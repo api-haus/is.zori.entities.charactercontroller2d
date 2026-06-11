@@ -229,12 +229,12 @@ namespace Zori.Entities.CharacterController2D
         {
             float len = length(vector);
             if (len <= EPSILON)
-                return float2.zero;
+                return Unity.Mathematics.float2.zero;
 
             // The line is everything orthogonal to its normal; its direction is perp(normal).
             float2 lineDir = normalizesafe(perp(onLineNormal));
             if (lengthsq(lineDir) <= EPSILON)
-                return float2.zero;
+                return Unity.Mathematics.float2.zero;
 
             // Pick the line direction that points the same way as alongDirection (the 3D version constrains the
             // result to lie between the original vector and alongDirection; in 2D "between" on a single line is

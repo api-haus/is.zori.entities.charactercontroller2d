@@ -4,6 +4,7 @@
   "references": [
     "Zori.Entities.CharacterController2D.Runtime",
     "Unity.Entities",
+    "Unity.Collections",
     "Unity.Mathematics"
   ],
   "includePlatforms": [],

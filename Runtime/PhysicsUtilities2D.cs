@@ -51,7 +51,7 @@ namespace Zori.Entities.CharacterController2D
         {
             return new KinematicCharacterMass2D
             {
-                CenterOfMass = float2.zero,
+                CenterOfMass = Unity.Mathematics.float2.zero,
                 InverseInertia = 0f,
                 InverseMass = storedCharacterData.SimulateDynamicBody ? (1f / storedCharacterData.Mass) : 0f,
             };
@@ -68,7 +68,7 @@ namespace Zori.Entities.CharacterController2D
         {
             return new KinematicCharacterMass2D
             {
-                CenterOfMass = float2.zero,
+                CenterOfMass = Unity.Mathematics.float2.zero,
                 InverseInertia = 0f,
                 InverseMass = characterProperties.SimulateDynamicBody ? (1f / characterProperties.Mass) : 0f,
             };
@@ -218,7 +218,7 @@ namespace Zori.Entities.CharacterController2D
         /// <returns> True if the handle was valid and the velocity was read </returns>
         public static bool TryGetDynamicBodyMotion(PhysicsBody body, out float2 linearVelocity, out float angularVelocityRadians)
         {
-            linearVelocity = float2.zero;
+            linearVelocity = Unity.Mathematics.float2.zero;
             angularVelocityRadians = 0f;
 
             if (!body.isValid)

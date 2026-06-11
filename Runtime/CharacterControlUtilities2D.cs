@@ -74,7 +74,7 @@ namespace Zori.Entities.CharacterController2D
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StandardGroundMove_Accelerated(ref float2 velocity, float2 acceleration, float maxSpeed, float deltaTime, float2 groundingUp, float2 groundedHitNormal, bool forceNoMaxSpeedExcess)
         {
-            float2 addedVelocityFromAcceleration = float2.zero;
+            float2 addedVelocityFromAcceleration = Unity.Mathematics.float2.zero;
             AccelerateVelocity(ref addedVelocityFromAcceleration, acceleration, deltaTime);
 
             velocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(velocity, groundedHitNormal, groundingUp);
@@ -96,7 +96,7 @@ namespace Zori.Entities.CharacterController2D
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StandardAirMove(ref float2 velocity, float2 acceleration, float maxSpeed, float2 movementPlaneUp, float deltaTime, bool forceNoMaxSpeedExcess)
         {
-            float2 addedVelocityFromAcceleration = float2.zero;
+            float2 addedVelocityFromAcceleration = Unity.Mathematics.float2.zero;
             AccelerateVelocity(ref addedVelocityFromAcceleration, acceleration, deltaTime);
             ClampAdditiveVelocityToMaxSpeedOnPlane(ref addedVelocityFromAcceleration, velocity, maxSpeed, movementPlaneUp, forceNoMaxSpeedExcess);
             velocity += addedVelocityFromAcceleration;

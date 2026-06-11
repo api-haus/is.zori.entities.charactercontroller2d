@@ -7,6 +7,11 @@ using Zori.Entities.Physics2D;
 using Zori.Entities.Physics2D.Baking;
 using static Unity.Mathematics.math;
 
+// The baker lives in the Zori.Entities.CharacterController2D.Baking namespace, so the substrate's
+// PhysicsShape2D is not in an enclosing namespace (unlike the substrate's own bakers) and the unqualified
+// name collides with UnityEngine.PhysicsShape2D pulled in by `using UnityEngine;`. Alias to the substrate type.
+using PhysicsShape2D = Zori.Entities.Physics2D.PhysicsShape2D;
+
 namespace Zori.Entities.CharacterController2D.Baking
 {
     /// <summary>
@@ -125,7 +130,7 @@ namespace Zori.Entities.CharacterController2D.Baking
                         : PhysicsBody2DInterpolation.None,
                     fastCollisions = false,
                     overrideMassDistribution = false,
-                    centerOfMass = float2.zero,
+                    centerOfMass = Unity.Mathematics.float2.zero,
                     rotationalInertia = 0f,
                 }
             );
@@ -170,7 +175,7 @@ namespace Zori.Entities.CharacterController2D.Baking
                 {
                     Kind = PhysicsShape2DKind.Circle,
                     Radius = Collider2DBaking.ScaleCircleRadius(authoring.ProxyRadius, scale),
-                    BoxSize = float2.zero,
+                    BoxSize = Unity.Mathematics.float2.zero,
                 };
         }
 
@@ -188,7 +193,7 @@ namespace Zori.Entities.CharacterController2D.Baking
         {
             var shape = new PhysicsShape2D
             {
-                offset = float2.zero,
+                offset = Unity.Mathematics.float2.zero,
                 // Substrate material-less defaults (Collider2DBaking.ReadSurface's no-material branch), so the
                 // character body has a sane surface without an authored PhysicsMaterial2D.
                 friction = 0.4f,
