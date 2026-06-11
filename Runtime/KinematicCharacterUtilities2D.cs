@@ -318,8 +318,26 @@ namespace Zori.Entities.CharacterController2D
                 // Ground snapping: pull the character down onto the ground hit, then lift by the collision offset.
                 if (characterProperties.SnapToGround && newIsGrounded)
                 {
-                    characterPosition -= characterBody.GroundingUp * distanceToGround;
-                    characterPosition += characterBody.GroundingUp * Constants.CollisionOffset;
+                    // Suppress the downward snap while a just-stepped-up character's centre still overhangs the lower
+                    // surface it climbed from. The accepted ground hit there is the FAR lower floor (the box edge is
+                    // flush against the step's vertical face, so the step top is only a zero-fraction overlap with no
+                    // opposing normal — see CheckForSteppingUpHit / SuppressGroundSnappingUntilSteppedClear). Snapping
+                    // down onto that far floor would drive the character back off the step. Hold the snap until the
+                    // centre clears the edge and the step top is itself the accepted ground hit at a near distance,
+                    // then clear the flag and resume normal snapping. A "near" hit means the character is genuinely
+                    // resting on its accepted ground (the normal grounded state), so the suppression is over.
+                    bool acceptedGroundIsNear = distanceToGround <= Constants.GroundedHitDistanceTolerance;
+                    if (characterBody.SuppressGroundSnappingUntilSteppedClear && !acceptedGroundIsNear)
+                    {
+                        // Hold position: do not pull down onto the far floor. The character stays on the step it
+                        // climbed; subsequent steps advance its centre over the step edge.
+                    }
+                    else
+                    {
+                        characterPosition -= characterBody.GroundingUp * distanceToGround;
+                        characterPosition += characterBody.GroundingUp * Constants.CollisionOffset;
+                        characterBody.SuppressGroundSnappingUntilSteppedClear = false;
+                    }
                 }
 
                 if (newIsGrounded)
@@ -348,6 +366,14 @@ namespace Zori.Entities.CharacterController2D
 
             characterBody.IsGrounded = newIsGrounded;
             characterBody.GroundHit = newGroundHit;
+
+            // Clear the stepped-up snap suppression if grounding did not run (EvaluateGrounding off), if snapping is
+            // off (the suppression only guards the snap), or if the character is no longer grounded (it left the step
+            // — e.g. jumped or walked off) so a stale flag never lingers into an unrelated future step-up.
+            if (!characterProperties.EvaluateGrounding || !characterProperties.SnapToGround || !newIsGrounded)
+            {
+                characterBody.SuppressGroundSnappingUntilSteppedClear = false;
+            }
         }
 
         /// <summary>
@@ -2425,12 +2451,27 @@ namespace Zori.Entities.CharacterController2D
 
             if (steppedHeight < maxStepHeight)
             {
-                // Step up: lift by the measured hit height and advance to the forward-clear position.
-                characterPosition += characterBody.GroundingUp * hitHeight;
+                // Step up: lift onto the step top and advance to the forward-clear position. Lift by hitHeight PLUS
+                // CollisionOffset so the proxy bottom lands the same small clearance above the step top that normal
+                // ground-snapping keeps above any surface. The 3D reference lifts by the bare hitHeight (its
+                // collider-cast returns a clean top-surface hit even from a flush rest), but in 2D a box proxy whose
+                // bottom is flush with the step top registers the step only as a zero-fraction overlap with no
+                // opposing normal — so without the clearance the next frame's down-probe can never re-ground on the
+                // step and grounding would fall through to the lower floor. The clearance lets normal grounding take
+                // over on the step top cleanly once the centre clears the edge.
+                characterPosition += characterBody.GroundingUp * (hitHeight + Constants.CollisionOffset);
                 characterPosition += forwardCheckDirection * forwardStepHitDistance;
 
                 characterBody.IsGrounded = true;
                 characterBody.GroundHit = stepHit;
+
+                // Suppress next frame's downward ground-snap until the centre clears the step edge. The swept
+                // MovePosition delivers this lifted pose next frame (D3 latency); a box proxy resting with its edge
+                // flush against the step's vertical face makes the step a zero-fraction overlap in the down-probe (no
+                // opposing top normal), so the grounding step would otherwise snap the character down onto the lower
+                // floor it just climbed from. The flag holds the snap until the step top is cleanly grounded
+                // (Update_Grounding clears it). See KinematicCharacterBody2D.SuppressGroundSnappingUntilSteppedClear.
+                characterBody.SuppressGroundSnappingUntilSteppedClear = true;
 
                 // Kill the velocity component along grounding-up (we are now standing on the step top).
                 float2 characterVelocityBeforeHit = characterBody.RelativeVelocity;

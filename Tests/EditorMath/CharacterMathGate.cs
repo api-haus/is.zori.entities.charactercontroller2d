@@ -449,5 +449,76 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             var twice = MathUtilities2D.ProjectOnPlane(projected, n);
             Assert.IsTrue(Approx(twice, projected), "ProjectOnPlane is idempotent");
         }
+
+        // ---- Future-slope angle sign (gate 4, symptom 2) ----------------------------------------------------
+        //
+        // CalculateAngleOfHitWithGroundUp signs the slope change so the future-slope feature's downward-ledge test
+        // — degrees(angle) < -MaxDownwardSlopeChangeAngle (KinematicCharacterUtilities2D.Update_PreventGrounding-
+        // FromFutureSlopeChange, the 2D port of REF :852) — fires only on a DOWNWARD change. A wrong sign would
+        // never unground at a downward ledge (or would unground spuriously on an upward step), and the C4b
+        // deliverable flagged this 2D reduction as its least-certain. These tests are the direct, deterministic
+        // arbiter of the sign that the C4a/C4b gates left unexercised: a downward slope change (relative to the
+        // current ground, along the movement direction) must yield a NEGATIVE angle; an upward change a POSITIVE
+        // one. The convention matches the 3D: walking +X over flat ground (up = +Y) onto a surface that tilts DOWN
+        // ahead (its normal leans forward, +X-ward) is a negative angle; onto a surface that tilts UP ahead (normal
+        // leans back, -X-ward) is positive.
+
+        [Test]
+        public void Math_AngleOfHitWithGroundUp_DownwardSlopeChange_IsNegative()
+        {
+            var groundingUp = new float2(0f, 1f);
+            var currentGroundUp = new float2(0f, 1f); // currently on flat ground
+            var velocityDir = new float2(1f, 0f); // walking +X
+            // A surface tilting DOWN to the right (a downhill ahead): its outward normal leans in the +X (forward)
+            // direction, e.g. a 30° downslope to the right → normal = (sin30, cos30) = (0.5, 0.866).
+            var downhillNormal = normalize(new float2(0.5f, 0.866f));
+
+            float angle = KinematicCharacterUtilities2D.CalculateAngleOfHitWithGroundUp(
+                currentGroundUp, downhillNormal, velocityDir, groundingUp);
+
+            Assert.Less(degrees(angle), 0f,
+                $"a downward slope change in the movement direction must be a NEGATIVE angle (so the "
+                    + $"degrees(angle) < -MaxDownwardSlopeChangeAngle ledge test can fire); got {degrees(angle)}°");
+            Assert.AreEqual(-30f, degrees(angle), 0.5f, "magnitude is the 30° slope change between the two normals");
+        }
+
+        [Test]
+        public void Math_AngleOfHitWithGroundUp_UpwardSlopeChange_IsPositive()
+        {
+            var groundingUp = new float2(0f, 1f);
+            var currentGroundUp = new float2(0f, 1f);
+            var velocityDir = new float2(1f, 0f); // walking +X
+            // A surface tilting UP to the right (an uphill ahead): its outward normal leans in the -X (backward)
+            // direction, e.g. a 30° upslope to the right → normal = (-sin30, cos30) = (-0.5, 0.866).
+            var uphillNormal = normalize(new float2(-0.5f, 0.866f));
+
+            float angle = KinematicCharacterUtilities2D.CalculateAngleOfHitWithGroundUp(
+                currentGroundUp, uphillNormal, velocityDir, groundingUp);
+
+            Assert.Greater(degrees(angle), 0f,
+                $"an upward slope change in the movement direction must be a POSITIVE angle (so it never trips the "
+                    + $"downward-ledge ungrounding test); got {degrees(angle)}°");
+            Assert.AreEqual(30f, degrees(angle), 0.5f, "magnitude is the 30° slope change between the two normals");
+        }
+
+        [Test]
+        public void Math_AngleOfHitWithGroundUp_SignFollowsMovementDirection()
+        {
+            // The sign is RELATIVE to the movement direction: the SAME downhill-to-the-right surface is a downward
+            // change when walking +X (toward the downhill) but an upward change when walking -X (toward the uphill
+            // it represents from the other side). This pins that the sign tracks velocityDirection, not a fixed
+            // world axis — the property the 3D measures about velocityRight and the 2D reduction must preserve.
+            var groundingUp = new float2(0f, 1f);
+            var currentGroundUp = new float2(0f, 1f);
+            var surfaceNormal = normalize(new float2(0.5f, 0.866f)); // tilts down to the right
+
+            float walkingRight = KinematicCharacterUtilities2D.CalculateAngleOfHitWithGroundUp(
+                currentGroundUp, surfaceNormal, new float2(1f, 0f), groundingUp);
+            float walkingLeft = KinematicCharacterUtilities2D.CalculateAngleOfHitWithGroundUp(
+                currentGroundUp, surfaceNormal, new float2(-1f, 0f), groundingUp);
+
+            Assert.Less(degrees(walkingRight), 0f, "walking toward the downhill is a downward (negative) change");
+            Assert.Greater(degrees(walkingLeft), 0f, "walking the other way the same surface is an upward (positive) change");
+        }
     }
 }

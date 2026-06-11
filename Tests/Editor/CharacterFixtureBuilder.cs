@@ -65,6 +65,14 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string MovingPlatformParent = FixtureRoot + "/CC2D_MovingPlatform.unity";
         public const string MovingPlatformChild = FixtureRoot + "/CC2D_MovingPlatform_Sub.unity";
 
+        // ---- gate-4 future-slope / downward-ledge fixtures -------------------------------------------------
+        public const string DownLedgeParent = FixtureRoot + "/CC2D_DownLedge.unity";
+        public const string DownLedgeChild = FixtureRoot + "/CC2D_DownLedge_Sub.unity";
+        public const string DownSlopeGentleParent = FixtureRoot + "/CC2D_DownSlopeGentle.unity";
+        public const string DownSlopeGentleChild = FixtureRoot + "/CC2D_DownSlopeGentle_Sub.unity";
+        public const string DownSlopeSteepParent = FixtureRoot + "/CC2D_DownSlopeSteep.unity";
+        public const string DownSlopeSteepChild = FixtureRoot + "/CC2D_DownSlopeSteep_Sub.unity";
+
         // Step geometry: the lower step is below MaxStepHeight (0.5), the higher step is above it. The runtime
         // gate asserts the character steps up onto the low one and is blocked by the high one. The step's top
         // surface Y is what the character's grounded settle height tracks after stepping up.
@@ -84,6 +92,15 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // The character circle proxy radius used across all fixtures — the runtime test asserts the grounded settle
         // height against this.
         public const float CharacterRadius = 0.5f;
+
+        // gate-4 future-slope / downward-ledge geometry. The downward-ledge platform ends at LedgeEdgeX; the
+        // downslope fixtures put the flat-to-downhill lip at SlopeLipX. The gentle downhill is within the gate's
+        // configured max downward slope-change angle, the steep one is over it — see CharacterFixtureBuilder-
+        // Constants.MaxDownwardSlopeChangeForGate (the runtime gate sets the same value on the character).
+        public const float LedgeEdgeX = 3f;
+        public const float SlopeLipX = 0f;
+        public const float GentleDownSlopeDeg = 20f;
+        public const float SteepDownSlopeDeg = 55f;
 
         // Floor top surface sits at Y=0 (a thin box centred just below 0). The runtime gate
         // (CharacterFixtureBuilderConstants.FloorTopY) hard-codes the same 0 — kept in sync by convention rather than
@@ -112,6 +129,11 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildDynamicPush();
             BuildDynamicPushHeavy();
             BuildMovingPlatform();
+
+            // gate-4 future-slope / downward-ledge.
+            BuildDownLedge();
+            BuildDownSlopeGentle();
+            BuildDownSlopeSteep();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -358,6 +380,70 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     // Character standing on the platform top.
                     AddCharacter(root, new Vector3(0f, PlatformTopY + CharacterRadius + 0.05f, 0f));
                 });
+        }
+
+        // ---- gate-4 future-slope / downward-ledge fixtures -------------------------------------------------
+
+        // Downward ledge: a flat platform that ENDS in mid-air. A grounded character running +X off the edge, with
+        // PreventGroundingWhenMovingTowardsNoGrounding on (the default), must UNGROUND as it crosses the edge
+        // (DetectFutureSlopeChange finds no ground ahead → isMovingTowardsNoGrounding) and launch off cleanly,
+        // rather than snapping back onto the ledge. This exercises the no-grounding branch of the future-slope path.
+        static void BuildDownLedge()
+        {
+            BuildFixture(
+                DownLedgeChild,
+                DownLedgeParent,
+                root =>
+                {
+                    // Platform top at Y=0, ending at X = LedgeEdgeX (right face). Beyond it is empty space.
+                    AddFloor(root, new Vector2((LedgeEdgeX - 10f) * 0.5f, FloorTopY - 0.5f), new Vector2(10f + LedgeEdgeX, 1f));
+                    var c = AddCharacter(root, new Vector3(LedgeEdgeX - 3f, CharacterRadius + 0.05f, 0f));
+                    // PreventGroundingWhenMovingTowardsNoGrounding is on by default in the params; leave it. No
+                    // HasMaxDownwardSlopeChangeAngle needed — the ledge is the no-grounding case.
+                    _ = c;
+                });
+        }
+
+        // Gentle downslope (within the max downward slope-change angle): a flat top that transitions to a shallow
+        // downhill. A grounded character running +X onto it, with HasMaxDownwardSlopeChangeAngle on and a generous
+        // max, must STAY grounded (the future-slope check finds a grounded slope ahead via the secondary-down ray,
+        // and the angle is within the limit so it is not force-ungrounded). The downhill angle (GentleDownSlopeDeg)
+        // is below MaxDownwardSlopeChangeForGate.
+        static void BuildDownSlopeGentle()
+        {
+            BuildFixture(
+                DownSlopeGentleChild,
+                DownSlopeGentleParent,
+                root => BuildDownSlopeScene(root, GentleDownSlopeDeg));
+        }
+
+        // Steep downslope (over the max downward slope-change angle): the same flat-to-downhill transition but a
+        // steep downhill (SteepDownSlopeDeg > MaxDownwardSlopeChangeForGate). A grounded character running +X onto
+        // it must UNGROUND at the transition (the SIGNED future-slope angle is negative and its magnitude exceeds
+        // the max), launching off the lip instead of snapping down the steep face. This is the direct behavioural
+        // arbiter of the angle SIGN: a wrong (positive-for-downward) sign would never trip the < -max test and the
+        // character would stay glued to the steep slope.
+        static void BuildDownSlopeSteep()
+        {
+            BuildFixture(
+                DownSlopeSteepChild,
+                DownSlopeSteepParent,
+                root => BuildDownSlopeScene(root, SteepDownSlopeDeg));
+        }
+
+        // A flat top platform (so the character starts grounded on flat ground, currentGroundUp = +Y) butted up
+        // against a downhill ramp descending to the right at `downSlopeDeg`. The character starts on the flat part
+        // and walks +X toward the lip where the flat meets the downhill.
+        static void BuildDownSlopeScene(GameObject root, float downSlopeDeg)
+        {
+            // Flat top: left face well to the left, right face (the lip) at X = SlopeLipX, top at Y=0.
+            AddFloor(root, new Vector2(SlopeLipX - 5f, FloorTopY - 0.5f), new Vector2(10f, 1f));
+            // Downhill ramp: a long thin box rotated -downSlopeDeg (descending to the right), its high (left) end
+            // butted at the lip so its top surface continues down-right from (SlopeLipX, 0).
+            var ramp = AddFloor(root, new Vector2(SlopeLipX + 5f, -0.5f), new Vector2(12f, 1f));
+            ramp.transform.RotateAround(new Vector3(SlopeLipX, 0f, 0f), Vector3.forward, -downSlopeDeg);
+            // Character on the flat top, a little left of the lip, close to the surface.
+            AddCharacter(root, new Vector3(SlopeLipX - 2f, CharacterRadius + 0.05f, 0f));
         }
 
         // ---- authoring helpers -----------------------------------------------------------------------------

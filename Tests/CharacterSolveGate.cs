@@ -340,5 +340,17 @@ namespace Zori.Entities.CharacterController2D.Tests
         // gate asserts the ridden character's X travel tracks the platform's; the editor builder references this
         // so the platform geometry and the drive speed share one home.
         public const float PlatformSpeedX = 2f;
+
+        // Gate-4 step: the low step's top-surface Y (below MaxStepHeight 0.5). The runtime gate asserts the
+        // stable-stand height (step top + radius) against this; the editor builder authors the step box to it, so
+        // the geometry and the assertion share one home.
+        public const float LowStepTopY = 0.3f;
+
+        // Gate-4 future-slope: the max downward slope-change angle (degrees) the gate configures on the character
+        // via HasMaxDownwardSlopeChangeAngle. The gentle downhill (20°, BuildDownSlopeScene) is UNDER it → stays
+        // grounded; the steep downhill (55°) is OVER it → ungrounds. Chosen strictly between the two authored slope
+        // angles. The downward-ledge fixture's right edge (the no-grounding case) is at LedgeEdgeX.
+        public const float MaxDownwardSlopeChangeForGate = 35f;
+        public const float LedgeEdgeX = 3f;
     }
 }

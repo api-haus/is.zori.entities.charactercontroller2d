@@ -78,6 +78,20 @@ namespace Zori.Entities.CharacterController2D
         public bool WasGroundedBeforeCharacterUpdate;
 
         /// <summary>
+        /// Set true when step-up lifts the character onto a step, and consumed by the next update's grounding step
+        /// to suppress the downward ground-snap while the character's centre still overhangs the lower surface it
+        /// stepped up from. In 3D the step-up writes the over-the-step position instantaneously and the next frame's
+        /// collider-cast down returns the step top as the nearest opposing hit, so the character stays on the step.
+        /// In 2D the move is the substrate's swept <c>MovePosition</c> applied next frame (design D3), and a box
+        /// proxy whose edge is flush against the step's vertical face registers the step only as a zero-fraction
+        /// overlap (no opposing top-surface normal) — so the next frame's grounding finds the lower floor as the
+        /// closest opposing hit and the snap would yank the character back down onto it. This flag is the localized
+        /// 2D bridge: it holds the snap until the centre clears the step edge and the step top is cleanly grounded
+        /// (the grounding step clears it then). It is persisted state (not reset in <c>Update_Initialize</c>).
+        /// </summary>
+        public bool SuppressGroundSnappingUntilSteppedClear;
+
+        /// <summary>
         /// Returns a sensible default for this component, grounding-up pointing along world +Y.
         /// </summary>
         /// <returns> The default KinematicCharacterBody2D </returns>
@@ -97,6 +111,7 @@ namespace Zori.Entities.CharacterController2D
                 RotationFromParent = 0f,
                 LastPhysicsUpdateDeltaTime = 0f,
                 WasGroundedBeforeCharacterUpdate = default,
+                SuppressGroundSnappingUntilSteppedClear = default,
             };
         }
 

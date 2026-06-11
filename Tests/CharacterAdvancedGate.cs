@@ -218,15 +218,17 @@ namespace Zori.Entities.CharacterController2D.Tests
 
         // ---- Step handling ---------------------------------------------------------------------------------
 
-        // Step ≤ MaxStepHeight: the step-up logic must ENGAGE and LIFT the character onto the step top (Y rises to
-        // ~step-top + half-height). The decision point the brief names is "≤ max → steps up". The lift is the
-        // verified behaviour here; the box's CENTRE clearing the step edge to stand permanently is a separately-
-        // documented 2D limitation (the swept MovePosition + per-step grounding-snap-to-nearest can snap a box
-        // back to the lower floor when its centre still overhangs the floor — see the gate-3 side notes). So this
-        // gate asserts the step-up engaged and raised the character to the step height at least once (peak Y over
-        // the walk), and the contrast test below proves a too-high step is NOT climbed at all.
+        // Step ≤ MaxStepHeight: the step-up logic must ENGAGE, lift the character onto the step top, AND hold a
+        // stable stand there for several fixed steps with no slide-back or reset — including while the box's CENTRE
+        // still overhangs the lower floor (the case the C4b gate-3 originally found regressing). The fix is the
+        // localized grounding change (KinematicCharacterUtilities2D.cs): step-up lifts the proxy onto the step top
+        // with the same CollisionOffset clearance normal ground-snapping keeps, and a one-frame snap-suppression
+        // bridges the swept-MovePosition delivery latency (design D3), so the next frame's grounding re-grounds on
+        // the STEP top instead of yanking the character down to the lower floor it climbed from. The constant Y the
+        // character holds is the step top + radius + offset (~0.815 for the 0.3 step, radius 0.5, offset 0.01).
+        // The contrast test below proves a too-high step is never climbed at all (the "> max → blocked" branch).
         [UnityTest]
-        public IEnumerator Step_WalkIntoLowStep_StepUpEngages_RaisesToStepTop()
+        public IEnumerator Step_WalkIntoLowStep_StepsUp_HoldsStableStandOnStep()
         {
             yield return LoadAndPrepare("CC2D_StepLow", 1);
 
@@ -235,21 +237,63 @@ namespace Zori.Entities.CharacterController2D.Tests
             Assert.IsTrue(Body().IsGrounded, "character starts grounded on the floor");
             var floorY = Position().y;
 
-            // Walk +X into the low step (top at LowStepTopY=0.3, below MaxStepHeight 0.5). Track the peak Y the
-            // step-up lifts the character to.
-            var peakY = floorY;
-            for (var i = 0; i < 180; i++)
+            // Walk +X into the low step (top at LowStepTopY=0.3, below MaxStepHeight 0.5) until the character has
+            // mounted it. The step-up engages while the centre overhangs the lower floor; the character must climb
+            // and STAY up, not climb-then-snap-back each frame. Detect the mount: grounded, Y near step-top+radius.
+            var stepTop = CharacterFixtureBuilderConstants.LowStepTopY;
+            var expectedStandY = stepTop + CharacterRadius; // + ~Offset; asserted to a tolerance below
+            var mountedAtStep = -1;
+            for (var i = 0; i < 120; i++)
             {
                 SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
                 _fixedGroup.Update();
-                peakY = max(peakY, Position().y);
+                if (Body().IsGrounded && abs(Position().y - expectedStandY) <= 0.08f)
+                {
+                    mountedAtStep = i;
+                    break; // start the sustained-stand assertion right after mounting, while most of the step is ahead
+                }
+            }
+            Assert.GreaterOrEqual(mountedAtStep, 0,
+                $"step ≤ MaxStepHeight must lift the character onto the step top (~Y {expectedStandY}); never reached it");
+
+            // The STRICT assertion: after mounting, the character holds a stable stand on the step for many fixed
+            // steps while still walking +X ACROSS the step surface — no slide-back to the floor, no per-frame reset.
+            // The step box spans X[2,7] (left face 2, the editor builder centres a 5-wide box at 4.5); assert the
+            // hold only WHILE the character is on the step top (its centre well within the step span), since walking
+            // off the far edge correctly descends back to the floor (the right behaviour, not the snap-back bug).
+            const float stepRightEdgeX = 7f;
+            var minYOnStep = float.MaxValue;
+            var maxYOnStep = float.MinValue;
+            var startXAfterMount = Position().x;
+            var framesAssertedOnStep = 0;
+            for (var i = 0; i < 70; i++)
+            {
+                SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
+                _fixedGroup.Update();
+                // Only assert the stable stand while the proxy is fully over the step top (a margin inside both
+                // edges so the lip-transition frames at either end are not counted).
+                if (Position().x > 2f + CharacterRadius + 0.1f && Position().x < stepRightEdgeX - CharacterRadius - 0.1f)
+                {
+                    Assert.IsTrue(Body().IsGrounded, $"character must stay grounded standing on the step (step {i}, x={Position().x})");
+                    var y = Position().y;
+                    minYOnStep = min(minYOnStep, y);
+                    maxYOnStep = max(maxYOnStep, y);
+                    framesAssertedOnStep++;
+                }
             }
 
-            // Step-up engaged: the character was lifted to (about) the step top + half-height. The box half-height
-            // is CharacterRadius (0.5), the step top is at 0.3, so a successful step-up reaches ~0.3+0.5 = 0.8 —
-            // well above the floor rest (~0.51). A too-high step (the next test) never lifts the character at all.
-            Assert.Greater(peakY, floorY + 0.2f, $"step ≤ MaxStepHeight must lift the character onto the step; floor {floorY}, peak {peakY}");
-            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN during step-up");
+            // It genuinely stood on the step for a sustained run (not a one-frame graze), and over that run its Y
+            // never dipped back toward the floor (the snap-back bug) nor climbed above the step top — a stable stand.
+            Assert.Greater(framesAssertedOnStep, 30,
+                $"character must spend a sustained run standing ON the step top, not graze it; on-step frames {framesAssertedOnStep}");
+            Assert.GreaterOrEqual(minYOnStep, expectedStandY - 0.08f,
+                $"character must HOLD the step stand without snapping back to the floor; floor {floorY}, "
+                    + $"expected stand ~{expectedStandY}, min Y on step {minYOnStep}");
+            Assert.LessOrEqual(maxYOnStep, expectedStandY + 0.12f,
+                $"the held stand must sit at the step top, not climb higher; max Y on step {maxYOnStep}");
+            Assert.Greater(Position().x, startXAfterMount + 0.5f,
+                $"character must keep walking across the step (not stick at the edge); {startXAfterMount} -> {Position().x}");
+            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN during the step stand");
         }
 
         [UnityTest]
@@ -498,6 +542,119 @@ namespace Zori.Entities.CharacterController2D.Tests
             Assert.Less(charTravel, platformTravel + 0.3f, $"character must not overshoot the platform; platform {platformTravel}, char {charTravel}");
             Assert.IsTrue(Body().IsGrounded, "character must stay grounded riding the platform");
             Assert.AreEqual(charStartY, Position().y, 0.08f, $"riding a flat platform must not change the character's Y; {charStartY} -> {Position().y}");
+        }
+
+        // ---- Future-slope / downward-ledge (gate 4, symptom 2 — the angle-sign behavioural arbiter) ---------
+
+        // Configure the character's step/slope params at runtime (the real API, the same opt-in pattern as the
+        // default tag): enable the future-slope feature(s) the test exercises.
+        void ConfigureSlopeHandling(Entity e, bool preventOnNoGrounding, bool hasMaxDownward, float maxDownwardDeg)
+        {
+            var em = _world.EntityManager;
+            var p = em.GetComponentData<BasicStepAndSlopeHandlingParameters2D>(e);
+            p.PreventGroundingWhenMovingTowardsNoGrounding = preventOnNoGrounding;
+            p.HasMaxDownwardSlopeChangeAngle = hasMaxDownward;
+            p.MaxDownwardSlopeChangeAngle = maxDownwardDeg;
+            em.SetComponentData(e, p);
+        }
+
+        // Running off a downward ledge with PreventGroundingWhenMovingTowardsNoGrounding on: the character must
+        // UNGROUND as it crosses the edge (DetectFutureSlopeChange finds no ground ahead) and launch off — not
+        // snap back onto the lip. This exercises the no-grounding branch of the future-slope path.
+        [UnityTest]
+        public IEnumerator FutureSlope_RunOffDownwardLedge_Ungrounds()
+        {
+            yield return LoadAndPrepare("CC2D_DownLedge", 1);
+            ConfigureSlopeHandling(TheCharacter(), preventOnNoGrounding: true, hasMaxDownward: false, maxDownwardDeg: 90f);
+
+            Step(60);
+            Assert.IsTrue(Body().IsGrounded, "character starts grounded on the platform");
+
+            // Walk +X toward and off the ledge (right edge at LedgeEdgeX). Watch for the ungrounding as it crosses.
+            var sawUngrounded = false;
+            for (var i = 0; i < 90; i++)
+            {
+                SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
+                _fixedGroup.Update();
+                if (Position().x > CharacterFixtureBuilderConstants.LedgeEdgeX && !Body().IsGrounded)
+                    sawUngrounded = true;
+            }
+
+            Assert.IsTrue(sawUngrounded,
+                "running off a downward ledge (PreventGroundingWhenMovingTowardsNoGrounding) must unground the "
+                    + "character so it launches off cleanly rather than snapping back onto the lip");
+            Assert.Greater(Position().x, CharacterFixtureBuilderConstants.LedgeEdgeX,
+                "the character must travel past the ledge edge");
+            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN off the ledge");
+        }
+
+        // Walking onto a GENTLE downhill (within MaxDownwardSlopeChange): the character must STAY grounded — the
+        // future-slope check finds a grounded slope ahead and the signed angle is within the limit. (Contrast with
+        // the steep case below; this proves the angle sign/magnitude does not spuriously unground a shallow slope.)
+        [UnityTest]
+        public IEnumerator FutureSlope_GentleDownSlope_StaysGrounded()
+        {
+            yield return LoadAndPrepare("CC2D_DownSlopeGentle", 1);
+            ConfigureSlopeHandling(
+                TheCharacter(),
+                preventOnNoGrounding: false, // isolate the max-downward-angle path (the SIGN arbiter)
+                hasMaxDownward: true,
+                maxDownwardDeg: CharacterFixtureBuilderConstants.MaxDownwardSlopeChangeForGate);
+
+            Step(60);
+            Assert.IsTrue(Body().IsGrounded, "character starts grounded on the flat top");
+
+            // Walk +X over the lip onto the gentle (20°) downhill — under the 35° max — and continue down it.
+            var groundedFrames = 0;
+            for (var i = 0; i < 120; i++)
+            {
+                SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
+                _fixedGroup.Update();
+                if (Body().IsGrounded) groundedFrames++;
+            }
+
+            // It descended the gentle slope (Y dropped below the flat-top rest) while staying grounded almost
+            // throughout (a transient ungrounded frame at the very lip is acceptable; a gentle slope must not
+            // launch the character).
+            Assert.Less(Position().y, CharacterRadius + 0.05f, "character must have descended onto the gentle downhill");
+            Assert.Greater(groundedFrames, 110, $"a gentle downslope (under the max) must keep the character grounded; grounded {groundedFrames}/120 frames");
+            Assert.IsTrue(Body().IsGrounded, "character must end grounded on the gentle downhill");
+            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN on the gentle slope");
+        }
+
+        // Walking onto a STEEP downhill (over MaxDownwardSlopeChange): the character must UNGROUND at the lip — the
+        // SIGNED future-slope angle is negative and its magnitude exceeds the max, so degrees(angle) < -max fires.
+        // This is the direct behavioural arbiter of CalculateAngleOfHitWithGroundUp's SIGN: a wrong (positive)
+        // sign would never trip the test and the character would stay glued to the steep slope (the gentle case
+        // above would then be the only outcome, and this contrast test is RED).
+        [UnityTest]
+        public IEnumerator FutureSlope_SteepDownSlope_Ungrounds()
+        {
+            yield return LoadAndPrepare("CC2D_DownSlopeSteep", 1);
+            ConfigureSlopeHandling(
+                TheCharacter(),
+                preventOnNoGrounding: false, // isolate the max-downward-angle path (the SIGN arbiter)
+                hasMaxDownward: true,
+                maxDownwardDeg: CharacterFixtureBuilderConstants.MaxDownwardSlopeChangeForGate);
+
+            Step(60);
+            Assert.IsTrue(Body().IsGrounded, "character starts grounded on the flat top");
+
+            // Walk +X over the lip toward the steep (55°) downhill — over the 35° max. The signed angle is a
+            // downward change exceeding the max, so the character must unground at the lip and launch off.
+            var sawUngrounded = false;
+            for (var i = 0; i < 60; i++)
+            {
+                SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
+                _fixedGroup.Update();
+                if (!Body().IsGrounded) sawUngrounded = true;
+            }
+
+            Assert.IsTrue(sawUngrounded,
+                "a steep downward slope change OVER MaxDownwardSlopeChangeAngle must unground the character "
+                    + "(the signed future-slope angle is negative and exceeds the max); if the angle SIGN were "
+                    + "inverted this would never fire and the character would stay glued to the slope");
+            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN at the steep lip");
         }
     }
 }
