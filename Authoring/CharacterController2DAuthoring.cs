@@ -5,15 +5,28 @@ namespace Zori.Entities.CharacterController2D.Authoring
 {
     /// <summary>
     /// Which cast-proxy shape the controller's solve sweeps against the world. A subset of the substrate's
-    /// <c>Zori.Entities.Physics2D.PhysicsShape2DKind</c> — only Circle and Box have a substrate cast surface
-    /// (<c>PhysicsQueries2D.CircleCast</c> / <c>BoxCast</c>), so the proxy is one of those two (design D1).
-    /// A local authoring enum (rather than exposing the full substrate enum) so the inspector offers only the
-    /// two valid choices and the Authoring assembly stays free of a substrate-runtime reference.
+    /// <c>Zori.Entities.Physics2D.PhysicsShape2DKind</c> — Circle, Box, and Capsule have a substrate cast surface
+    /// (<c>PhysicsQueries2D.CircleCast</c> / <c>BoxCast</c> / <c>CapsuleCast</c>), so the proxy is one of those
+    /// three (design D1). A local authoring enum (rather than exposing the full substrate enum) so the inspector
+    /// offers only the valid choices and the Authoring assembly stays free of a substrate-runtime reference.
     /// </summary>
     public enum CharacterProxyShape2D : byte
     {
         Circle,
         Box,
+        Capsule,
+    }
+
+    /// <summary>
+    /// The long axis of a capsule proxy, matching <c>UnityEngine.CapsuleDirection2D</c> — Vertical caps sit on
+    /// the Y axis (a standing character), Horizontal on the X axis. The authored capsule is a <c>Size</c> +
+    /// direction (the inspector-natural form), reduced to two end-cap centers + a cap radius at bake exactly the
+    /// way the substrate's <c>CapsuleCollider2DBaker</c> reduces a built-in <c>CapsuleCollider2D</c>.
+    /// </summary>
+    public enum CharacterCapsuleDirection2D : byte
+    {
+        Vertical,
+        Horizontal,
     }
 
     /// <summary>
@@ -67,6 +80,21 @@ namespace Zori.Entities.CharacterController2D.Authoring
 
         [SerializeField]
         [Tooltip(
+            "Capsule proxy full extents (width, height), like CapsuleCollider2D.size (used when Proxy Shape is "
+                + "Capsule). The cap radius and end-cap centers are derived from this size and the direction at "
+                + "bake."
+        )]
+        float2 m_ProxyCapsuleSize = new float2(1f, 2f);
+
+        [SerializeField]
+        [Tooltip(
+            "Capsule proxy long axis (used when Proxy Shape is Capsule). Vertical for a standing character (caps "
+                + "on the Y axis), Horizontal for caps on the X axis."
+        )]
+        CharacterCapsuleDirection2D m_ProxyCapsuleDirection = CharacterCapsuleDirection2D.Vertical;
+
+        [SerializeField]
+        [Tooltip(
             "Render-rate pose smoothing between fixed physics steps. When on, the body gets the substrate's "
                 + "Interpolate smoothing (one step of render lag); off is None (the choppy fixed-step pose)."
         )]
@@ -107,6 +135,21 @@ namespace Zori.Entities.CharacterController2D.Authoring
             set => m_ProxyBoxSize = math.max(float2.zero, value);
         }
 
+        /// <summary>Capsule proxy full extents (width, height), used when <see cref="ProxyShape"/> is
+        /// Capsule.</summary>
+        public float2 ProxyCapsuleSize
+        {
+            get => m_ProxyCapsuleSize;
+            set => m_ProxyCapsuleSize = math.max(float2.zero, value);
+        }
+
+        /// <summary>Capsule proxy long axis, used when <see cref="ProxyShape"/> is Capsule.</summary>
+        public CharacterCapsuleDirection2D ProxyCapsuleDirection
+        {
+            get => m_ProxyCapsuleDirection;
+            set => m_ProxyCapsuleDirection = value;
+        }
+
         /// <summary>Whether the rendered pose is smoothed between fixed steps (the substrate's
         /// <c>PhysicsBody2DInterpolation.Interpolate</c>) or shown at the raw fixed-step pose
         /// (<c>None</c>).</summary>
@@ -120,6 +163,7 @@ namespace Zori.Entities.CharacterController2D.Authoring
         {
             m_ProxyRadius = math.max(0f, m_ProxyRadius);
             m_ProxyBoxSize = math.max(float2.zero, m_ProxyBoxSize);
+            m_ProxyCapsuleSize = math.max(float2.zero, m_ProxyCapsuleSize);
             m_CharacterProperties.GroundSnappingDistance = math.max(
                 0f,
                 m_CharacterProperties.GroundSnappingDistance

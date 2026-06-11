@@ -656,5 +656,145 @@ namespace Zori.Entities.CharacterController2D.Tests
                     + "inverted this would never fire and the character would stay glued to the slope");
             Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN at the steep lip");
         }
+
+        // ---- P0 capsule character (the capsule mandate, end-to-end) ----------------------------------------
+
+        // The capsule's grounded settle: the centre rests CapsuleBottomReach (+ ~Offset) above the surface it
+        // stands on (the bottom cap touches the surface). Used by the capsule grounding + step tests.
+        const float CapsuleBottomReach = CharacterFixtureBuilderConstants.CapsuleBottomReach;
+        const float CapsuleCapRadius = CharacterFixtureBuilderConstants.CapsuleCapRadius;
+
+        // A capsule proxy probe (the capsule analogue of PenetratesWorld): does the character's capsule proxy,
+        // shrunk by 3*Offset, still enclose another world body? A surface contact at zero separation is not
+        // counted, only a body genuinely inside the shrunk capsule.
+        bool CapsulePenetratesWorld(Entity character, float2 centre)
+        {
+            var pw = GetPhysicsWorld();
+            using var hits = new NativeList<PhysicsQueryHit2D>(8, Allocator.Temp);
+            var half = CapsuleBottomReach - CapsuleCapRadius; // segment half-length (caps on Y)
+            PhysicsQueries2D.OverlapCapsule(
+                pw,
+                centre + new float2(0f, -half),
+                centre + new float2(0f, half),
+                CapsuleCapRadius - (3f * Offset),
+                0ul,
+                hits);
+            for (var i = 0; i < hits.Length; i++)
+            {
+                if (hits[i].entity != character && hits[i].entity != Entity.Null)
+                    return true;
+            }
+            return false;
+        }
+
+        // Capsule grounding: a capsule dropped above a flat floor settles at CapsuleBottomReach (+ ~Offset) above
+        // the floor top, grounded, with no X drift — the capsule analogue of CharacterSolveGate's grounding test.
+        // Proves the CapsuleCast-driven solve grounds a capsule the same way a circle proxy does.
+        [UnityTest]
+        public IEnumerator Capsule_DroppedOnFloor_Grounds_AtCapsuleBottomReach()
+        {
+            yield return LoadAndPrepare("CC2D_CapsuleGround", 1);
+
+            var startX = Position().x;
+            Step(120);
+
+            Assert.IsTrue(Body().IsGrounded, "the capsule must ground on the floor");
+            var settleY = Position().y;
+            var expected = CharacterFixtureBuilderConstants.FloorTopY + CapsuleBottomReach;
+            Assert.Less(
+                abs(settleY - expected),
+                0.08f,
+                $"the capsule must settle ~CapsuleBottomReach above the floor; expected ~{expected}, got {settleY}");
+            Assert.Less(abs(Position().x - startX), 0.05f, "the capsule must not drift in X on a flat floor");
+            Assert.IsFalse(CapsulePenetratesWorld(TheCharacter(), Position()), "the settled capsule must not penetrate the floor");
+        }
+
+        // Capsule collide-and-slide: a grounded capsule driven +X into a wall (left face X=3) must clamp at the
+        // wall (its right cap edge at the face), travel up to it, and never penetrate — the capsule analogue of
+        // CharacterSolveGate's wall test. Proves the capsule cast resolves a horizontal collide-and-slide.
+        [UnityTest]
+        public IEnumerator Capsule_CollideAndSlideIntoWall_ClampsAtWall_NoPenetration()
+        {
+            yield return LoadAndPrepare("CC2D_CapsuleWall", 1);
+
+            Step(30); // settle on the floor
+            Assert.IsTrue(Body().IsGrounded, "the capsule starts grounded near the floor");
+
+            for (var i = 0; i < 180; i++)
+            {
+                SetRelativeVelocity(TheCharacter(), new float2(4f, 0f));
+                _fixedGroup.Update();
+                Assert.IsFalse(
+                    CapsulePenetratesWorld(TheCharacter(), Position()),
+                    $"the capsule penetrated the wall at step {i} (centre {Position()})");
+            }
+
+            // The right cap edge (centre + cap radius) must clamp at or before the wall face X=3.
+            var rightEdge = Position().x + CapsuleCapRadius;
+            Assert.LessOrEqual(rightEdge, 3f + 1e-2f, $"the capsule's right cap crossed the wall face X=3; right edge {rightEdge}");
+            Assert.Greater(Position().x, 2f, $"the capsule must travel up to the wall (centre near it); centre {Position().x}");
+            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN during the capsule wall slide");
+        }
+
+        // Capsule step-up (the UNVERIFIED case the box-only gate-4 fix left open): a grounded capsule walks +X
+        // into the low step (top 0.3, below the 0.5 max). The capsule must MOUNT it and HOLD a stable stand
+        // (grounded, Y at step-top + CapsuleBottomReach) across the step surface — the capsule analogue of the
+        // strict box step test (Step_WalkIntoLowStep_StepsUp_HoldsStableStandOnStep). A capsule's rounded bottom
+        // is expected to behave at least as well as a box (no top-left-corner catch); this gate is the evidence.
+        [UnityTest]
+        public IEnumerator Capsule_WalkIntoLowStep_StepsUp_HoldsStableStandOnStep()
+        {
+            yield return LoadAndPrepare("CC2D_CapsuleStepLow", 1);
+
+            Step(60);
+            Assert.IsTrue(Body().IsGrounded, "the capsule starts grounded on the floor");
+            var floorY = Position().y;
+
+            var stepTop = CharacterFixtureBuilderConstants.LowStepTopY;
+            var expectedStandY = stepTop + CapsuleBottomReach; // + ~Offset; asserted to a tolerance
+            var mountedAtStep = -1;
+            for (var i = 0; i < 120; i++)
+            {
+                SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
+                _fixedGroup.Update();
+                if (Body().IsGrounded && abs(Position().y - expectedStandY) <= 0.08f)
+                {
+                    mountedAtStep = i;
+                    break;
+                }
+            }
+            Assert.GreaterOrEqual(mountedAtStep, 0,
+                $"a step ≤ MaxStepHeight must lift the capsule onto the step top (~Y {expectedStandY}); never reached it");
+
+            const float stepRightEdgeX = 7f;
+            var minYOnStep = float.MaxValue;
+            var maxYOnStep = float.MinValue;
+            var startXAfterMount = Position().x;
+            var framesAssertedOnStep = 0;
+            for (var i = 0; i < 70; i++)
+            {
+                SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
+                _fixedGroup.Update();
+                if (Position().x > 2f + CapsuleCapRadius + 0.1f && Position().x < stepRightEdgeX - CapsuleCapRadius - 0.1f)
+                {
+                    Assert.IsTrue(Body().IsGrounded, $"the capsule must stay grounded standing on the step (step {i}, x={Position().x})");
+                    var y = Position().y;
+                    minYOnStep = min(minYOnStep, y);
+                    maxYOnStep = max(maxYOnStep, y);
+                    framesAssertedOnStep++;
+                }
+            }
+
+            Assert.Greater(framesAssertedOnStep, 30,
+                $"the capsule must spend a sustained run standing ON the step top, not graze it; on-step frames {framesAssertedOnStep}");
+            Assert.GreaterOrEqual(minYOnStep, expectedStandY - 0.08f,
+                $"the capsule must HOLD the step stand without snapping back to the floor; floor {floorY}, "
+                    + $"expected stand ~{expectedStandY}, min Y on step {minYOnStep}");
+            Assert.LessOrEqual(maxYOnStep, expectedStandY + 0.12f,
+                $"the held stand must sit at the step top, not climb higher; max Y on step {maxYOnStep}");
+            Assert.Greater(Position().x, startXAfterMount + 0.5f,
+                $"the capsule must keep walking across the step (not stick at the edge); {startXAfterMount} -> {Position().x}");
+            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN during the capsule step stand");
+        }
     }
 }

@@ -164,19 +164,64 @@ namespace Zori.Entities.CharacterController2D.Baking
             float2 scale
         )
         {
-            return authoring.ProxyShape == CharacterProxyShape2D.Box
-                ? new KinematicCharacterColliderProxy2D
-                {
-                    Kind = PhysicsShape2DKind.Box,
-                    BoxSize = Collider2DBaking.ScaleBoxSize(authoring.ProxyBoxSize, scale),
-                    Radius = 0f,
-                }
-                : new KinematicCharacterColliderProxy2D
-                {
-                    Kind = PhysicsShape2DKind.Circle,
-                    Radius = Collider2DBaking.ScaleCircleRadius(authoring.ProxyRadius, scale),
-                    BoxSize = Unity.Mathematics.float2.zero,
-                };
+            switch (authoring.ProxyShape)
+            {
+                case CharacterProxyShape2D.Box:
+                    return new KinematicCharacterColliderProxy2D
+                    {
+                        Kind = PhysicsShape2DKind.Box,
+                        BoxSize = Collider2DBaking.ScaleBoxSize(authoring.ProxyBoxSize, scale),
+                        Radius = 0f,
+                    };
+                case CharacterProxyShape2D.Capsule:
+                    DeriveCapsule(authoring, scale, out var capRadius, out var c1, out var c2);
+                    return new KinematicCharacterColliderProxy2D
+                    {
+                        Kind = PhysicsShape2DKind.Capsule,
+                        Radius = capRadius,
+                        CapsuleCenter1 = c1,
+                        CapsuleCenter2 = c2,
+                        BoxSize = Unity.Mathematics.float2.zero,
+                    };
+                default:
+                    return new KinematicCharacterColliderProxy2D
+                    {
+                        Kind = PhysicsShape2DKind.Circle,
+                        Radius = Collider2DBaking.ScaleCircleRadius(authoring.ProxyRadius, scale),
+                        BoxSize = Unity.Mathematics.float2.zero,
+                    };
+            }
+        }
+
+        /// <summary>
+        /// Reduce the authored capsule <c>Size</c> + direction to a Box2D capsule (cap radius + two local end-cap
+        /// centers), folding transform scale into the size per-axis FIRST — the exact derivation the substrate's
+        /// <see cref="CapsuleCollider2DBaker"/> uses (Collider2DBaking.cs:314-335), so the controller's capsule
+        /// proxy and the substrate's built-in capsule shape bake to the same geometry from the same authored size.
+        /// </summary>
+        static void DeriveCapsule(
+            CharacterController2DAuthoring authoring,
+            float2 scale,
+            out float capsuleRadius,
+            out float2 c1,
+            out float2 c2
+        )
+        {
+            var halfSize = Collider2DBaking.ScaleBoxSize(authoring.ProxyCapsuleSize, scale) * 0.5f;
+            if (authoring.ProxyCapsuleDirection == CharacterCapsuleDirection2D.Vertical)
+            {
+                capsuleRadius = halfSize.x;
+                var half = max(0f, halfSize.y - capsuleRadius);
+                c1 = new float2(0f, -half);
+                c2 = new float2(0f, half);
+            }
+            else
+            {
+                capsuleRadius = halfSize.y;
+                var half = max(0f, halfSize.x - capsuleRadius);
+                c1 = new float2(-half, 0f);
+                c2 = new float2(half, 0f);
+            }
         }
 
         /// <summary>
@@ -206,16 +251,24 @@ namespace Zori.Entities.CharacterController2D.Baking
                 isTrigger = false,
             };
 
-            if (authoring.ProxyShape == CharacterProxyShape2D.Box)
+            switch (authoring.ProxyShape)
             {
-                shape.kind = PhysicsShape2DKind.Box;
-                shape.size = Collider2DBaking.ScaleBoxSize(authoring.ProxyBoxSize, scale);
-                shape.radius = 0f;
-            }
-            else
-            {
-                shape.kind = PhysicsShape2DKind.Circle;
-                shape.radius = Collider2DBaking.ScaleCircleRadius(authoring.ProxyRadius, scale);
+                case CharacterProxyShape2D.Box:
+                    shape.kind = PhysicsShape2DKind.Box;
+                    shape.size = Collider2DBaking.ScaleBoxSize(authoring.ProxyBoxSize, scale);
+                    shape.radius = 0f;
+                    break;
+                case CharacterProxyShape2D.Capsule:
+                    DeriveCapsule(authoring, scale, out var capRadius, out var c1, out var c2);
+                    shape.kind = PhysicsShape2DKind.Capsule;
+                    shape.radius = capRadius;
+                    shape.capsuleCenter1 = c1;
+                    shape.capsuleCenter2 = c2;
+                    break;
+                default:
+                    shape.kind = PhysicsShape2DKind.Circle;
+                    shape.radius = Collider2DBaking.ScaleCircleRadius(authoring.ProxyRadius, scale);
+                    break;
             }
 
             return shape;

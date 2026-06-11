@@ -352,5 +352,14 @@ namespace Zori.Entities.CharacterController2D.Tests
         // angles. The downward-ledge fixture's right edge (the no-grounding case) is at LedgeEdgeX.
         public const float MaxDownwardSlopeChangeForGate = 35f;
         public const float LedgeEdgeX = 3f;
+
+        // P0 capsule character: a vertical capsule of full extents (CapsuleWidth, CapsuleHeight) → cap radius
+        // CapsuleWidth/2 and bottom-most point CapsuleHeight/2 below the centre. The capsule gate asserts the
+        // grounded settle (centre at surface + CapsuleBottomReach + offset) against these; the editor builder
+        // authors the same dims (kept in lockstep by convention, like LowStepTopY above).
+        public const float CapsuleWidth = 1f;
+        public const float CapsuleHeight = 2f;
+        public const float CapsuleCapRadius = CapsuleWidth * 0.5f;
+        public const float CapsuleBottomReach = CapsuleHeight * 0.5f;
     }
 }

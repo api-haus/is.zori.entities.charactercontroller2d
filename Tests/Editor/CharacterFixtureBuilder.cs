@@ -65,6 +65,14 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string MovingPlatformParent = FixtureRoot + "/CC2D_MovingPlatform.unity";
         public const string MovingPlatformChild = FixtureRoot + "/CC2D_MovingPlatform_Sub.unity";
 
+        // ---- P0 capsule-proxy fixtures (the capsule character mandate) -------------------------------------
+        public const string CapsuleStepLowParent = FixtureRoot + "/CC2D_CapsuleStepLow.unity";
+        public const string CapsuleStepLowChild = FixtureRoot + "/CC2D_CapsuleStepLow_Sub.unity";
+        public const string CapsuleGroundParent = FixtureRoot + "/CC2D_CapsuleGround.unity";
+        public const string CapsuleGroundChild = FixtureRoot + "/CC2D_CapsuleGround_Sub.unity";
+        public const string CapsuleWallParent = FixtureRoot + "/CC2D_CapsuleWall.unity";
+        public const string CapsuleWallChild = FixtureRoot + "/CC2D_CapsuleWall_Sub.unity";
+
         // ---- gate-4 future-slope / downward-ledge fixtures -------------------------------------------------
         public const string DownLedgeParent = FixtureRoot + "/CC2D_DownLedge.unity";
         public const string DownLedgeChild = FixtureRoot + "/CC2D_DownLedge_Sub.unity";
@@ -92,6 +100,15 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // The character circle proxy radius used across all fixtures — the runtime test asserts the grounded settle
         // height against this.
         public const float CharacterRadius = 0.5f;
+
+        // The capsule character: a vertical capsule of full extents (width, height). Width 1 → cap radius 0.5;
+        // height 2 → end caps at ±0.5, so the bottom-most point is centre − (0.5 + 0.5) = centre − 1.0. The
+        // grounded settle puts the centre ~1.0 + CollisionOffset above the surface it rests on. The runtime gate
+        // asserts the capsule grounds, slides, and steps up using these dims.
+        public const float CapsuleWidth = 1f;
+        public const float CapsuleHeight = 2f;
+        // Distance from the capsule centre to its bottom-most point (cap radius + cap offset).
+        public const float CapsuleBottomReach = CapsuleHeight * 0.5f;
 
         // gate-4 future-slope / downward-ledge geometry. The downward-ledge platform ends at LedgeEdgeX; the
         // downslope fixtures put the flat-to-downhill lip at SlopeLipX. The gentle downhill is within the gate's
@@ -134,6 +151,11 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildDownLedge();
             BuildDownSlopeGentle();
             BuildDownSlopeSteep();
+
+            // P0 capsule-proxy character (the capsule mandate).
+            BuildCapsuleGround();
+            BuildCapsuleWall();
+            BuildCapsuleStepLow();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -288,6 +310,55 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     AddFloor(root, new Vector2(4.5f, HighStepTopY - 1f), new Vector2(5f, 2f));
                     var c = AddBoxCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
                     EnableStepHandling(c, maxStepHeight: 0.5f);
+                });
+        }
+
+        // ---- P0 capsule-proxy fixtures ---------------------------------------------------------------------
+
+        // Capsule grounding: a CAPSULE character dropped above a flat floor → settles at ~CapsuleBottomReach above
+        // the floor top, the capsule analogue of BuildGrounding (which uses a circle).
+        static void BuildCapsuleGround()
+        {
+            BuildFixture(
+                CapsuleGroundChild,
+                CapsuleGroundParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
+                    AddCapsuleCharacter(root, new Vector3(0f, CapsuleBottomReach + 2f, 0f));
+                });
+        }
+
+        // Capsule collide-and-slide: a grounded CAPSULE walks +X into a vertical wall whose left face is at X=3;
+        // its right cap edge (centre + cap radius 0.5) must clamp at the wall face, no penetration.
+        static void BuildCapsuleWall()
+        {
+            BuildFixture(
+                CapsuleWallChild,
+                CapsuleWallParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
+                    AddFloor(root, new Vector2(3.5f, 3f), new Vector2(1f, 10f));
+                    AddCapsuleCharacter(root, new Vector3(0f, CapsuleBottomReach + 0.05f, 0f));
+                });
+        }
+
+        // Capsule step-up (the UNVERIFIED case the box-only gate-4 fix left open): a grounded CAPSULE walks +X
+        // into the same low step (top 0.3, below the 0.5 max). A capsule's rounded bottom should mount the step
+        // at least as cleanly as a box (no top-left-corner catch). The runtime gate asserts it climbs and holds a
+        // stable stand, the capsule analogue of Step_WalkIntoLowStep_StepsUp_HoldsStableStandOnStep.
+        static void BuildCapsuleStepLow()
+        {
+            BuildFixture(
+                CapsuleStepLowChild,
+                CapsuleStepLowParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
+                    AddFloor(root, new Vector2(4.5f, LowStepTopY - 1f), new Vector2(5f, 2f));
+                    var c = AddCapsuleCharacter(root, new Vector3(0f, CapsuleBottomReach + 0.05f, 0f));
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
                 });
         }
 
@@ -495,6 +566,36 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             auth.ProxyBoxSize = new Unity.Mathematics.float2(2f * CharacterRadius, 2f * CharacterRadius);
             auth.InterpolateRendering = false;
             return auth;
+        }
+
+        // A capsule-proxy character: a vertical capsule (width CapsuleWidth → cap radius 0.5, height CapsuleHeight
+        // → caps at ±0.5). The proxy cast is a CapsuleCast, the world body shape a capsule, both derived from the
+        // same authored size — the P0 capsule mandate end-to-end.
+        static CharacterController2DAuthoring AddCapsuleCharacter(GameObject parent, Vector3 position)
+        {
+            var go = new GameObject("Character");
+            go.transform.SetParent(parent.transform, false);
+            go.transform.position = position;
+            var auth = go.AddComponent<CharacterController2DAuthoring>();
+
+            var props = AuthoringKinematicCharacterProperties2D.GetDefault();
+            auth.CharacterProperties = props;
+            auth.ProxyShape = CharacterProxyShape2D.Capsule;
+            auth.ProxyCapsuleSize = new Unity.Mathematics.float2(CapsuleWidth, CapsuleHeight);
+            auth.ProxyCapsuleDirection = CharacterCapsuleDirection2D.Vertical;
+            auth.InterpolateRendering = false;
+            return auth;
+        }
+
+        // Step handling for a capsule: the grounding-width check uses the cap diameter (the capsule's width), the
+        // capsule analogue of EnableStepHandling's 2*CharacterRadius for a circle.
+        static void EnableCapsuleStepHandling(CharacterController2DAuthoring auth, float maxStepHeight)
+        {
+            var step = auth.StepAndSlopeHandling;
+            step.StepHandling = true;
+            step.MaxStepHeight = maxStepHeight;
+            step.CharacterWidthForStepGroundingCheck = CapsuleWidth;
+            auth.StepAndSlopeHandling = step;
         }
 
         static void DisableGrounding(CharacterController2DAuthoring auth)

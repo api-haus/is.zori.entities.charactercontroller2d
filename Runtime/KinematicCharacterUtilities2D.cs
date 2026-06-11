@@ -91,17 +91,21 @@ namespace Zori.Entities.CharacterController2D
         }
 
         // =====================================================================================================
-        // Cast-proxy query wrappers — the single place the circle-or-box proxy (design D1) chooses CircleCast vs
-        // BoxCast / OverlapCircle vs OverlapBox. The reference cast the character's actual collider; the substrate
-        // offers only circle/box casts (PhysicsQueries2D.cs:245,277), so the proxy decides the shape.
+        // Cast-proxy query wrappers — the single place the circle/box/capsule proxy (design D1) chooses CircleCast
+        // vs BoxCast vs CapsuleCast / OverlapCircle vs OverlapBox vs OverlapCapsule. The reference cast the
+        // character's actual collider; the substrate offers circle/box/capsule casts (PhysicsQueries2D.cs), so the
+        // proxy decides the shape. A capsule's two local end-cap centers are translated by the character centre
+        // before casting (the proxy stores them in the body's local frame, matching the baked world shape).
         // =====================================================================================================
 
         /// <summary>
         /// Sweeps the character's cast proxy from <paramref name="origin"/> along <paramref name="direction"/> for
         /// <paramref name="distance"/>, writing nearest-first hits into the context scratch list. Dispatches to
-        /// <see cref="PhysicsQueries2D.CircleCast"/> or <see cref="PhysicsQueries2D.BoxCast"/> by proxy
+        /// <see cref="PhysicsQueries2D.CircleCast"/>, <see cref="PhysicsQueries2D.BoxCast"/>, or
+        /// <see cref="PhysicsQueries2D.CapsuleCast"/> by proxy
         /// <see cref="KinematicCharacterColliderProxy2D.Kind"/>. The proxy box is swept axis-aligned at the
-        /// character's z-rotation (<paramref name="rotationRadians"/>).
+        /// character's z-rotation (<paramref name="rotationRadians"/>); the capsule's local centers are offset by
+        /// <paramref name="origin"/> (rotation not applied — the character does not rotate).
         /// </summary>
         static int CastProxy(
             ref KinematicCharacterUpdateContext2D baseContext,
@@ -118,6 +122,19 @@ namespace Zori.Entities.CharacterController2D
                     origin,
                     proxy.BoxSize,
                     rotationRadians,
+                    direction,
+                    distance,
+                    Constants.CharacterHitLayerMask,
+                    baseContext.TmpQueryHits);
+            }
+
+            if (proxy.Kind == PhysicsShape2DKind.Capsule)
+            {
+                return PhysicsQueries2D.CapsuleCast(
+                    baseContext.PhysicsWorld,
+                    origin + proxy.CapsuleCenter1,
+                    origin + proxy.CapsuleCenter2,
+                    proxy.Radius,
                     direction,
                     distance,
                     Constants.CharacterHitLayerMask,
@@ -157,6 +174,17 @@ namespace Zori.Entities.CharacterController2D
                     baseContext.TmpQueryHits);
             }
 
+            if (proxy.Kind == PhysicsShape2DKind.Capsule)
+            {
+                return PhysicsQueries2D.OverlapCapsule(
+                    baseContext.PhysicsWorld,
+                    center + proxy.CapsuleCenter1,
+                    center + proxy.CapsuleCenter2,
+                    proxy.Radius,
+                    Constants.CharacterHitLayerMask,
+                    baseContext.TmpQueryHits);
+            }
+
             return PhysicsQueries2D.OverlapCircle(
                 baseContext.PhysicsWorld,
                 center,
@@ -166,9 +194,10 @@ namespace Zori.Entities.CharacterController2D
         }
 
         /// <summary>
-        /// The proxy's bounding radius — half the box diagonal for a box, the radius for a circle. The D2
-        /// cast-back starts from a point this far outside the overlapping shape and casts back toward the
-        /// character, guaranteeing the cast begins clear of the overlap so it can register a clean contact normal.
+        /// The proxy's bounding radius — half the box diagonal for a box, half the capsule's tip-to-tip span (the
+        /// segment half-length plus the cap radius) for a capsule, the radius for a circle. The D2 cast-back
+        /// starts from a point this far outside the overlapping shape and casts back toward the character,
+        /// guaranteeing the cast begins clear of the overlap so it can register a clean contact normal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float ProxyBoundingRadius(in KinematicCharacterColliderProxy2D proxy)
@@ -176,6 +205,11 @@ namespace Zori.Entities.CharacterController2D
             if (proxy.Kind == PhysicsShape2DKind.Box)
             {
                 return length(proxy.BoxSize) * 0.5f;
+            }
+
+            if (proxy.Kind == PhysicsShape2DKind.Capsule)
+            {
+                return length(proxy.CapsuleCenter2 - proxy.CapsuleCenter1) * 0.5f + proxy.Radius;
             }
 
             return proxy.Radius;
