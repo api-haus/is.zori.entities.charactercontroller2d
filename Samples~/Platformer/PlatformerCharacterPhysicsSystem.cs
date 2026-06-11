@@ -81,7 +81,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 .WithAll<PlatformerCharacterTag>()
                 .WithAll<PlatformerCharacterTuning2D>()
                 .WithAllRW<PlatformerCharacterState2D>()
-                .WithAll<RopeSwingState2D>()
+                .WithAllRW<RopeSwingState2D>()
                 .WithAll<KinematicCharacterProperties2D, KinematicCharacterColliderProxy2D>()
                 .WithAllRW<KinematicCharacterBody2D>()
                 .WithAllRW<PlatformerCharacterControl2D>()
@@ -144,7 +144,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 ref KinematicCharacterBody2D characterBody,
                 ref PlatformerCharacterControl2D control,
                 ref PlatformerCharacterState2D state,
-                in RopeSwingState2D ropeState,
+                ref RopeSwingState2D ropeState,
                 in PlatformerCharacterTuning2D tuning,
                 in KinematicCharacterProperties2D characterProperties,
                 in KinematicCharacterColliderProxy2D colliderProxy,
@@ -178,10 +178,67 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
                 float2 gravity = new float2(0f, -tuning.GravityMagnitude);
 
+                // --- Stance transitions (P4): AirMove ↔ RopeSwing edges, consumed BEFORE the velocity-control block --
+                //
+                // The 3D reference flips state inside each state's DetectTransitions (RopeSwingState.cs:91-103,
+                // AirMoveState.cs grab edge); in 2D the {GroundMove, AirMove, RopeSwing} enum makes it a small block
+                // here. AirMove → RopeSwing on a grab edge near an anchor; RopeSwing → AirMove on a jump/release edge.
+                // GroundMove never grabs (grab is reachable only airborne, the 3D rule). Each consumed latch is cleared.
+                if (state.Stance == PlatformerStance2D.RopeSwing)
+                {
+                    // Exit the rope on jump or release; either edge returns the character to AirMove carrying its
+                    // current swing velocity (the tangential momentum becomes the launch arc — the whole point of a
+                    // rope swing). On a JUMP edge, add the jump impulse here: the 2D SolveAirMove only jumps on its
+                    // grounded branch (no coyote/double jump), and the character is airborne off the rope, so the
+                    // impulse must be applied at the exit. This mirrors the 3D, whose AirMoveState applies an airborne
+                    // StandardJump on JumpPressed (AirMoveState.cs:57-69); jumping off a rope launches immediately.
+                    if (control.JumpPressed)
+                    {
+                        CharacterControlUtilities2D.StandardJump(
+                            ref characterBody,
+                            groundingUp * tuning.JumpSpeed,
+                            cancelVelocityBeforeJump: false,
+                            groundingUp);
+                        control.JumpPressed = false;
+                        state.Stance = PlatformerStance2D.AirMove;
+                    }
+                    else if (control.ReleasePressed)
+                    {
+                        // Plain release: let go, keep the swing velocity, no extra impulse.
+                        control.ReleasePressed = false;
+                        state.Stance = PlatformerStance2D.AirMove;
+                    }
+                }
+                else if (state.Stance == PlatformerStance2D.AirMove && control.GrabPressed)
+                {
+                    // Grab: query the nearest rope anchor within RopeLength on the anchor layer. The character's own
+                    // position is both the grab/detection point and the rope-attachment point (a point-mass pendulum;
+                    // LocalRopeAnchorPoint = 0, the simplest faithful 2D reduction of the 3D local-offset attach). The
+                    // captured RopeLength is the tuned length (the 3D RopeLength used for both detection and the
+                    // constraint), so the rope is slack until the character swings out to full extension.
+                    if (PlatformerRopeMath.TryDetectRopeAnchor(
+                            BaseContext.PhysicsWorld,
+                            characterContext.CurrentPosition,
+                            tuning.RopeLength,
+                            tuning.RopeAnchorLayerMask,
+                            BaseContext.TmpQueryHits,
+                            out Entity anchorEntity,
+                            out float2 anchorPoint))
+                    {
+                        ropeState.Anchor = anchorEntity;
+                        ropeState.AnchorPoint = anchorPoint;
+                        ropeState.RopeLength = tuning.RopeLength;
+                        state.Stance = PlatformerStance2D.RopeSwing;
+                    }
+
+                    control.GrabPressed = false;
+                }
+
                 // --- Control → velocity: the stance machine (the sample's character logic, on the live body) --------
                 //
                 // GroundMove / AirMove share the grounded-vs-airborne split of the SideScroller; the stance only
-                // decides WHICH block is primary. RopeSwing is a P4 stub that falls through to AirMove for now.
+                // decides WHICH block is primary. RopeSwing runs the pendulum (gravity + air control + drag +
+                // ConstrainToRope2D) with grounding suppressed.
                 switch (state.Stance)
                 {
                     case PlatformerStance2D.GroundMove:
@@ -189,14 +246,13 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                         break;
 
                     case PlatformerStance2D.RopeSwing:
-                        // P4: replace this fall-through with the pendulum swing — gravity + StandardAirMove +
-                        // ApplyDragToVelocity + ConstrainToRope2D(ref position, ref velocity, ropeState.RopeLength,
-                        // ropeState.AnchorPoint, ...) against `ropeState`, with grounding suppressed for the swing.
-                        // Until then a rope-stanced character behaves as AirMove (gravity + air control) rather than
-                        // freezing, and the AirMove↔RopeSwing transitions (P4) never set this stance, so it is unreached
-                        // in P2. `ropeState` is read here only to keep it on the job's Execute (and thus in the query).
-                        _ = ropeState.RopeLength;
-                        SolveAirMove(ref characterBody, ref control, in tuning, groundingUp, gravity, DeltaTime, in FrictionModifierLookup);
+                        // Suppress grounding for the swing — the 2D analogue of the 3D OnStateEnter setting
+                        // characterProperties.EvaluateGrounding = false (RopeSwingState.cs:18). The grounding step
+                        // reads characterContext.CharacterProperties.EvaluateGrounding (KinematicCharacterUtilities2D
+                        // .Update_Grounding:327), so clearing it here skips all ground detection / snapping for this
+                        // step, leaving the pendulum free to swing without snapping to a floor below the arc.
+                        characterContext.CharacterProperties.EvaluateGrounding = false;
+                        SolveRopeSwing(ref characterContext, ref characterBody, in control, in ropeState, in tuning, gravity, DeltaTime);
                         break;
 
                     case PlatformerStance2D.AirMove:
@@ -220,7 +276,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 var processor = new PlatformerCharacterProcessor
                 {
                     CharacterBodySnapshot = characterBody,
-                    CharacterProperties = characterProperties,
+                    // Read the EFFECTIVE properties off the context, not the raw `in characterProperties`: the RopeSwing
+                    // stance set EvaluateGrounding = false on characterContext.CharacterProperties to suppress grounding
+                    // for the swing, so the processor snapshot the callbacks read must match. For GroundMove / AirMove
+                    // the context properties are the unmutated authored ones, so this is identical.
+                    CharacterProperties = characterContext.CharacterProperties,
                     StepAndSlopeHandling = stepAndSlopeHandling,
                     CharacterEntity = entity,
                 };
@@ -351,6 +411,69 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                         deltaTime,
                         forceNoMaxSpeedExcess: false);
                 }
+            }
+
+            /// <summary>
+            /// RopeSwing stance: the pendulum. Runs the same three forces as the 3D reference's
+            /// <c>RopeSwingState.OnStatePhysicsUpdate</c> (REF3D RopeSwingState.cs:43-58), in order — rope air control,
+            /// gravity, drag — then constrains the body to the rope. The pendulum motion is emergent: gravity pulls the
+            /// body down, <see cref="PlatformerRopeMath.ConstrainToRope2D"/> clamps it onto the rope-length circle and
+            /// projects out the radial (rope-stretching) velocity, leaving only the tangential swing. NOT a joint.
+            ///
+            /// <para>The position clamp lands on <see cref="KinematicCharacterContext2D.CurrentPosition"/> — the
+            /// pre-solve tracked position the package's <c>PhysicsUpdate2D</c> reads as the starting
+            /// <c>characterPosition</c> and delivers via the single per-step <c>MovePosition</c>. So the rope clamp is a
+            /// pre-adjustment of that one verified motion-drive (design D3/D6), NOT a new pose-delivery path: the normal
+            /// collide-and-slide then runs from the clamped start and resolves any world collision along the swing arc.
+            /// Grounding is already suppressed by the caller (EvaluateGrounding = false on the context), the 2D analogue
+            /// of the 3D OnStateEnter (RopeSwingState.cs:18).</para>
+            ///
+            /// <para>The character is treated as a point-mass pendulum: its own position is its rope-attachment point
+            /// (LocalRopeAnchorPoint = 0), so the attachment point and the tracked position coincide. Clamping the
+            /// attachment point therefore clamps the tracked position directly.</para>
+            /// </summary>
+            static void SolveRopeSwing(
+                ref KinematicCharacterContext2D characterContext,
+                ref KinematicCharacterBody2D characterBody,
+                in PlatformerCharacterControl2D control,
+                in RopeSwingState2D ropeState,
+                in PlatformerCharacterTuning2D tuning,
+                float2 gravity,
+                float deltaTime)
+            {
+                float2 groundingUp = characterBody.GroundingUp;
+
+                // Rope air control — accelerate the tangential swing toward the input direction, capped at the rope
+                // swing max speed (the 3D StandardAirMove with RopeSwingAcceleration / RopeSwingMaxSpeed). The move is
+                // taken on the movement plane (horizontal, +Y up); MoveX is already in-plane, so no extra projection.
+                float2 targetMove = new float2(control.MoveX, 0f);
+
+                CharacterControlUtilities2D.StandardAirMove(
+                    ref characterBody.RelativeVelocity,
+                    targetMove * tuning.RopeSwingAcceleration,
+                    tuning.RopeSwingMaxSpeed,
+                    groundingUp,
+                    deltaTime,
+                    forceNoMaxSpeedExcess: false);
+
+                // Gravity — the pendulum's driving force (the 3D AccelerateVelocity with CustomGravity.Gravity).
+                CharacterControlUtilities2D.AccelerateVelocity(ref characterBody.RelativeVelocity, gravity, deltaTime);
+
+                // Drag — bleeds energy out of the swing so it settles rather than swinging forever (the 3D
+                // ApplyDragToVelocity with RopeSwingDrag).
+                CharacterControlUtilities2D.ApplyDragToVelocity(ref characterBody.RelativeVelocity, deltaTime, tuning.RopeSwingDrag);
+
+                // The rope constraint — clamp the tracked position onto the rope-length circle and project out the
+                // radial velocity. The character is a point-mass pendulum, so its position IS its rope-attachment point:
+                // snapshot the attachment point before the clamp moves the position (the by-value `anchorOnCharacter`
+                // is the pre-clamp point, the `ref position` is moved onto the circle).
+                float2 anchorOnCharacter = characterContext.CurrentPosition;
+                PlatformerRopeMath.ConstrainToRope2D(
+                    ref characterContext.CurrentPosition,
+                    ref characterBody.RelativeVelocity,
+                    ropeState.RopeLength,
+                    ropeState.AnchorPoint,
+                    anchorOnCharacter);
             }
 
             /// <summary>

@@ -74,6 +74,12 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
         // ---- rope tuning ----
 
+        /// <summary>The rope's length (units): both the max distance the grab query reaches for an anchor and the
+        /// radius of the circle the swing constrains the character onto. Matches the 3D reference's single
+        /// <c>RopeLength</c> used for both detection and the constraint (REF3D RopeSwingState). The rope is slack —
+        /// no clamp — until the character swings out to this full extension.</summary>
+        public float RopeLength;
+
         /// <summary>Target tangential speed of air control while swinging in RopeSwing (units/s).</summary>
         public float RopeSwingMaxSpeed;
 

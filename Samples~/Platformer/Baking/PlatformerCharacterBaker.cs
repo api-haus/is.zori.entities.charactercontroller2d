@@ -48,6 +48,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
                     AirMoveSpeed = authoring.AirMoveSpeed,
                     AirAcceleration = authoring.AirAcceleration,
                     JumpSpeed = authoring.JumpSpeed,
+                    RopeLength = authoring.RopeLength,
                     RopeSwingMaxSpeed = authoring.RopeSwingMaxSpeed,
                     RopeSwingAcceleration = authoring.RopeSwingAcceleration,
                     RopeSwingDrag = authoring.RopeSwingDrag,

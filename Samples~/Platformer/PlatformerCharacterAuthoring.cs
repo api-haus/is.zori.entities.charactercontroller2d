@@ -64,6 +64,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
         [Header("Rope swing tuning (per-character)")]
         [SerializeField]
+        [Tooltip(
+            "The rope's length (units): both the max distance the grab query reaches for an anchor and the radius of "
+                + "the circle the swing constrains the character onto. The rope is slack until the character swings "
+                + "out to this full extension."
+        )]
+        float m_RopeLength = 5f;
+
+        [SerializeField]
         [Tooltip("Target tangential speed of air control while swinging in RopeSwing (units/s).")]
         float m_RopeSwingMaxSpeed = 7f;
 
@@ -124,6 +132,13 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             set => m_JumpSpeed = Mathf.Max(0f, value);
         }
 
+        /// <summary>The rope's length (units): the grab reach and the swing-constraint radius.</summary>
+        public float RopeLength
+        {
+            get => m_RopeLength;
+            set => m_RopeLength = Mathf.Max(0f, value);
+        }
+
         /// <summary>Target tangential speed of air control while swinging in RopeSwing (units/s).</summary>
         public float RopeSwingMaxSpeed
         {
@@ -165,6 +180,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             m_AirMoveSpeed = Mathf.Max(0f, m_AirMoveSpeed);
             m_AirAcceleration = Mathf.Max(0f, m_AirAcceleration);
             m_JumpSpeed = Mathf.Max(0f, m_JumpSpeed);
+            m_RopeLength = Mathf.Max(0f, m_RopeLength);
             m_RopeSwingMaxSpeed = Mathf.Max(0f, m_RopeSwingMaxSpeed);
             m_RopeSwingAcceleration = Mathf.Max(0f, m_RopeSwingAcceleration);
             m_RopeSwingDrag = Mathf.Max(0f, m_RopeSwingDrag);
