@@ -308,39 +308,38 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     }
 
     // =============================================================================================================
-    // Teleporters — best-effort instantaneous teleport on a character's Enter.
+    // Teleporters — proper instantaneous teleport on a character's Enter (SetTransform + SkipInterpolation).
     // =============================================================================================================
 
     /// <summary>
     /// Teleports a <see cref="PlatformerCharacterTag"/> character to a <see cref="Teleporter2D.Destination"/>'s world
-    /// position on a trigger Begin. Runs <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> (the trigger buffer is valid only
-    /// against the just-stepped world). Reads the substrate trigger-event buffer; for each Begin where the trigger is a
-    /// <see cref="Teleporter2D"/> and the visitor is a platformer character, it performs a BEST-EFFORT teleport.
-    ///
-    /// <para><b>Best-effort, because the substrate has no instantaneous <c>SetTransform</c> (design teleport decision A
-    /// was not built — the binding exposes only the swept <c>SetTransformTarget</c>). The teleport therefore does three
-    /// things:</b>
+    /// position on a trigger Begin — a PROPER instantaneous teleport, the 2D mirror of the 3D
+    /// <c>com.unity.charactercontroller</c> Platformer sample's <c>TeleporterSystem</c> (which writes
+    /// <c>LocalTransform.Position</c> + calls <c>CharacterInterpolation.SkipNextInterpolation()</c>). Runs
+    /// <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> (the trigger buffer is valid only against the just-stepped world).
+    /// Reads the substrate trigger-event buffer; for each Begin where the trigger is a <see cref="Teleporter2D"/> and
+    /// the visitor is a platformer character, it teleports the character with the two distinct substrate APIs that are
+    /// the 2D analogues of the 3D pair:
     /// <list type="number">
-    /// <item>writes the destination into the character's <see cref="LocalToWorld"/> (the pose the next fixed-step solve
-    /// reads with <c>ReadPoseFromLocalToWorld</c>), so the character's collide-and-slide starts from the destination;</item>
-    /// <item>enqueues a swept <c>MovePosition(destination)</c> on the character's command buffer, so the body's
-    /// authoritative Box2D pose is driven toward the destination;</item>
-    /// <item>resets <c>PhysicsBody2DSmoothing.hasPrev = 0</c> so the render-rate smoothing writes the new pose with no
-    /// interpolation streak — the 2D analogue of the 3D <c>CharacterInterpolation.SkipNextInterpolation()</c>.</item>
+    /// <item><b><see cref="PhysicsBody2DCommands.SetTransform"/></b> (the analogue of writing
+    /// <c>LocalTransform.Position</c>) — a hard, NON-swept write to the body's <c>transform</c> (native
+    /// <c>b2Body_SetTransform</c>), so the body reaches the destination in ONE step at any distance with no speed
+    /// clamp. This replaces the prior best-effort swept <c>MovePosition</c>, which could undershoot a far destination
+    /// because <c>SetTransformTarget</c> is velocity-based and the world clamps it to <c>maximumLinearSpeed · dt</c>.</item>
+    /// <item><b><see cref="PhysicsBody2DCommands.SkipInterpolation"/></b> (the analogue of
+    /// <c>CharacterInterpolation.SkipNextInterpolation()</c>) — resets the body's render-rate smoothing so the next
+    /// frame draws the teleported pose with no interpolation streak from the old location.</item>
     /// </list>
-    /// It also zeroes <c>RelativeVelocity</c> so no pre-teleport momentum carries through.</para>
     ///
-    /// <para>// P7-PROBE: the OPEN QUESTION this best-effort form cannot answer without running is whether a kinematic
-    /// body driven to a FAR <c>MovePosition</c> target REACHES it in one step, or STOPS at obstructions along the swept
-    /// path. <c>MovePosition</c> maps to Box2D's swept <c>SetTransformTarget</c> — for a near target the sweep is short
-    /// and lands, but a teleport across the level sweeps through the whole world. A kinematic body generally pushes
-    /// through collisions (infinite mass, no solver reaction) and should reach the target generating contact events en
-    /// route, in which case this best-effort teleport is correct and sample-level. If instead it stops at an
-    /// obstruction, teleport is a genuine binding gap and is flagged for a substrate <c>SetTransform</c> addition
-    /// (decision A). This is VERIFIED at the P7 behavioural gate, not blocked on here. The <see cref="LocalToWorld"/>
-    /// write (step 1) makes the NEXT solve start from the destination regardless, so even if the body's swept move
-    /// undershoots this step, the character's solve position is already at the destination — the residual risk is a
-    /// one-step disagreement between the body pose and the solve pose, observed at P7.</para>
+    /// <para><b>The controller's solve position.</b> Unlike the 3D controller (which owns <c>LocalTransform</c>), the
+    /// 2D solve re-reads its position off the character's <see cref="LocalToWorld"/> every fixed step
+    /// (<c>ReadPoseFromLocalToWorld</c>) and enqueues its own move from there. So the teleport ALSO writes the
+    /// destination into the character's <see cref="LocalToWorld"/>: otherwise the next solve would read the
+    /// pre-teleport pose and move the character back. With both the body's <c>SetTransform</c> and the solve's
+    /// <c>LocalToWorld</c> at the destination, the body and the solve agree from the teleport step onward.</para>
+    ///
+    /// <para>It also zeroes <c>RelativeVelocity</c> so no pre-teleport momentum carries through (a respawn-style
+    /// teleport; <c>SetTransform</c> deliberately does not clear velocity itself).</para>
     /// </summary>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
     [UpdateAfter(typeof(PhysicsWorld2DSystem))]
@@ -350,7 +349,6 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         ComponentLookup<PlatformerCharacterTag> _characterTagLookup;
         ComponentLookup<KinematicCharacterBody2D> _bodyLookup;
         ComponentLookup<LocalToWorld> _localToWorldLookup;
-        ComponentLookup<PhysicsBody2DSmoothing> _smoothingLookup;
         BufferLookup<PhysicsBody2DCommand> _commandLookup;
 
         public void OnCreate(ref SystemState state)
@@ -362,7 +360,6 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             _characterTagLookup = state.GetComponentLookup<PlatformerCharacterTag>(true);
             _bodyLookup = state.GetComponentLookup<KinematicCharacterBody2D>(false);
             _localToWorldLookup = state.GetComponentLookup<LocalToWorld>(false);
-            _smoothingLookup = state.GetComponentLookup<PhysicsBody2DSmoothing>(false);
             _commandLookup = state.GetBufferLookup<PhysicsBody2DCommand>(false);
         }
 
@@ -377,7 +374,6 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             _characterTagLookup.Update(ref state);
             _bodyLookup.Update(ref state);
             _localToWorldLookup.Update(ref state);
-            _smoothingLookup.Update(ref state);
             _commandLookup.Update(ref state);
 
             var triggers = SystemAPI.GetSingletonBuffer<PhysicsTriggerEvent2D>(isReadOnly: true);
@@ -411,22 +407,21 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                     _localToWorldLookup[visitor] = ltw;
                 }
 
-                // (2) Drive the BODY: enqueue a swept MovePosition(destination) so Box2D moves the authoritative pose.
+                // (2) Set the BODY pose INSTANTANEOUSLY + skip interpolation, in that order on the command buffer
+                // (both drain before the next step; SkipInterpolation reads the post-SetTransform pose). SetTransform
+                // is the hard, unclamped b2Body_SetTransform write — it reaches any destination in one step, unlike
+                // the swept MovePosition this replaces. SkipInterpolation suppresses the render-rate smoothing streak
+                // (the 2D analogue of CharacterInterpolation.SkipNextInterpolation()); it is a no-op on a None-
+                // interpolation body, so no separate smoothing-component check is needed here.
                 if (_commandLookup.HasBuffer(visitor))
                 {
                     DynamicBuffer<PhysicsBody2DCommand> commands = _commandLookup[visitor];
-                    PhysicsBody2DCommands.MovePosition(commands, target);
+                    PhysicsBody2DCommands.SetTransform(commands, target, 0f);
+                    PhysicsBody2DCommands.SkipInterpolation(commands);
                 }
 
-                // (3) Skip interpolation: reset hasPrev so the smoothing system writes the new pose with no streak.
-                if (_smoothingLookup.HasComponent(visitor))
-                {
-                    PhysicsBody2DSmoothing smoothing = _smoothingLookup[visitor];
-                    smoothing.hasPrev = 0;
-                    _smoothingLookup[visitor] = smoothing;
-                }
-
-                // Zero pre-teleport momentum so the character does not carry velocity through the teleport.
+                // (3) Zero pre-teleport momentum so the character does not carry velocity through the teleport
+                // (a respawn-style teleport drops momentum; SetTransform itself does not clear velocity).
                 if (_bodyLookup.HasComponent(visitor))
                 {
                     KinematicCharacterBody2D body = _bodyLookup[visitor];

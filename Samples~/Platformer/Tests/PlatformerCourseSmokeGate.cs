@@ -592,88 +592,91 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         }
 
         [UnityTest]
-        public IEnumerator F_Teleport_TriggerNowFiresOnPad_ButFarMovePositionStillStopsShort()
+        public IEnumerator F_Teleport_CharacterEntersPadAndArrivesAtDestinationAnyDistanceNoStreak()
         {
             yield return LoadCourse();
 
-            // THE P7 TELEPORT PROBE, re-resolved after the sensor fix. The verdict HAD two layers; the dominant one
-            // is now fixed and only the second residual remains.
+            // THE TELEPORT GATE — now a PROPER instantaneous teleport (SetTransform + SkipInterpolation), the 2D
+            // mirror of the 3D Platformer sample's TeleporterSystem. The prior best-effort form (a swept
+            // MovePosition clamped to ~6.67 u/step by maximumLinearSpeed) STOPPED SHORT of a far cross-course
+            // teleport; TeleporterSystem2D now uses the substrate's instantaneous SetTransform, so the character
+            // ARRIVES at the destination in one step at any distance, with no interpolation streak.
             //
-            // LAYER 1 (the dominant gap — NOW FIXED). The teleporter is a sensor (CollisionResponse=Sensor →
-            // isTrigger=true) and TeleporterSystem2D fires on its trigger Begin. Before the sensor fix the kinematic
-            // controller's casts treated the sensor as solid ground, so the character grounded ON the pad and the
-            // trigger Begin never fired. Now that the controller's casts EXCLUDE isTrigger shapes, the character
-            // passes INTO the pad as a visitor and the trigger Begin DOES fire — the teleporter system runs. (Same
-            // fix re-enabled the wind zone, test D.)
-            //
-            // LAYER 2 (the residual binding gap — STILL OPEN, documented). The teleport is best-effort: it writes
-            // LocalToWorld := destination and enqueues a swept MovePosition(destination). The substrate has no
-            // instantaneous SetTransform — MovePosition maps to SetTransformTarget(target, dt), and Box2D clamps the
-            // implied velocity to PhysicsWorld2DConfig.maximumLinearSpeed = 400 u/s (~6.67 u/step at 60 Hz). A
-            // ~97-unit cross-course teleport therefore advances only ~6.67 u/step and STOPS SHORT, sweeping through the
-            // world over ~15 steps rather than landing in one. This is the known instantaneous-SetTransform binding
-            // gap (teleport decision A), NOT a new bug — measured directly below.
+            // The gate proves two things: (1) the trigger fires on the pad and the character ARRIVES at the
+            // destination (the end-to-end teleporter path), and (2) the substrate SetTransform lands a far
+            // destination in ONE step (the underlying mechanism, isolated).
 
-            // LAYER 1 (now passes): place the character ABOVE the teleporter pad and let it FALL through. A clean
-            // not-touching → touching transition as it enters the pad sensor is what fires the substrate trigger Begin
-            // (warping the body already-overlapping produces no transition — the substrate's begin-on-entry
-            // semantics). Now that the controller's casts exclude the isTrigger pad, the character falls through it as
-            // a visitor and the trigger Begin fires.
+            // (1) End-to-end: place the character ABOVE the teleporter pad and let it FALL through. A clean
+            // not-touching → touching transition as it enters the pad sensor fires the substrate trigger Begin (the
+            // controller's casts exclude the isTrigger pad, so the character passes INTO it as a visitor rather than
+            // grounding on it). TeleporterSystem2D reads that Begin and teleports the character to TeleportDestination.
+            var padX = TeleporterPadPos.x;
             PlaceCharacterViaSky(
                 new float2(TeleporterPadPos.x, TeleporterPadPos.y + 6f),
                 PlatformerStance2D.AirMove
             );
             var anyTrigger = false;
             var groundedOnPad = false;
-            for (var i = 0; i < 80; i++)
+            var arrived = false;
+            for (var i = 0; i < 120; i++)
             {
                 Step(1, moveX: 0f);
                 if (TriggerEventCount() > 0)
                     anyTrigger = true;
                 if (Body().IsGrounded && _em.HasComponent<Teleporter2D>(Body().GroundHit.Entity))
                     groundedOnPad = true;
+                // The character ARRIVES at the destination after the teleporter fires (the SetTransform lands it
+                // there in one step; the next solve reads the LocalToWorld := destination and stays). Distance from
+                // the pad (~97 u away) to the destination is far past any swept per-step ceiling.
+                if (length(Position() - TeleportDestinationPos) < 2.0f)
+                {
+                    arrived = true;
+                    break;
+                }
             }
             Assert.IsFalse(
                 groundedOnPad,
-                "Teleport (layer 1, fixed): the character must NOT ground on the teleporter pad sensor — the "
-                    + "controller casts now exclude isTrigger shapes, so it passes into the pad as a visitor."
+                "Teleport: the character must NOT ground on the teleporter pad sensor — the controller casts exclude "
+                    + "isTrigger shapes, so it passes into the pad as a visitor and the trigger Begin fires."
             );
             Assert.IsTrue(
                 anyTrigger,
-                "Teleport (layer 1, fixed): a trigger Begin must fire while the character is in the teleporter pad "
-                    + "sensor — the controller now passes through the sensor instead of grounding on it, so the "
-                    + "teleporter system runs."
+                "Teleport: a trigger Begin must fire while the character is in the teleporter pad sensor."
+            );
+            Assert.IsTrue(
+                arrived,
+                $"Teleport: the character must ARRIVE at the destination {TeleportDestinationPos} after entering the "
+                    + $"pad (it was at {Position()}). The far cross-course teleport must complete — SetTransform is "
+                    + "instantaneous and unclamped, so the destination is reached in one step at any distance."
             );
 
-            // LAYER 2 (still open, documented): directly drive a far MovePosition (the body, tag off so only the move
-            // acts) and confirm the swept SetTransformTarget cannot cross the course in one step — it advances ≤ ~6.67
-            // u (the 400 u/s clamp). This is the residual instantaneous-SetTransform binding gap, unchanged by the
-            // sensor fix.
+            // (2) Mechanism, isolated: directly drive a far SetTransform (tag off so only the command acts, no solve
+            // re-target) and confirm the instantaneous set crosses the whole course in ONE step — past the ~6.67
+            // u/step swept ceiling the old MovePosition was clamped to. This is the substrate fact the teleporter
+            // now stands on.
             _em.RemoveComponent<PlatformerCharacterTag>(_character);
+            var farTarget = new float2(padX, TeleporterPadPos.y); // re-cross the course back to the pad in one step
             var fromX = Position().x;
+            var crossDistance = abs(farTarget.x - fromX);
             var farCmds = _em.GetBuffer<PhysicsBody2DCommand>(_character);
-            PhysicsBody2DCommands.MovePosition(farCmds, TeleportDestinationPos); // a ~97-unit jump to spawn
+            PhysicsBody2DCommands.SetTransform(farCmds, farTarget, 0f);
             _fixedGroup.Update();
-            var advancedOneStep = abs(Position().x - fromX);
+            var landed = Position();
             _em.AddComponent<PlatformerCharacterTag>(_character);
 
             UnityEngine.Debug.Log(
-                $"[P7-TELEPORT-PROBE] LAYER1 (fixed): trigger fired on pad = {anyTrigger}, grounded-on-pad = "
-                    + $"{groundedOnPad} (the character now passes INTO the pad and the trigger fires). LAYER2 "
-                    + $"(residual): a far MovePosition (~97 u) advanced only {advancedOneStep:F2} u in one step (the "
-                    + "400 u/s ≈ 6.67 u/step maximumLinearSpeed clamp), so the swept move STOPS SHORT of a cross-course "
-                    + "teleport. VERDICT: the teleporter now FIRES (sensor fix), but a far cross-course jump cannot "
-                    + "complete in one step — the substrate lacks an instantaneous SetTransform (teleport decision A, "
-                    + "unbuilt). A clear-path / short teleport whose per-step distance fits within ~6.67 u completes."
+                $"[TELEPORT-GATE] End-to-end: trigger fired on pad = {anyTrigger}, grounded-on-pad = {groundedOnPad}, "
+                    + $"ARRIVED at destination = {arrived}. Mechanism: a far SetTransform crossing {crossDistance:F1} u "
+                    + $"landed at {landed} (target {farTarget}) in ONE step — instantaneous and unclamped (no ~6.67 "
+                    + "u/step maximumLinearSpeed limit). VERDICT: proper teleport, mirrors the 3D sample."
             );
 
             Assert.Less(
-                advancedOneStep,
-                10f,
-                $"Teleport (layer 2, residual binding gap): a far ~97-unit MovePosition advanced only "
-                    + $"{advancedOneStep:F2} u in one step — the swept SetTransformTarget is clamped to ~6.67 u/step "
-                    + "(400 u/s maximumLinearSpeed) and STOPS SHORT of a cross-course teleport. An instantaneous "
-                    + "substrate SetTransform (decision A) would land it in one step; that remains unbuilt."
+                length(landed - farTarget),
+                0.5f,
+                $"Teleport mechanism: a far SetTransform crossing ~{crossDistance:F1} u must land at the target "
+                    + $"{farTarget} in ONE step (landed {landed}). The instantaneous set bypasses the swept "
+                    + "maximumLinearSpeed clamp, so distance does not matter."
             );
         }
     }
