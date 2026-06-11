@@ -1,0 +1,21 @@
+{
+  "name": "is.zori.entities.charactercontroller2d",
+  "displayName": "Zori Entities Character Controller 2D",
+  "version": "0.1.0",
+  "unity": "6000.0",
+  "description": "DOTS 2D kinematic character controller: a faithful 2D port of Unity's com.unity.charactercontroller (collide-and-slide, grounding, step/slope handling, character/dynamic-body interactions, processor extensibility) built entirely on the is.zori.entities.physics2d substrate. Drives a kinematic body via swept MovePosition commands; renderer-agnostic.",
+  "license": "MIT",
+  "dependencies": {
+    "com.unity.entities": "6.5.0",
+    "com.unity.collections": "6.5.0",
+    "com.unity.burst": "1.8.29",
+    "com.unity.mathematics": "1.3.2"
+  },
+  "samples": [
+    {
+      "displayName": "Side-Scroller Character",
+      "description": "A single side-scrolling platformer character built on the controller: authored ground, slopes, steps, and a few dynamic boxes to push, with a worked IKinematicCharacterProcessor2D and the control/physics system pair. Renderer-agnostic.",
+      "path": "Samples~/SideScrollerCharacter"
+    }
+  ]
+}
