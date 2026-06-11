@@ -4,6 +4,7 @@
   "references": [
     "Zori.Entities.CharacterController2D.Runtime",
     "Zori.Entities.CharacterController2D.Authoring",
+    "Zori.Entities.CharacterController2D.Diagnostics",
     "Zori.Entities.CharacterController2D.Samples.Platformer",
     "Zori.Entities.Physics2D.Runtime",
     "Zori.Entities.Physics2D.Authoring",
