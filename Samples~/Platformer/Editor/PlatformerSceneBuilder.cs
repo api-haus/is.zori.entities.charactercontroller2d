@@ -15,9 +15,8 @@ using PhysicsShape2DKind = Zori.Entities.Physics2D.PhysicsShape2DKind;
 namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
 {
     /// <summary>
-    /// Click-free, reproducible authoring of the Platformer sample course — the same proven pattern the SideScroller's
-    /// <see cref="Zori.Entities.CharacterController2D.Samples.Editor.SideScrollerSceneBuilder"/> uses (programmatic
-    /// <c>AddComponent&lt;T&gt;()</c> authoring + an <c>EditorSceneManager</c> SubScene save), rather than hand-authored
+    /// Click-free, reproducible authoring of the Platformer sample course — programmatic
+    /// <c>AddComponent&lt;T&gt;()</c> authoring + an <c>EditorSceneManager</c> SubScene save, rather than hand-authored
     /// fragile <c>.unity</c> YAML. It builds a parent scene (the one you open, carrying the SubScene reference, the 2D
     /// orthographic follow camera, and <see cref="DebugPhysicsWorld2D"/>) and a SubScene child (the baked ECS course: a
     /// capsule character, the static world, the three friction floor segments + a bouncy crate, two moving platforms, a

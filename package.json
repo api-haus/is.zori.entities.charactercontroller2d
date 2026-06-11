@@ -13,11 +13,6 @@
   },
   "samples": [
     {
-      "displayName": "Side-Scroller Character",
-      "description": "A single side-scrolling platformer character built on the controller: authored ground, slopes, steps, and a few dynamic boxes to push, with a worked IKinematicCharacterProcessor2D and the control/physics system pair. Renderer-agnostic.",
-      "path": "Samples~/SideScrollerCharacter"
-    },
-    {
       "displayName": "Platformer Character",
       "description": "A 2D rendition of Unity's Platformer sample: a capsule kinematic character with GroundMove/AirMove/RopeSwing stances and per-character movement tuning, in a course exercising moving platforms, force/wind zones, friction-modifier surfaces, teleporters, and rope swings — every feature built on the controller and the is.zori.entities.physics2d substrate. Renderer-agnostic.",
       "path": "Samples~/Platformer"
