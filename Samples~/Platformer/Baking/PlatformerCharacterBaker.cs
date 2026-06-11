@@ -44,7 +44,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
                 {
                     GravityMagnitude = authoring.GravityMagnitude,
                     GroundMoveSpeed = authoring.GroundMoveSpeed,
-                    GroundAcceleration = authoring.GroundAcceleration,
+                    GroundedMovementSharpness = authoring.GroundedMovementSharpness,
                     AirMoveSpeed = authoring.AirMoveSpeed,
                     AirAcceleration = authoring.AirAcceleration,
                     JumpSpeed = authoring.JumpSpeed,

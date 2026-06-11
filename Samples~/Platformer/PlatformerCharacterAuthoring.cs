@@ -47,8 +47,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         float m_GroundMoveSpeed = 7f;
 
         [SerializeField]
-        [Tooltip("How sharply ground velocity approaches the GroundMove target (acceleration sharpness).")]
-        float m_GroundAcceleration = 90f;
+        [Tooltip(
+            "Sharpness of the interpolation toward the desired ground velocity (higher = snappier). With no input the "
+                + "desired velocity is zero, so this is the ground grip that decelerates the character to a stop; it is "
+                + "scaled per-surface by the FrictionModifier2D (low = slippery ice).")]
+        float m_GroundedMovementSharpness = 15f;
 
         [SerializeField]
         [Tooltip("Target horizontal speed of air control in AirMove (units/s).")]
@@ -104,11 +107,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             set => m_GroundMoveSpeed = Mathf.Max(0f, value);
         }
 
-        /// <summary>How sharply ground velocity approaches the GroundMove target.</summary>
-        public float GroundAcceleration
+        /// <summary>Sharpness of the interpolation toward the desired ground velocity (the ground grip / deceleration).</summary>
+        public float GroundedMovementSharpness
         {
-            get => m_GroundAcceleration;
-            set => m_GroundAcceleration = Mathf.Max(0f, value);
+            get => m_GroundedMovementSharpness;
+            set => m_GroundedMovementSharpness = Mathf.Max(0f, value);
         }
 
         /// <summary>Target horizontal speed of air control in AirMove (units/s).</summary>
@@ -176,7 +179,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         {
             m_GravityMagnitude = Mathf.Max(0f, m_GravityMagnitude);
             m_GroundMoveSpeed = Mathf.Max(0f, m_GroundMoveSpeed);
-            m_GroundAcceleration = Mathf.Max(0f, m_GroundAcceleration);
+            m_GroundedMovementSharpness = Mathf.Max(0f, m_GroundedMovementSharpness);
             m_AirMoveSpeed = Mathf.Max(0f, m_AirMoveSpeed);
             m_AirAcceleration = Mathf.Max(0f, m_AirAcceleration);
             m_JumpSpeed = Mathf.Max(0f, m_JumpSpeed);

@@ -332,16 +332,19 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 // off the ground hit's owning entity; absent ⇒ neutral 1.
                 float frictionScale = ReadFrictionScale(in frictionModifierLookup, characterBody.GroundHit.Entity);
 
-                // Accelerate horizontally along the GROUND LINE so the character climbs slopes at the move speed; the
-                // friction scale modulates how sharply it reaches that speed (the 3D CharacterFrictionModifier approach).
-                CharacterControlUtilities2D.StandardGroundMove_Accelerated(
+                // Interpolate horizontal velocity toward the desired ground velocity along the GROUND LINE so the
+                // character climbs slopes at the move speed AND decelerates to a stop when input is released (with no
+                // input the desired velocity is zero). The friction scale modulates the sharpness, so ice (low) is
+                // slow to both reach speed and stop while sticky (high) is snappy — the 3D CharacterFrictionModifier
+                // approach. The earlier StandardGroundMove_Accelerated only ADDED accel*dt, so a zero input added
+                // nothing and the character slid forever.
+                CharacterControlUtilities2D.StandardGroundMove_Interpolated(
                     ref characterBody.RelativeVelocity,
-                    targetMove * (tuning.GroundAcceleration * frictionScale),
-                    tuning.GroundMoveSpeed,
+                    targetMove * tuning.GroundMoveSpeed,
+                    tuning.GroundedMovementSharpness * frictionScale,
                     deltaTime,
                     groundingUp,
-                    characterBody.GroundHit.Normal,
-                    forceNoMaxSpeedExcess: false);
+                    characterBody.GroundHit.Normal);
 
                 // Consume a latched jump: unground, cancel downward velocity, add the jump impulse. StandardJump sets
                 // IsGrounded = false on the live body (so the post-block WasGrounded snapshot reads false).
@@ -377,14 +380,15 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 {
                     float frictionScale = ReadFrictionScale(in frictionModifierLookup, characterBody.GroundHit.Entity);
 
-                    CharacterControlUtilities2D.StandardGroundMove_Accelerated(
+                    // Same grounded grip/deceleration as SolveGroundMove (a stance left at AirMove still walks/stops
+                    // once a step grounds it).
+                    CharacterControlUtilities2D.StandardGroundMove_Interpolated(
                         ref characterBody.RelativeVelocity,
-                        targetMove * (tuning.GroundAcceleration * frictionScale),
-                        tuning.GroundMoveSpeed,
+                        targetMove * tuning.GroundMoveSpeed,
+                        tuning.GroundedMovementSharpness * frictionScale,
                         deltaTime,
                         groundingUp,
-                        characterBody.GroundHit.Normal,
-                        forceNoMaxSpeedExcess: false);
+                        characterBody.GroundHit.Normal);
 
                     if (control.JumpPressed)
                     {

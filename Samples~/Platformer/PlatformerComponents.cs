@@ -60,8 +60,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         /// <summary>Target horizontal speed on the ground line in GroundMove (units/s).</summary>
         public float GroundMoveSpeed;
 
-        /// <summary>How sharply ground velocity approaches the GroundMove target (acceleration sharpness).</summary>
-        public float GroundAcceleration;
+        /// <summary>
+        /// Sharpness of the interpolation toward the desired ground velocity (higher = snappier). With no move input
+        /// the desired velocity is zero, so this is the ground grip that decelerates the character to a stop. It is
+        /// scaled per-surface by <see cref="FrictionModifier2D"/> (low → slippery ice, slow to reach speed AND slow to
+        /// stop; high → sticky, snappy both ways). A pure acceleration model never decelerates toward a zero target,
+        /// so a released character slid forever — the 3D ThirdPerson sample uses this interpolated form for grip.
+        /// </summary>
+        public float GroundedMovementSharpness;
 
         /// <summary>Target horizontal speed of air control in AirMove (units/s).</summary>
         public float AirMoveSpeed;

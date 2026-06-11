@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &88673892
+--- !u!1 &150444638
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,77 +127,89 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 88673894}
-  - component: {fileID: 88673893}
+  - component: {fileID: 150444641}
+  - component: {fileID: 150444640}
+  - component: {fileID: 150444639}
   m_Layer: 0
-  m_Name: Ledge_FarRope
+  m_Name: Teleporter_BackToSpawn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!61 &88673893
-BoxCollider2D:
+--- !u!114 &150444639
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 88673892}
+  m_GameObject: {fileID: 150444638}
   m_Enabled: 1
-  serializedVersion: 3
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05cd33e6f9c34caab88136bd3dfeb663, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.Teleporter2DAuthoring
+  m_Destination: {fileID: 2011208191}
+--- !u!114 &150444640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 150444638}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring
+  m_Kind: 1
+  m_Offset:
+    x: 0
+    y: 0
+  m_Radius: 0.5
+  m_BoxSize:
+    x: 1.5
+    y: 1
+  m_BoxAngle: 0
+  m_CapsuleSize:
+    x: 1
+    y: 2
+  m_CapsuleVertical: 1
+  m_CapsuleAngle: 0
+  m_EdgeIsLoop: 0
+  m_Vertices: []
+  m_PolygonDecompose: 0
+  m_MaterialTemplate: {fileID: 0}
+  m_OverrideFriction: 0
+  m_Friction: 0.4
+  m_OverrideBounciness: 0
+  m_Bounciness: 0
   m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 8, y: 1}
-  m_EdgeRadius: 0
---- !u!4 &88673894
+  m_OverrideFrictionCombine: 0
+  m_FrictionCombine: 0
+  m_OverrideBouncinessCombine: 0
+  m_BouncinessCombine: 0
+  m_Layer: -1
+  m_OverrideFilterBits: 0
+  m_CategoryBits: -1
+  m_ContactBits: -1
+  m_CollisionResponse: 1
+--- !u!4 &150444641
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 88673892}
+  m_GameObject: {fileID: 150444638}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 95, y: 8.5, z: 0}
+  m_LocalPosition: {x: 97, y: 9.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &97932859
+--- !u!1 &462314060
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -205,9 +217,98 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 97932862}
-  - component: {fileID: 97932861}
-  - component: {fileID: 97932860}
+  - component: {fileID: 462314063}
+  - component: {fileID: 462314062}
+  - component: {fileID: 462314061}
+  m_Layer: 0
+  m_Name: RopeAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &462314061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 462314060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf46496b30d5467fa36d01c6f4297649, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.RopeAnchor2DAuthoring
+--- !u!114 &462314062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 462314060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring
+  m_Kind: 0
+  m_Offset:
+    x: 0
+    y: 0
+  m_Radius: 0.3
+  m_BoxSize:
+    x: 1
+    y: 1
+  m_BoxAngle: 0
+  m_CapsuleSize:
+    x: 1
+    y: 2
+  m_CapsuleVertical: 1
+  m_CapsuleAngle: 0
+  m_EdgeIsLoop: 0
+  m_Vertices: []
+  m_PolygonDecompose: 0
+  m_MaterialTemplate: {fileID: 0}
+  m_OverrideFriction: 0
+  m_Friction: 0.4
+  m_OverrideBounciness: 0
+  m_Bounciness: 0
+  m_Density: 1
+  m_OverrideFrictionCombine: 0
+  m_FrictionCombine: 0
+  m_OverrideBouncinessCombine: 0
+  m_BouncinessCombine: 0
+  m_Layer: -1
+  m_OverrideFilterBits: 1
+  m_CategoryBits: 64
+  m_ContactBits: -1
+  m_CollisionResponse: 0
+--- !u!4 &462314063
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 462314060}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 85, y: 16, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &519871910
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 519871913}
+  - component: {fileID: 519871912}
+  - component: {fileID: 519871911}
   m_Layer: 0
   m_Name: Floor_Sticky
   m_TagString: Untagged
@@ -215,26 +316,26 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &97932860
+--- !u!114 &519871911
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 97932859}
+  m_GameObject: {fileID: 519871910}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 800000001}
+  m_Script: {fileID: 11500000, guid: ee06530b0b584085abe5f552ab2446d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.FrictionModifier2DAuthoring
   m_Friction: 3
---- !u!61 &97932861
+--- !u!61 &519871912
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 97932859}
+  m_GameObject: {fileID: 519871910}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -274,13 +375,13 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 10, y: 1}
   m_EdgeRadius: 0
---- !u!4 &97932862
+--- !u!4 &519871913
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 97932859}
+  m_GameObject: {fileID: 519871910}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 19, y: -0.5, z: 0}
@@ -289,7 +390,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &98364556
+--- !u!1 &538436477
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -297,9 +398,379 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 98364559}
-  - component: {fileID: 98364558}
-  - component: {fileID: 98364557}
+  - component: {fileID: 538436479}
+  - component: {fileID: 538436478}
+  m_Layer: 0
+  m_Name: Ledge_FarRope
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!61 &538436478
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 538436477}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 8, y: 1}
+  m_EdgeRadius: 0
+--- !u!4 &538436479
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 538436477}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 95, y: 8.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &711278470
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 711278474}
+  - component: {fileID: 711278473}
+  - component: {fileID: 711278472}
+  - component: {fileID: 711278471}
+  m_Layer: 0
+  m_Name: MovingPlatform_Lateral
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &711278471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 711278470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2565a95840484b8386a4392eac3d7c9e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.MovingPlatform2DAuthoring
+  m_TravelHalfExtent: {x: 4, y: 0}
+  m_Speed: 3
+--- !u!114 &711278472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 711278470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring
+  m_Kind: 1
+  m_Offset:
+    x: 0
+    y: 0
+  m_Radius: 0.5
+  m_BoxSize:
+    x: 4
+    y: 0.5
+  m_BoxAngle: 0
+  m_CapsuleSize:
+    x: 1
+    y: 2
+  m_CapsuleVertical: 1
+  m_CapsuleAngle: 0
+  m_EdgeIsLoop: 0
+  m_Vertices: []
+  m_PolygonDecompose: 0
+  m_MaterialTemplate: {fileID: 0}
+  m_OverrideFriction: 0
+  m_Friction: 0.4
+  m_OverrideBounciness: 0
+  m_Bounciness: 0
+  m_Density: 1
+  m_OverrideFrictionCombine: 0
+  m_FrictionCombine: 0
+  m_OverrideBouncinessCombine: 0
+  m_BouncinessCombine: 0
+  m_Layer: -1
+  m_OverrideFilterBits: 0
+  m_CategoryBits: -1
+  m_ContactBits: -1
+  m_CollisionResponse: 0
+--- !u!114 &711278473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 711278470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a33c89e613abe298b8ca0f919ae10593, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsBody2DAuthoring
+  m_BodyType: 1
+  m_GravityScale: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_FreezePositionX: 0
+  m_FreezePositionY: 0
+  m_FreezeRotation: 0
+  m_InitialLinearVelocity:
+    x: 0
+    y: 0
+  m_InitialAngularVelocity: 0
+  m_Interpolation: 0
+  m_CollisionDetection: 0
+  m_OverrideMassDistribution: 0
+  m_CenterOfMass:
+    x: 0
+    y: 0
+  m_RotationalInertia: 0
+--- !u!4 &711278474
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 711278470}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 58, y: 5.75, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &798955017
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 798955020}
+  - component: {fileID: 798955019}
+  - component: {fileID: 798955018}
+  m_Layer: 0
+  m_Name: WindZone_Updraft
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &798955018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 798955017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7ff86fbcd844e8a9989d130cbff36c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.WindZone2DAuthoring
+  m_Force: {x: 2, y: 14}
+--- !u!114 &798955019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 798955017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring
+  m_Kind: 1
+  m_Offset:
+    x: 0
+    y: 0
+  m_Radius: 0.5
+  m_BoxSize:
+    x: 8
+    y: 4
+  m_BoxAngle: 0
+  m_CapsuleSize:
+    x: 1
+    y: 2
+  m_CapsuleVertical: 1
+  m_CapsuleAngle: 0
+  m_EdgeIsLoop: 0
+  m_Vertices: []
+  m_PolygonDecompose: 0
+  m_MaterialTemplate: {fileID: 0}
+  m_OverrideFriction: 0
+  m_Friction: 0.4
+  m_OverrideBounciness: 0
+  m_Bounciness: 0
+  m_Density: 1
+  m_OverrideFrictionCombine: 0
+  m_FrictionCombine: 0
+  m_OverrideBouncinessCombine: 0
+  m_BouncinessCombine: 0
+  m_Layer: -1
+  m_OverrideFilterBits: 0
+  m_CategoryBits: -1
+  m_ContactBits: -1
+  m_CollisionResponse: 1
+--- !u!4 &798955020
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 798955017}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 73, y: 11, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1005814071
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1005814073}
+  - component: {fileID: 1005814072}
+  m_Layer: 0
+  m_Name: SlopeOverLimit_75deg
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!61 &1005814072
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1005814071}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 7, y: 1}
+  m_EdgeRadius: 0
+--- !u!4 &1005814073
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1005814071}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: 0.60876137, w: 0.7933534}
+  m_LocalPosition: {x: 45.38883, y: 3.2513309, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1079996348
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1079996351}
+  - component: {fileID: 1079996350}
+  - component: {fileID: 1079996349}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -307,21 +778,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &98364557
+--- !u!114 &1079996349
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 98364556}
+  m_GameObject: {fileID: 1079996348}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 800000002}
+  m_Script: {fileID: 11500000, guid: bff943145b354bec9b25277f7e373c34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.PlatformerCharacterAuthoring
   m_GravityMagnitude: 20
   m_GroundMoveSpeed: 7
-  m_GroundAcceleration: 90
+  m_GroundedMovementSharpness: 15
   m_AirMoveSpeed: 7
   m_AirAcceleration: 30
   m_JumpSpeed: 9
@@ -332,13 +803,13 @@ MonoBehaviour:
   m_RopeAnchorLayerMask:
     serializedVersion: 2
     m_Bits: 64
---- !u!114 &98364558
+--- !u!114 &1079996350
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 98364556}
+  m_GameObject: {fileID: 1079996348}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 444d7e51d27e928c9a8f4693874c965a, type: 3}
@@ -379,13 +850,13 @@ MonoBehaviour:
     y: 2
   m_ProxyCapsuleDirection: 0
   m_InterpolateRendering: 1
---- !u!4 &98364559
+--- !u!4 &1079996351
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 98364556}
+  m_GameObject: {fileID: 1079996348}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1.05, z: 0}
@@ -394,7 +865,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &148004324
+--- !u!1 &1094948730
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -402,10 +873,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 148004328}
-  - component: {fileID: 148004327}
-  - component: {fileID: 148004326}
-  - component: {fileID: 148004325}
+  - component: {fileID: 1094948734}
+  - component: {fileID: 1094948733}
+  - component: {fileID: 1094948732}
+  - component: {fileID: 1094948731}
   m_Layer: 0
   m_Name: BouncyCrate
   m_TagString: Untagged
@@ -413,25 +884,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &148004325
+--- !u!114 &1094948731
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148004324}
+  m_GameObject: {fileID: 1094948730}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 800000003}
+  m_Script: {fileID: 11500000, guid: d657ecb3bcce474f91dffd92eb7ffbdc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.Pushable2DAuthoring
---- !u!114 &148004326
+--- !u!114 &1094948732
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148004324}
+  m_GameObject: {fileID: 1094948730}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
@@ -469,13 +940,13 @@ MonoBehaviour:
   m_CategoryBits: -1
   m_ContactBits: -1
   m_CollisionResponse: 0
---- !u!114 &148004327
+--- !u!114 &1094948733
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148004324}
+  m_GameObject: {fileID: 1094948730}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a33c89e613abe298b8ca0f919ae10593, type: 3}
@@ -501,13 +972,13 @@ MonoBehaviour:
     x: 0
     y: 0
   m_RotationalInertia: 0
---- !u!4 &148004328
+--- !u!4 &1094948734
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148004324}
+  m_GameObject: {fileID: 1094948730}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -6, y: 0.55, z: 0}
@@ -516,7 +987,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &283200363
+--- !u!1 &1129333146
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -524,364 +995,38 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 283200366}
-  - component: {fileID: 283200365}
-  - component: {fileID: 283200364}
+  - component: {fileID: 1129333150}
+  - component: {fileID: 1129333149}
+  - component: {fileID: 1129333148}
+  - component: {fileID: 1129333147}
   m_Layer: 0
-  m_Name: Floor_Ice
+  m_Name: MovingPlatform_Vertical
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &283200364
+--- !u!114 &1129333147
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 283200363}
+  m_GameObject: {fileID: 1129333146}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 800000001}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.FrictionModifier2DAuthoring
-  m_Friction: 0.15
---- !u!61 &283200365
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 283200363}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 10, y: 1}
-  m_EdgeRadius: 0
---- !u!4 &283200366
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 283200363}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9, y: -0.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &342939835
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 342939837}
-  - component: {fileID: 342939836}
-  m_Layer: 0
-  m_Name: Ledge_HighWind
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!61 &342939836
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 342939835}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 10, y: 1}
-  m_EdgeRadius: 0
---- !u!4 &342939837
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 342939835}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 73, y: 8.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &345187158
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 345187160}
-  - component: {fileID: 345187159}
-  m_Layer: 0
-  m_Name: StepHigh_top0.9
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!61 &345187159
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 345187158}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 4, y: 3}
-  m_EdgeRadius: 0
---- !u!4 &345187160
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 345187158}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 31, y: -0.6, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &608711757
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 608711759}
-  - component: {fileID: 608711758}
-  m_Layer: 0
-  m_Name: Ledge_AfterSlopes
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!61 &608711758
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 608711757}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 8, y: 1}
-  m_EdgeRadius: 0
---- !u!4 &608711759
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 608711757}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 49, y: 5.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &666653376
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 666653380}
-  - component: {fileID: 666653379}
-  - component: {fileID: 666653378}
-  - component: {fileID: 666653377}
-  m_Layer: 0
-  m_Name: MovingPlatform_Lateral
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &666653377
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 666653376}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 800000004}
+  m_Script: {fileID: 11500000, guid: 2565a95840484b8386a4392eac3d7c9e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.MovingPlatform2DAuthoring
-  m_TravelHalfExtent: {x: 4, y: 0}
-  m_Speed: 3
---- !u!114 &666653378
+  m_TravelHalfExtent: {x: 0, y: 3}
+  m_Speed: 2.5
+--- !u!114 &1129333148
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 666653376}
+  m_GameObject: {fileID: 1129333146}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
@@ -919,13 +1064,13 @@ MonoBehaviour:
   m_CategoryBits: -1
   m_ContactBits: -1
   m_CollisionResponse: 0
---- !u!114 &666653379
+--- !u!114 &1129333149
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 666653376}
+  m_GameObject: {fileID: 1129333146}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a33c89e613abe298b8ca0f919ae10593, type: 3}
@@ -951,22 +1096,22 @@ MonoBehaviour:
     x: 0
     y: 0
   m_RotationalInertia: 0
---- !u!4 &666653380
+--- !u!4 &1129333150
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 666653376}
+  m_GameObject: {fileID: 1129333146}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 58, y: 5.75, z: 0}
+  m_LocalPosition: {x: 66, y: 5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &760303527
+--- !u!1 &1241510220
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -974,178 +1119,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 760303530}
-  - component: {fileID: 760303529}
-  - component: {fileID: 760303528}
-  m_Layer: 0
-  m_Name: Teleporter_BackToSpawn
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &760303528
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 760303527}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 800000005}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.Teleporter2DAuthoring
-  m_Destination: {fileID: 1102229958}
---- !u!114 &760303529
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 760303527}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring
-  m_Kind: 1
-  m_Offset:
-    x: 0
-    y: 0
-  m_Radius: 0.5
-  m_BoxSize:
-    x: 1.5
-    y: 1
-  m_BoxAngle: 0
-  m_CapsuleSize:
-    x: 1
-    y: 2
-  m_CapsuleVertical: 1
-  m_CapsuleAngle: 0
-  m_EdgeIsLoop: 0
-  m_Vertices: []
-  m_PolygonDecompose: 0
-  m_MaterialTemplate: {fileID: 0}
-  m_OverrideFriction: 0
-  m_Friction: 0.4
-  m_OverrideBounciness: 0
-  m_Bounciness: 0
-  m_Density: 1
-  m_OverrideFrictionCombine: 0
-  m_FrictionCombine: 0
-  m_OverrideBouncinessCombine: 0
-  m_BouncinessCombine: 0
-  m_Layer: -1
-  m_OverrideFilterBits: 0
-  m_CategoryBits: -1
-  m_ContactBits: -1
-  m_CollisionResponse: 1
---- !u!4 &760303530
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 760303527}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 97, y: 9.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &921671039
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 921671041}
-  - component: {fileID: 921671040}
-  m_Layer: 0
-  m_Name: SlopeOverLimit_75deg
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!61 &921671040
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 921671039}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 7, y: 1}
-  m_EdgeRadius: 0
---- !u!4 &921671041
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 921671039}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: 0.60876137, w: 0.7933534}
-  m_LocalPosition: {x: 45.38883, y: 3.2513309, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &991076596
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 991076600}
-  - component: {fileID: 991076599}
-  - component: {fileID: 991076598}
-  - component: {fileID: 991076597}
+  - component: {fileID: 1241510224}
+  - component: {fileID: 1241510223}
+  - component: {fileID: 1241510222}
+  - component: {fileID: 1241510221}
   m_Layer: 0
   m_Name: PushCrate
   m_TagString: Untagged
@@ -1153,25 +1130,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &991076597
+--- !u!114 &1241510221
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 991076596}
+  m_GameObject: {fileID: 1241510220}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 800000003}
+  m_Script: {fileID: 11500000, guid: d657ecb3bcce474f91dffd92eb7ffbdc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.Pushable2DAuthoring
---- !u!114 &991076598
+--- !u!114 &1241510222
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 991076596}
+  m_GameObject: {fileID: 1241510220}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
@@ -1209,13 +1186,13 @@ MonoBehaviour:
   m_CategoryBits: -1
   m_ContactBits: -1
   m_CollisionResponse: 0
---- !u!114 &991076599
+--- !u!114 &1241510223
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 991076596}
+  m_GameObject: {fileID: 1241510220}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a33c89e613abe298b8ca0f919ae10593, type: 3}
@@ -1241,13 +1218,13 @@ MonoBehaviour:
     x: 0
     y: 0
   m_RotationalInertia: 0
---- !u!4 &991076600
+--- !u!4 &1241510224
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 991076596}
+  m_GameObject: {fileID: 1241510220}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2, y: 0.55, z: 0}
@@ -1256,7 +1233,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1046109315
+--- !u!1 &1461593878
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1264,9 +1241,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1046109318}
-  - component: {fileID: 1046109317}
-  - component: {fileID: 1046109316}
+  - component: {fileID: 1461593881}
+  - component: {fileID: 1461593880}
+  - component: {fileID: 1461593879}
   m_Layer: 0
   m_Name: Floor_Normal
   m_TagString: Untagged
@@ -1274,26 +1251,26 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1046109316
+--- !u!114 &1461593879
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046109315}
+  m_GameObject: {fileID: 1461593878}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 800000001}
+  m_Script: {fileID: 11500000, guid: ee06530b0b584085abe5f552ab2446d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.FrictionModifier2DAuthoring
   m_Friction: 1
---- !u!61 &1046109317
+--- !u!61 &1461593880
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046109315}
+  m_GameObject: {fileID: 1461593878}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -1333,13 +1310,13 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 14, y: 1}
   m_EdgeRadius: 0
---- !u!4 &1046109318
+--- !u!4 &1461593881
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046109315}
+  m_GameObject: {fileID: 1461593878}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -3, y: -0.5, z: 0}
@@ -1348,7 +1325,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1075346943
+--- !u!1 &1547918692
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1356,143 +1333,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1075346946}
-  - component: {fileID: 1075346945}
-  - component: {fileID: 1075346944}
+  - component: {fileID: 1547918694}
+  - component: {fileID: 1547918693}
   m_Layer: 0
-  m_Name: WindZone_Updraft
+  m_Name: Ledge_HighWind
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1075346944
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1075346943}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 800000006}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.WindZone2DAuthoring
-  m_Force: {x: 2, y: 14}
---- !u!114 &1075346945
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1075346943}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring
-  m_Kind: 1
-  m_Offset:
-    x: 0
-    y: 0
-  m_Radius: 0.5
-  m_BoxSize:
-    x: 8
-    y: 4
-  m_BoxAngle: 0
-  m_CapsuleSize:
-    x: 1
-    y: 2
-  m_CapsuleVertical: 1
-  m_CapsuleAngle: 0
-  m_EdgeIsLoop: 0
-  m_Vertices: []
-  m_PolygonDecompose: 0
-  m_MaterialTemplate: {fileID: 0}
-  m_OverrideFriction: 0
-  m_Friction: 0.4
-  m_OverrideBounciness: 0
-  m_Bounciness: 0
-  m_Density: 1
-  m_OverrideFrictionCombine: 0
-  m_FrictionCombine: 0
-  m_OverrideBouncinessCombine: 0
-  m_BouncinessCombine: 0
-  m_Layer: -1
-  m_OverrideFilterBits: 0
-  m_CategoryBits: -1
-  m_ContactBits: -1
-  m_CollisionResponse: 1
---- !u!4 &1075346946
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1075346943}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 73, y: 11, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1102229958
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1102229959}
-  m_Layer: 0
-  m_Name: TeleportDestination
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1102229959
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1102229958}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.1, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1375490555
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1375490557}
-  - component: {fileID: 1375490556}
-  m_Layer: 0
-  m_Name: SlopeWithinLimit_30deg
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!61 &1375490556
+--- !u!61 &1547918693
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1375490555}
+  m_GameObject: {fileID: 1547918692}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -1530,24 +1386,24 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 12, y: 1}
+  m_Size: {x: 10, y: 1}
   m_EdgeRadius: 0
---- !u!4 &1375490557
+--- !u!4 &1547918694
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1375490555}
+  m_GameObject: {fileID: 1547918692}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: 0.2588191, w: 0.9659258}
-  m_LocalPosition: {x: 39.44615, y: 2.5669873, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 73, y: 8.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1493687935
+--- !u!1 &1633538016
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1555,123 +1411,91 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1493687939}
-  - component: {fileID: 1493687938}
-  - component: {fileID: 1493687937}
-  - component: {fileID: 1493687936}
+  - component: {fileID: 1633538019}
+  - component: {fileID: 1633538018}
+  - component: {fileID: 1633538017}
   m_Layer: 0
-  m_Name: MovingPlatform_Vertical
+  m_Name: Floor_Ice
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1493687936
+--- !u!114 &1633538017
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1493687935}
+  m_GameObject: {fileID: 1633538016}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 800000004}
+  m_Script: {fileID: 11500000, guid: ee06530b0b584085abe5f552ab2446d7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.MovingPlatform2DAuthoring
-  m_TravelHalfExtent: {x: 0, y: 3}
-  m_Speed: 2.5
---- !u!114 &1493687937
-MonoBehaviour:
+  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.FrictionModifier2DAuthoring
+  m_Friction: 0.15
+--- !u!61 &1633538018
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1493687935}
+  m_GameObject: {fileID: 1633538016}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring
-  m_Kind: 1
-  m_Offset:
-    x: 0
-    y: 0
-  m_Radius: 0.5
-  m_BoxSize:
-    x: 4
-    y: 0.5
-  m_BoxAngle: 0
-  m_CapsuleSize:
-    x: 1
-    y: 2
-  m_CapsuleVertical: 1
-  m_CapsuleAngle: 0
-  m_EdgeIsLoop: 0
-  m_Vertices: []
-  m_PolygonDecompose: 0
-  m_MaterialTemplate: {fileID: 0}
-  m_OverrideFriction: 0
-  m_Friction: 0.4
-  m_OverrideBounciness: 0
-  m_Bounciness: 0
+  serializedVersion: 3
   m_Density: 1
-  m_OverrideFrictionCombine: 0
-  m_FrictionCombine: 0
-  m_OverrideBouncinessCombine: 0
-  m_BouncinessCombine: 0
-  m_Layer: -1
-  m_OverrideFilterBits: 0
-  m_CategoryBits: -1
-  m_ContactBits: -1
-  m_CollisionResponse: 0
---- !u!114 &1493687938
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1493687935}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a33c89e613abe298b8ca0f919ae10593, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsBody2DAuthoring
-  m_BodyType: 1
-  m_GravityScale: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_FreezePositionX: 0
-  m_FreezePositionY: 0
-  m_FreezeRotation: 0
-  m_InitialLinearVelocity:
-    x: 0
-    y: 0
-  m_InitialAngularVelocity: 0
-  m_Interpolation: 0
-  m_CollisionDetection: 0
-  m_OverrideMassDistribution: 0
-  m_CenterOfMass:
-    x: 0
-    y: 0
-  m_RotationalInertia: 0
---- !u!4 &1493687939
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 10, y: 1}
+  m_EdgeRadius: 0
+--- !u!4 &1633538019
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1493687935}
+  m_GameObject: {fileID: 1633538016}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 66, y: 5, z: 0}
+  m_LocalPosition: {x: 9, y: -0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1729313485
+--- !u!1 &1847734150
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1679,97 +1503,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1729313488}
-  - component: {fileID: 1729313487}
-  - component: {fileID: 1729313486}
-  m_Layer: 0
-  m_Name: RopeAnchor
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1729313486
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1729313485}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 800000007}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.RopeAnchor2DAuthoring
---- !u!114 &1729313487
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1729313485}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aab897196845a7d66993271f784de684, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Zori.Entities.Physics2D.Authoring::Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring
-  m_Kind: 0
-  m_Offset:
-    x: 0
-    y: 0
-  m_Radius: 0.3
-  m_BoxSize:
-    x: 1
-    y: 1
-  m_BoxAngle: 0
-  m_CapsuleSize:
-    x: 1
-    y: 2
-  m_CapsuleVertical: 1
-  m_CapsuleAngle: 0
-  m_EdgeIsLoop: 0
-  m_Vertices: []
-  m_PolygonDecompose: 0
-  m_MaterialTemplate: {fileID: 0}
-  m_OverrideFriction: 0
-  m_Friction: 0.4
-  m_OverrideBounciness: 0
-  m_Bounciness: 0
-  m_Density: 1
-  m_OverrideFrictionCombine: 0
-  m_FrictionCombine: 0
-  m_OverrideBouncinessCombine: 0
-  m_BouncinessCombine: 0
-  m_Layer: -1
-  m_OverrideFilterBits: 1
-  m_CategoryBits: 64
-  m_ContactBits: -1
-  m_CollisionResponse: 0
---- !u!4 &1729313488
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1729313485}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 85, y: 16, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1906087893
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1906087895}
-  - component: {fileID: 1906087894}
+  - component: {fileID: 1847734152}
+  - component: {fileID: 1847734151}
   m_Layer: 0
   m_Name: StepLow_top0.3
   m_TagString: Untagged
@@ -1777,13 +1512,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!61 &1906087894
+--- !u!61 &1847734151
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1906087893}
+  m_GameObject: {fileID: 1847734150}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -1823,16 +1558,281 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 4, y: 2}
   m_EdgeRadius: 0
---- !u!4 &1906087895
+--- !u!4 &1847734152
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1906087893}
+  m_GameObject: {fileID: 1847734150}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 26, y: -0.7, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2011208191
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2011208192}
+  m_Layer: 0
+  m_Name: TeleportDestination
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2011208192
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011208191}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2046087830
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2046087832}
+  - component: {fileID: 2046087831}
+  m_Layer: 0
+  m_Name: StepHigh_top0.9
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!61 &2046087831
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2046087830}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 4, y: 3}
+  m_EdgeRadius: 0
+--- !u!4 &2046087832
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2046087830}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 31, y: -0.6, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2062441282
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2062441284}
+  - component: {fileID: 2062441283}
+  m_Layer: 0
+  m_Name: SlopeWithinLimit_30deg
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!61 &2062441283
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2062441282}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 12, y: 1}
+  m_EdgeRadius: 0
+--- !u!4 &2062441284
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2062441282}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: 0.2588191, w: 0.9659258}
+  m_LocalPosition: {x: 39.44615, y: 2.5669873, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2107464605
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2107464607}
+  - component: {fileID: 2107464606}
+  m_Layer: 0
+  m_Name: Ledge_AfterSlopes
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!61 &2107464606
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2107464605}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 8, y: 1}
+  m_EdgeRadius: 0
+--- !u!4 &2107464607
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2107464605}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 49, y: 5.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1842,127 +1842,22 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1046109318}
-  - {fileID: 283200366}
-  - {fileID: 97932862}
-  - {fileID: 148004328}
-  - {fileID: 991076600}
-  - {fileID: 1906087895}
-  - {fileID: 345187160}
-  - {fileID: 1375490557}
-  - {fileID: 921671041}
-  - {fileID: 608711759}
-  - {fileID: 666653380}
-  - {fileID: 1493687939}
-  - {fileID: 342939837}
-  - {fileID: 1075346946}
-  - {fileID: 1729313488}
-  - {fileID: 88673894}
-  - {fileID: 1102229959}
-  - {fileID: 760303530}
-  - {fileID: 98364559}
---- !u!115 &800000001
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: FrictionModifier2DAuthoring
-  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
-  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
---- !u!115 &800000002
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: PlatformerCharacterAuthoring
-  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
-  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
---- !u!115 &800000003
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: Pushable2DAuthoring
-  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
-  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
---- !u!115 &800000004
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: MovingPlatform2DAuthoring
-  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
-  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
---- !u!115 &800000005
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: Teleporter2DAuthoring
-  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
-  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
---- !u!115 &800000006
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: WindZone2DAuthoring
-  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
-  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
---- !u!115 &800000007
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: RopeAnchor2DAuthoring
-  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
-  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
+  - {fileID: 1461593881}
+  - {fileID: 1633538019}
+  - {fileID: 519871913}
+  - {fileID: 1094948734}
+  - {fileID: 1241510224}
+  - {fileID: 1847734152}
+  - {fileID: 2046087832}
+  - {fileID: 2062441284}
+  - {fileID: 1005814073}
+  - {fileID: 2107464607}
+  - {fileID: 711278474}
+  - {fileID: 1129333150}
+  - {fileID: 1547918694}
+  - {fileID: 798955020}
+  - {fileID: 462314063}
+  - {fileID: 538436479}
+  - {fileID: 2011208192}
+  - {fileID: 150444641}
+  - {fileID: 1079996351}

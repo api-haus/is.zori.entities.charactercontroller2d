@@ -52,8 +52,14 @@ namespace Zori.Entities.CharacterController2D.Samples
         /// <summary>Max horizontal ground speed (units/s).</summary>
         public const float GroundMoveSpeed = 7f;
 
-        /// <summary>Horizontal ground acceleration (units/s²).</summary>
-        public const float GroundAcceleration = 90f;
+        /// <summary>
+        /// Sharpness of the interpolation toward the desired ground velocity (higher = snappier). With no move input
+        /// the desired velocity is zero, so a positive sharpness is the ground grip that decelerates the character to
+        /// a stop — the analogue of the 3D ThirdPerson sample's <c>GroundedMovementSharpness</c>. The earlier
+        /// <c>StandardGroundMove_Accelerated</c> call never decelerated toward a zero target, so a released character
+        /// slid forever as if the level were ice.
+        /// </summary>
+        public const float GroundedMovementSharpness = 15f;
 
         /// <summary>Max horizontal air speed (units/s).</summary>
         public const float AirMoveSpeed = 7f;
@@ -158,7 +164,6 @@ namespace Zori.Entities.CharacterController2D.Samples
                 // mirrors it and the processor's UpdateGroundingUp is a no-op.
                 float2 groundingUp = new float2(0f, 1f);
                 characterBody.GroundingUp = groundingUp;
-                characterBody.WasGroundedBeforeCharacterUpdate = characterBody.IsGrounded;
 
                 float2 gravity = new float2(0f, -GravityMagnitude);
 
@@ -172,15 +177,18 @@ namespace Zori.Entities.CharacterController2D.Samples
 
                 if (characterBody.IsGrounded)
                 {
-                    // Accelerate horizontally along the GROUND LINE so the character climbs slopes at the move speed.
-                    CharacterControlUtilities2D.StandardGroundMove_Accelerated(
+                    // Interpolate horizontal velocity toward the desired ground velocity along the GROUND LINE. With no
+                    // move input the desired velocity is zero, so the character DECELERATES to a stop (normal ground
+                    // grip) — the accelerated form only ever ADDED acceleration*dt, so a zero input added nothing and
+                    // the character kept its horizontal velocity forever (slid as if the level were ice). The 3D
+                    // ThirdPerson sample uses this same StandardGroundMove_Interpolated for the same reason.
+                    CharacterControlUtilities2D.StandardGroundMove_Interpolated(
                         ref characterBody.RelativeVelocity,
-                        targetMove * GroundAcceleration,
-                        GroundMoveSpeed,
+                        targetMove * GroundMoveSpeed,
+                        GroundedMovementSharpness,
                         DeltaTime,
                         groundingUp,
-                        characterBody.GroundHit.Normal,
-                        forceNoMaxSpeedExcess: false);
+                        characterBody.GroundHit.Normal);
 
                     // Consume a latched jump: unground, cancel downward velocity, add the jump impulse.
                     if (control.JumpPressed)
@@ -206,6 +214,18 @@ namespace Zori.Entities.CharacterController2D.Samples
                         DeltaTime,
                         forceNoMaxSpeedExcess: false);
                 }
+
+                // Snapshot the was-grounded state AFTER the control/jump logic, so a jump (which set IsGrounded = false
+                // above) makes WasGroundedBeforeCharacterUpdate = false in the snapshot the processor's grounding
+                // callbacks read. This is the load-bearing ordering the default solve uses
+                // (KinematicCharacterPhysicsSolveSystem2D sets it after its own ungrounding, before building the
+                // snapshot): the solve's Default_IsGroundedOnHit only invokes ShouldPreventGroundingBasedOnVelocity —
+                // the guard that prevents re-snapping to the floor a jump is launching off — when WasGrounded is false.
+                // Setting it before the jump (the original sample bug) left it true, so the guard never fired, the
+                // grounding step re-grounded the character on the floor still directly below it (the MovePosition has a
+                // one-step latency, so the body has not physically risen yet), and the +Y jump velocity was projected
+                // onto the flat ground plane and zeroed — the character never left the ground.
+                characterBody.WasGroundedBeforeCharacterUpdate = characterBody.IsGrounded;
 
                 // --- The package solve over the sample processor -----------------------------------------------
 
