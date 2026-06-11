@@ -94,6 +94,44 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string BoxStepSlopeR2LParent = FixtureRoot + "/CC2D_BoxStepSlopeR2L.unity";
         public const string BoxStepSlopeR2LChild = FixtureRoot + "/CC2D_BoxStepSlopeR2L_Sub.unity";
 
+        // The LITERAL Platformer Station-2 cluster reproduced VERBATIM (same X spacing, same gaps, the same rotated
+        // 30° ramp box) so the step-next-to-slope junction the user reports is exercised with its real geometry,
+        // not the gap-removed synthetic above. Shifted −22 in X so StepLow's left face lands at X=2 and the spawn
+        // numbers stay small. Both approach directions, capsule (the platformer proxy).
+        public const string ClusterL2RParent = FixtureRoot + "/CC2D_ClusterL2R.unity";
+        public const string ClusterL2RChild = FixtureRoot + "/CC2D_ClusterL2R_Sub.unity";
+        public const string ClusterR2LParent = FixtureRoot + "/CC2D_ClusterR2L.unity";
+        public const string ClusterR2LChild = FixtureRoot + "/CC2D_ClusterR2L_Sub.unity";
+
+        // The capsule SPAWNED wedged in the diagonal-ramp + step corner (an initial overlap), so the per-step
+        // SolveOverlaps depenetration fires against a skewed-normal contact — the path c719d90 patched. This is the
+        // state the walk-in fixtures never reach (they approach cleanly); the user's "teleport/propel" is at a
+        // body already overlapping the diagonal beam at the step.
+        public const string CornerWedgeParent = FixtureRoot + "/CC2D_CornerWedge.unity";
+        public const string CornerWedgeChild = FixtureRoot + "/CC2D_CornerWedge_Sub.unity";
+
+        // The c719d90 suspect probe: a capsule resting ON a wide flat block but spawned with its centre well past
+        // the block's centre, so the body→character axis (the cast-back's separating-axis assumption) is nearly
+        // HORIZONTAL while the correct depenetration normal is VERTICAL (the block top). c719d90 scales the
+        // recovered depth by |dot(dirToCharacter, normal)| ≈ 0 there, so a real overlap is reported as ~zero depth
+        // and the character is NOT pushed out — it sinks. Drives a small +X and asserts no-penetration + no-fling.
+        public const string SkewBlockParent = FixtureRoot + "/CC2D_SkewBlock.unity";
+        public const string SkewBlockChild = FixtureRoot + "/CC2D_SkewBlock_Sub.unity";
+
+        // The STEEP-ramp depenetration probe — the real "X-crossed beam" trigger. A capsule grounded on flat floor
+        // is pushed up against a 75° OVER-LIMIT ramp (the Platformer SlopeOverLimit_75deg). Its surface normal is
+        // ~15° off horizontal, so the recovered overlap normal has dot(up, n) ≈ 0.26 — inside the reverse-projection
+        // amplification band (> MinDotRatioForVerticalDecollision 0.1), where DecollideFromHit divides the
+        // ReconstructOverlap depth by that small dot (clamped at depth*10). Combined with ReconstructOverlap's
+        // over-reported depth (the A/B-confirmed inflation), this is the multi-unit fling the user sees.
+        public const string SteepRampParent = FixtureRoot + "/CC2D_SteepRamp.unity";
+        public const string SteepRampChild = FixtureRoot + "/CC2D_SteepRamp_Sub.unity";
+
+        // Same steep-ramp geometry, but step handling OFF — the bisection probe for whether the spurious
+        // step-grounding on the over-limit ramp is what pumps the velocity.
+        public const string SteepRampNoStepParent = FixtureRoot + "/CC2D_SteepRampNoStep.unity";
+        public const string SteepRampNoStepChild = FixtureRoot + "/CC2D_SteepRampNoStep_Sub.unity";
+
         // ---- sensor / trigger pass-through fixture (the negative-space case: a kinematic character must NOT
         // ground on a sensor; it passes through and the trigger Begin fires) -------------------------------
         public const string SensorPassThroughParent = FixtureRoot + "/CC2D_SensorPassThrough.unity";
@@ -202,6 +240,14 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildCapsuleStepSlopeR2L();
             BuildBoxStepSlopeL2R();
             BuildBoxStepSlopeR2L();
+
+            // The literal Platformer Station-2 cluster (verbatim spacing + the rotated ramp), both directions.
+            BuildClusterL2R();
+            BuildClusterR2L();
+            BuildCornerWedge();
+            BuildSkewBlock();
+            BuildSteepRamp();
+            BuildSteepRampNoStep();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -535,6 +581,194 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     BuildStepSlopeWorld(root);
                     var c = AddBoxCharacter(root, R2LSpawnOnLedge(CharacterRadius));
                     EnableStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        // ---- the LITERAL Platformer cluster (verbatim geometry, both directions) -----------------------------
+        // PlatformerSceneBuilder.BuildChild Station-2, shifted −22 in X (so StepLow left face → X=2):
+        //   StepLow box (26,-0.7) size(4,2)  → top 0.3, X[24,28]  → shifted (4,-0.7), top 0.3, X[2,6]
+        //   StepHigh box (31,-0.6) size(4,3) → top 0.9, X[29,33]  → shifted (9,-0.6), top 0.9, X[7,11]
+        //   slope lip (34,0), len 12, 30° rising right            → shifted lip (12,0), the rotated ramp box
+        // The 1-unit GAPS the synthetic BuildStepSlopeWorld closes (X[6,7] between StepLow/StepHigh, X[11,12]
+        // between StepHigh and the slope lip) are PRESERVED here — that open floor at the bottom of the steps is
+        // exactly where the rotated ramp box's low end sweeps and the diagonal-normal contact the bug needs lives.
+        const float ClusterLipX = 12f;
+        const float ClusterRampLen = 12f;
+        const float ClusterSlopeDeg = 30f;
+
+        static void BuildClusterWorld(GameObject root)
+        {
+            // The continuous bottom floor (top Y=0) running under the whole cluster, including the 1-unit gaps
+            // between the steps and up to the slope lip — the Platformer course's sticky floor butts the cluster
+            // at floor level. X[−14, 12].
+            AddFloor(root, new Vector2(-1f, FloorTopY - 0.5f), new Vector2(26f, 1f)); // top 0, X[−14,12]
+            // StepLow: top 0.3, X[2,6] (mountable, ≤ 0.5 max).
+            AddFloor(root, new Vector2(4f, LowStepTopY - 1f), new Vector2(4f, 2f));
+            // StepHigh: top 0.9, X[7,11] (over the 0.5 max — a wall).
+            AddFloor(root, new Vector2(9f, HighStepTopY - 1.5f), new Vector2(4f, 3f));
+            // The 30° slope-within-limit, a thin box rotated about its lip (12,0) — the diagonal "beam" collider.
+            var ramp = AddFloor(
+                root,
+                new Vector2(ClusterLipX + ClusterRampLen * 0.5f, FloorTopY - 0.5f),
+                new Vector2(ClusterRampLen, 1f)
+            );
+            ramp.transform.RotateAround(
+                new Vector3(ClusterLipX, FloorTopY, 0f),
+                Vector3.forward,
+                ClusterSlopeDeg
+            );
+            // The flat ledge the ramp tops out onto (so an R2L start has a stable flat rest above the slope).
+            float topX = ClusterLipX + ClusterRampLen * Mathf.Cos(Mathf.Deg2Rad * ClusterSlopeDeg);
+            float topY = ClusterRampLen * Mathf.Sin(Mathf.Deg2Rad * ClusterSlopeDeg);
+            AddFloor(root, new Vector2(topX + 3f, topY - 0.5f), new Vector2(6f, 1f));
+        }
+
+        static void BuildClusterL2R()
+        {
+            BuildFixture(
+                ClusterL2RChild,
+                ClusterL2RParent,
+                root =>
+                {
+                    BuildClusterWorld(root);
+                    // Capsule on the bottom floor, a few units left of StepLow (X=2), walking +X into the cluster.
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(-2f, CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        static void BuildClusterR2L()
+        {
+            BuildFixture(
+                ClusterR2LChild,
+                ClusterR2LParent,
+                root =>
+                {
+                    BuildClusterWorld(root);
+                    // Capsule on the flat top ledge, walking −X down the slope into the step+slope corner.
+                    float topX =
+                        ClusterLipX + ClusterRampLen * Mathf.Cos(Mathf.Deg2Rad * ClusterSlopeDeg);
+                    float topY = ClusterRampLen * Mathf.Sin(Mathf.Deg2Rad * ClusterSlopeDeg);
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(topX + 1.5f, topY + CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        // The capsule spawned right at the step lip where the diagonal ramp beam meets the step top — overlapping
+        // both the step block and the rotated ramp box at once. This forces SolveOverlaps to reconstruct two
+        // overlaps with skewed normals on the first step (the c719d90 path) rather than approaching cleanly. The
+        // runtime gate drives a gentle +X and asserts the same bounded-delta / no-propulsion decision points: an
+        // initial-overlap depenetration must NOT fling or propel the character.
+        static void BuildCornerWedge()
+        {
+            BuildFixture(
+                CornerWedgeChild,
+                CornerWedgeParent,
+                root =>
+                {
+                    BuildClusterWorld(root);
+                    // Spawn ON the slope just above the lip (X=12, the slope rises right at 30°), so the capsule's
+                    // lower body overlaps the StepHigh block's right face (X=11) AND the diagonal ramp box at once.
+                    // slope Y at X≈12.3 ≈ (12.3−12)·tan30 ≈ 0.17 → spawn centre a touch into the corner.
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(12.0f, FloorTopY + CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        // The c719d90 skew probe. A WIDE low block (top 0.3, X[0,12], centre at X=6) and a capsule resting on top
+        // but SUNK ~0.2 into it and placed at X=11 — far to the right of the block centre (X=6), so the
+        // body→character axis is steeply HORIZONTAL while the correct push-out is straight UP (the block top
+        // normal). This is exactly the geometry c719d90's |dot(dirToCharacter, normal)| factor collapses to ~0.
+        static void BuildSkewBlock()
+        {
+            BuildFixture(
+                SkewBlockChild,
+                SkewBlockParent,
+                root =>
+                {
+                    // The wide block: top 0.3, X[0,12], centre (6, -0.7), size (12,2).
+                    AddFloor(root, new Vector2(6f, LowStepTopY - 1f), new Vector2(12f, 2f));
+                    // Capsule sunk into the block top (centre Y below the clean rest height by ~0.2) at X=11, far
+                    // right of the block centre X=6.
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(11f, LowStepTopY + CapsuleBottomReach - 0.2f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                    // Allow several depenetration iterations (default may be low); the gate asserts it pops out.
+                    BumpOverlapIterations(c, 8);
+                }
+            );
+        }
+
+        // The steep-ramp fling probe (the real "X-crossed beam"). Flat floor (top 0, X[−10,10]); a 75° over-limit
+        // ramp whose lip sits at (5,0) rising right, exactly the Platformer SlopeOverLimit_75deg. A capsule starts
+        // grounded on the flat floor just left of the lip and is driven +X INTO the steep ramp — it cannot climb it
+        // (over the 60° max), so it must collide-and-slide / depenetrate against the ramp's steep face while
+        // grounded. The recovered overlap normal there is ~15° off horizontal, in the reverse-projection
+        // amplification band. The gate asserts bounded per-step delta + no propulsion (the user's symptom).
+        static void BuildSteepRamp()
+        {
+            BuildFixture(
+                SteepRampChild,
+                SteepRampParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(20f, 1f)); // top 0, X[−10,10]
+                    // 75° ramp, a thin box rotated about its lip (5,0), len 7 (the Platformer dims).
+                    const float lipX = 5f;
+                    const float lenAlong = 7f;
+                    var ramp = AddFloor(
+                        root,
+                        new Vector2(lipX + lenAlong * 0.5f, FloorTopY - 0.5f),
+                        new Vector2(lenAlong, 1f)
+                    );
+                    ramp.transform.RotateAround(new Vector3(lipX, FloorTopY, 0f), Vector3.forward, 75f);
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(2f, CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                    BumpOverlapIterations(c, 8);
+                }
+            );
+        }
+
+        static void BuildSteepRampNoStep()
+        {
+            BuildFixture(
+                SteepRampNoStepChild,
+                SteepRampNoStepParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(20f, 1f));
+                    const float lipX = 5f;
+                    const float lenAlong = 7f;
+                    var ramp = AddFloor(
+                        root,
+                        new Vector2(lipX + lenAlong * 0.5f, FloorTopY - 0.5f),
+                        new Vector2(lenAlong, 1f)
+                    );
+                    ramp.transform.RotateAround(new Vector3(lipX, FloorTopY, 0f), Vector3.forward, 75f);
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(2f, CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    // Step handling OFF (the bisection variant).
+                    BumpOverlapIterations(c, 8);
                 }
             );
         }

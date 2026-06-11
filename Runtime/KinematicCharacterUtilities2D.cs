@@ -115,6 +115,19 @@ namespace Zori.Entities.CharacterController2D
             float rotationRadians,
             float2 direction,
             float distance
+        ) => CastProxyInto(ref baseContext, in proxy, origin, rotationRadians, direction, distance, baseContext.TmpQueryHits);
+
+        // The proxy cast against an explicit target hit list. The OUTER move/grounding/overlap iterations cast into
+        // TmpQueryHits (the list they then walk); the INNER step/depenetration helpers cast into TmpInnerQueryHits so
+        // they never clobber the outer iteration's list (see KinematicCharacterUpdateContext2D.TmpInnerQueryHits).
+        static int CastProxyInto(
+            ref KinematicCharacterUpdateContext2D baseContext,
+            in KinematicCharacterColliderProxy2D proxy,
+            float2 origin,
+            float rotationRadians,
+            float2 direction,
+            float distance,
+            NativeList<PhysicsQueryHit2D> hits
         )
         {
             if (proxy.Kind == PhysicsShape2DKind.Box)
@@ -127,7 +140,7 @@ namespace Zori.Entities.CharacterController2D
                     direction,
                     distance,
                     Constants.CharacterHitLayerMask,
-                    baseContext.TmpQueryHits
+                    hits
                 );
             }
 
@@ -141,7 +154,7 @@ namespace Zori.Entities.CharacterController2D
                     direction,
                     distance,
                     Constants.CharacterHitLayerMask,
-                    baseContext.TmpQueryHits
+                    hits
                 );
             }
 
@@ -152,7 +165,7 @@ namespace Zori.Entities.CharacterController2D
                 direction,
                 distance,
                 Constants.CharacterHitLayerMask,
-                baseContext.TmpQueryHits
+                hits
             );
         }
 
@@ -2037,18 +2050,22 @@ namespace Zori.Entities.CharacterController2D
         )
         {
             closestHit = default;
+            // INNER query: write into the inner scratch list so it never clobbers the outer TmpQueryHits the caller
+            // (GroundDetection's tolerance walk / IsGroundedOnSteps reached from a move/grounding filter loop) is
+            // still iterating. See KinematicCharacterUpdateContext2D.TmpInnerQueryHits.
+            var hits = baseContext.TmpInnerQueryHits;
             PhysicsQueries2D.Raycast(
                 baseContext.PhysicsWorld,
                 origin,
                 direction,
                 distance,
                 Constants.CharacterHitLayerMask,
-                baseContext.TmpQueryHits
+                hits
             );
 
-            for (int i = 0; i < baseContext.TmpQueryHits.Length; i++)
+            for (int i = 0; i < hits.Length; i++)
             {
-                PhysicsQueryHit2D hit = baseContext.TmpQueryHits[i];
+                PhysicsQueryHit2D hit = hits[i];
                 if (
                     hit.entity == characterEntity
                     || hit.entity == Entity.Null
@@ -2086,18 +2103,22 @@ namespace Zori.Entities.CharacterController2D
             closestHit = default;
             hitDistance = distance;
 
-            CastProxy(
+            // INNER query: cast into the inner scratch list (step-up forward/down casts and the obstruction check in
+            // DecollideFromHit run while an outer move/overlap loop is mid-iteration over TmpQueryHits).
+            var hits = baseContext.TmpInnerQueryHits;
+            CastProxyInto(
                 ref baseContext,
                 in colliderProxy,
                 origin,
                 rotationRadians,
                 direction,
-                distance
+                distance,
+                hits
             );
 
-            for (int i = 0; i < baseContext.TmpQueryHits.Length; i++)
+            for (int i = 0; i < hits.Length; i++)
             {
-                PhysicsQueryHit2D hit = baseContext.TmpQueryHits[i];
+                PhysicsQueryHit2D hit = hits[i];
                 if (
                     hit.entity == characterEntity
                     || hit.entity == Entity.Null
@@ -2963,11 +2984,30 @@ namespace Zori.Entities.CharacterController2D
             float steppedHeight = max(0f, hitHeight + Constants.CollisionOffset);
 
             // Slope + character-width consideration: a rounded base over an angled step top can rise more than the
-            // measured hit height, so add the extra height a forward slope of the step top would impose.
+            // measured hit height, so add the extra height a forward slope of the step top would impose. This is the
+            // gate that REJECTS a step-up onto a surface too steep to stand on: an over-limit slope produces a large
+            // tan(slopeRadians)·width extra height that pushes steppedHeight past maxStepHeight, so the step-up below
+            // does not engage (a character must not "step up" a 75° ramp it cannot climb — doing so lets the grounded
+            // magnitude-preserving reorient pump gravity into a lateral fling / propulsion).
+            //
+            // forwardSlopeCheckDirection MUST be the DOWN-SLOPE tangent of the step top (pointing INTO the slope,
+            // with the slope's vertical component), the 2D reduction of the 3D's
+            // -normalize(cross(cross(GroundingUp, stepHit.Normal), stepHit.Normal)) (REF/KinematicCharacterUtilities.cs:3998).
+            // Reducing that double-cross: cross(cross(up, n), n) = -cross(n, cross(up, n)), and
+            // ReorientVectorOnPlaneAlongDirection2D(up, n, up) IS cross(n, cross(up, n)) length-preserved, so the
+            // 3D's negated-normalized direction equals normalize(ReorientVectorOnPlaneAlongDirection2D(up, n, up)).
+            // The previous ProjectOnPlane(stepHit.Normal, GroundingUp) was the wrong reduction — it gives the
+            // normal's purely-horizontal component (pointing AWAY from the slope, no vertical part), so the
+            // down-probe sampled the flat floor behind the contact, found a 0° slope, added zero extra height, and
+            // the step-up wrongly engaged on the over-limit ramp.
             if (characterWidthForStepGroundingCheck > 0f)
             {
                 float2 forwardSlopeCheckDirection = normalizesafe(
-                    MathUtilities2D.ProjectOnPlane(stepHit.Normal, characterBody.GroundingUp)
+                    MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
+                        characterBody.GroundingUp,
+                        stepHit.Normal,
+                        characterBody.GroundingUp
+                    )
                 );
                 if (
                     RaycastClosestNonCharacter(

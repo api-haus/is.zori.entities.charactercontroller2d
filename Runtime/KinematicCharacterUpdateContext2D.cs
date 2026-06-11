@@ -85,6 +85,25 @@ namespace Zori.Entities.CharacterController2D
         public NativeList<PhysicsQueryHit2D> TmpQueryHits;
 
         /// <summary>
+        /// A SECOND reusable hit list for INNER queries issued while a routine is still iterating
+        /// <see cref="TmpQueryHits"/> — the step-grounding raycasts (<c>IsGroundedOnSteps</c>), the step-up proxy
+        /// casts (<c>CheckForSteppingUpHit</c>), the future-slope raycasts, and the depenetration cast-back
+        /// (<c>ReconstructOverlap</c>). These are reached from inside <c>GroundDetection</c>'s tolerance walk,
+        /// <c>MoveWithCollisions</c>'s filter loop, and <c>SolveOverlaps</c>'s overlap loop — all of which are
+        /// mid-iteration over <see cref="TmpQueryHits"/>. Without a second list the inner query CLEARS and refills
+        /// the very list the outer loop is walking, so the outer loop then reads the inner query's hits as if they
+        /// were its own (wrong fraction / normal / entity) and the grounding/step decision is corrupted — the
+        /// observed step-handling-only "climbs an over-limit ramp and is propelled" defect. The 3D avoids this for
+        /// free with its FOUR separate typed scratch lists (TmpColliderCastHits / TmpRaycastHits / TmpDistanceHits /
+        /// TmpRigidbodyIndexesProcessed); the 2D substrate's single <see cref="PhysicsQueryHit2D"/> hit type let the
+        /// port collapse them to one list, which is unsound for the re-entrant inner queries. This second list
+        /// restores the re-entrancy isolation the algorithm requires (the minimum split: an outer list and an inner
+        /// list, since the nesting is at most one level deep).
+        /// </summary>
+        [NativeDisableContainerSafetyRestriction]
+        public NativeList<PhysicsQueryHit2D> TmpInnerQueryHits;
+
+        /// <summary>
         /// Gets and stores the component lookups at the moment of the holding system's creation. Call from the
         /// system's <c>OnCreate</c>. Ports REF/KinematicCharacterUpdateContext.cs:62.
         /// </summary>
@@ -115,6 +134,7 @@ namespace Zori.Entities.CharacterController2D
             DynamicBodyDataLookup.Update(ref state);
 
             TmpQueryHits = default;
+            TmpInnerQueryHits = default;
         }
 
         /// <summary>
@@ -126,6 +146,11 @@ namespace Zori.Entities.CharacterController2D
             if (!TmpQueryHits.IsCreated)
             {
                 TmpQueryHits = new NativeList<PhysicsQueryHit2D>(24, Allocator.Temp);
+            }
+
+            if (!TmpInnerQueryHits.IsCreated)
+            {
+                TmpInnerQueryHits = new NativeList<PhysicsQueryHit2D>(24, Allocator.Temp);
             }
         }
     }

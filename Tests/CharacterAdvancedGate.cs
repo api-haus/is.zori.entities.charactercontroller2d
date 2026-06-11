@@ -901,5 +901,233 @@ namespace Zori.Entities.CharacterController2D.Tests
                 $"the capsule must keep walking across the step (not stick at the edge); {startXAfterMount} -> {Position().x}");
             Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN during the capsule step stand");
         }
+
+        // ---- step+slope cluster: per-step horizontal-delta + no-propulsion gate (the user-reported bug) ------
+        //
+        // The user reports a CAPSULE walking the Platformer Station-2 step+slope cluster (StepLow next to a rotated
+        // ramp "beam") is "teleported" laterally backward, and sometimes RANDOMLY PROPELLED. The prior c719d90 fix
+        // (clamping the D2 depenetration depth by |dot(dirToCharacter, normal)|) did NOT change the gameplay.
+        //
+        // This gate drives the LITERAL cluster geometry (CC2D_ClusterL2R / R2L, verbatim Platformer spacing incl.
+        // the open-floor gaps the synthetic StepSlope fixtures closed) with the Platformer sample's own GroundMove /
+        // AirMove dynamics — NOT a forced constant velocity, which masks the carried-velocity / corner-overlap
+        // interaction the bug needs. It is built from the solve's decision points (negative-space point 6):
+        //
+        //   1. PER-STEP HORIZONTAL DELTA is bounded. A correct step-up advances at most forwardStepHitDistance per
+        //      step (a fraction of one fixed-step move); the cap clamps every X delta to a small multiple of the
+        //      max per-step move (groundSpeed * dt ≈ 0.117). A lateral fling/teleport blows straight past it.
+        //   2. NO PROPULSION: per-step SPEED never exceeds the driven ground speed by more than a small margin. The
+        //      solve never ADDS energy — projection only ever shortens velocity — so a step where |v| jumps above
+        //      the input speed is anomalous (the "randomly propels" symptom).
+        //   3. NO backward overshoot past the start, and net forward progress (it traverses, not flung off).
+        //   4. NO vertical fling off the cluster, no NaN.
+        //
+        // RED on the bug (a single-frame multi-unit X lurch / a velocity spike); GREEN after the fix. Both
+        // directions (the asymmetry) + the plain-step control (CC2D_CapsuleStepLow, which works) for contrast.
+
+        const float ClusterGroundSpeed = 7f; // the Platformer GroundMoveSpeed
+        const float ClusterGroundSharpness = 90f;
+        const float ClusterGravity = 20f;
+        const float ClusterAirSharpness = 30f;
+        // A correct per-step horizontal advance is at most one fixed-step ground move (7 * 1/60 ≈ 0.117). Allow a
+        // small multiple to absorb the swept-MovePosition catch-up and the one-step D3 latency; a lateral teleport
+        // (the bug overshot ~2.3 u in a single step) is far past this.
+        const float MaxPerStepDx = 3f * ClusterGroundSpeed * FixedDt; // ≈ 0.35
+        // No-propulsion: the solve must never raise speed above the driven ground speed by more than a margin
+        // (gravity can add a little vertical while airborne; the margin covers one step of gravity + projection).
+        const float MaxAnomalousSpeed = ClusterGroundSpeed + ClusterGravity * FixedDt + 1.5f;
+
+        [UnityTest]
+        public IEnumerator Cluster_CapsuleWalksRight_BoundedDelta_NoPropulsion() =>
+            ClusterTrace("CC2D_ClusterL2R", +1f);
+
+        [UnityTest]
+        public IEnumerator Cluster_CapsuleWalksLeft_BoundedDelta_NoPropulsion() =>
+            ClusterTrace("CC2D_ClusterR2L", -1f);
+
+        // Plain-step control: walks +X up a single low step on a long floor (the step feature the user says "works").
+        // 120 steps ≈ 14 u of travel, well inside the floor span, so it does NOT run off the edge (a free-fall
+        // off the floor edge would itself spike speed — a fixture artifact, not the controller).
+        [UnityTest]
+        public IEnumerator Cluster_PlainStepControl_CapsuleWalksRight_BoundedDelta() =>
+            ClusterTrace("CC2D_CapsuleStepLow", +1f, 120);
+
+        // The initial-overlap corner wedge: the capsule spawned overlapping the diagonal ramp beam AND the step at
+        // once, so the per-step depenetration (the c719d90 path) fires against skewed normals. A correct decollision
+        // pushes out a small amount and never propels.
+        [UnityTest]
+        public IEnumerator Cluster_CornerWedge_DepenetratesWithoutPropulsion() =>
+            ClusterTrace("CC2D_CornerWedge", +1f, 120);
+
+        // The steep-ramp fling probe — the real "X-crossed beam": a grounded capsule driven +X into a 75° over-limit
+        // ramp it cannot climb, so it depenetrates against the steep face whose recovered normal is in the
+        // reverse-projection amplification band. RED on the multi-unit fling/propulsion; GREEN after the fix.
+        // Driven into an un-climbable wall, the swept MovePosition resolves the contact with a single bounded
+        // bounce-back (~0.38 u) as it clamps against the face — a legitimate collide-and-slide retreat, not the
+        // multi-unit teleport. So the per-step bound is relaxed to 0.5 here; the load-bearing bug detectors stay
+        // strict: NO propulsion (speed never exceeds the input), NO vertical fling, NO backward overshoot past start.
+        [UnityTest]
+        public IEnumerator SteepRamp_CapsuleDrivenIntoOverLimitRamp_NoFling_NoPropulsion() =>
+            ClusterTrace("CC2D_SteepRamp", +1f, 160, requireProgress: false, maxPerStepDx: 0.5f);
+
+        // Bisection: same steep ramp, step handling OFF. Behaves identically to the step-on case after the fix
+        // (the re-entrancy corruption is what made step-on differ).
+        [UnityTest]
+        public IEnumerator SteepRampNoStep_CapsuleDrivenIntoOverLimitRamp_NoFling_NoPropulsion() =>
+            ClusterTrace("CC2D_SteepRampNoStep", +1f, 160, requireProgress: false, maxPerStepDx: 0.5f);
+
+        // The c719d90 skew probe: a capsule sunk into a wide block top, placed far from the block centre so the
+        // body→character axis is near-horizontal while the correct push-out is straight up. c719d90's
+        // |dot(dirToCharacter, normal)| factor collapses the recovered depth to ~0 here, so the character is NOT
+        // depenetrated — it stays sunk (PenetratesWorld stays true). A correct depenetration pops it up to the clean
+        // rest height within a few steps. RED on the c719d90 skew-collapse, GREEN after the fix.
+        [UnityTest]
+        public IEnumerator SkewBlock_SunkCapsule_DepenetratesUpToCleanRest()
+        {
+            yield return LoadAndPrepare("CC2D_SkewBlock", 1);
+
+            var e = TheCharacter();
+            var up = new float2(0f, 1f);
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("[SKEW-BLOCK] depenetration trace (capsule sunk in a wide block top, off-centre):");
+
+            // Drive zero input; depenetration alone must lift the sunk capsule to the clean rest height.
+            float expectedRestY = CharacterFixtureBuilderConstants.LowStepTopY
+                + CharacterFixtureBuilderConstants.CapsuleBottomReach; // 0.3 + 1.0 = 1.3
+            var settled = false;
+            for (var i = 0; i < 90; i++)
+            {
+                DriveOneStep(moveX: 0f, up);
+                var p = Position();
+                var pen = CapsulePenetratesWorld(e, p);
+                if (i < 12 || (i % 15) == 0)
+                    sb.AppendLine($"  step {i,2}: y={p.y:F3} (expect ≥ {expectedRestY - 0.1f:F3}) penetrates={pen} grounded={Body().IsGrounded}");
+                if (!pen && p.y >= expectedRestY - 0.1f)
+                {
+                    settled = true;
+                    sb.AppendLine($"  settled clean at step {i}, y={p.y:F3}");
+                    break;
+                }
+            }
+            UnityEngine.Debug.Log(sb.ToString());
+
+            Assert.IsTrue(settled,
+                $"the sunk capsule must depenetrate up to the clean rest height ~{expectedRestY:F2} and stop "
+                    + $"penetrating, but it stayed sunk/penetrating (final y={Position().y:F3}) — the c719d90 "
+                    + "|dot(dirToCharacter, normal)| factor collapses the recovered depth on this skewed-axis contact.");
+        }
+
+        // Drives the character with the Platformer GroundMove/AirMove dynamics across the cluster, asserting the
+        // per-step horizontal delta + no-propulsion + no-overshoot decision-point bounds at EVERY fixed step. Logs
+        // a compact trajectory so the OBSERVED failure (the lateral delta + any speed spike) is visible in the log.
+        IEnumerator ClusterTrace(string sceneName, float moveX, int driveSteps = 260, bool requireProgress = true, float maxPerStepDx = MaxPerStepDx)
+        {
+            yield return LoadAndPrepare(sceneName, 1);
+
+            // Settle onto the starting surface.
+            var up = new float2(0f, 1f);
+            for (var s = 0; s < 30; s++)
+            {
+                DriveOneStep(moveX: 0f, up);
+            }
+            Assert.IsTrue(Body().IsGrounded, $"{sceneName}: character must settle grounded before walking");
+
+            var startX = Position().x;
+            var startY = Position().y;
+            var extremeBack = startX;
+            var maxY = startY;
+            var worstDx = 0f;
+            var worstStep = -1;
+            var worstSpeed = 0f;
+            var prev = Position();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[CLUSTER-TRACE {sceneName} moveX={moveX}] start=({startX:F3},{startY:F3})");
+
+            for (var i = 0; i < driveSteps; i++)
+            {
+                DriveOneStep(moveX, up);
+
+                var p = Position();
+                var b = Body();
+                var dx = p.x - prev.x;
+                var dy = p.y - prev.y;
+                var speed = length(b.RelativeVelocity);
+
+                Assert.IsFalse(float.IsNaN(p.x) || float.IsNaN(p.y), $"{sceneName}: NaN at step {i}");
+
+                if (abs(dx) > abs(worstDx)) { worstDx = dx; worstStep = i; }
+                worstSpeed = max(worstSpeed, speed);
+                if (moveX > 0f) extremeBack = min(extremeBack, p.x);
+                else extremeBack = max(extremeBack, p.x);
+                maxY = max(maxY, p.y);
+
+                // Log the corner region densely (where the bug lives) and any anomalous step.
+                if (abs(dx) > maxPerStepDx || speed > MaxAnomalousSpeed || (i % 20) == 0)
+                {
+                    sb.AppendLine(
+                        $"  step {i,3}: pos=({p.x:F3},{p.y:F3}) dx={dx:+0.000;-0.000} dy={dy:+0.000;-0.000} "
+                            + $"|v|={speed:F3} v=({b.RelativeVelocity.x:+0.00;-0.00},{b.RelativeVelocity.y:+0.00;-0.00}) "
+                            + $"grounded={b.IsGrounded} gN=({b.GroundHit.Normal.x:+0.00;-0.00},{b.GroundHit.Normal.y:+0.00;-0.00})");
+                }
+                prev = p;
+            }
+
+            sb.AppendLine(
+                $"  END pos=({Position().x:F3},{Position().y:F3}) extremeBack={extremeBack:F3} maxY={maxY:F3} "
+                    + $"worstDx={worstDx:F3}@{worstStep} worstSpeed={worstSpeed:F3} "
+                    + $"(maxPerStepDx={maxPerStepDx:F3}, MaxAnomalousSpeed={MaxAnomalousSpeed:F3})");
+            UnityEngine.Debug.Log(sb.ToString());
+
+            // Decision-point assertions.
+            Assert.LessOrEqual(abs(worstDx), maxPerStepDx,
+                $"{sceneName}: per-step horizontal delta {worstDx:F3} at step {worstStep} exceeds the bound "
+                    + $"{maxPerStepDx:F3} — a lateral fling/teleport. A correct step-up advances ≤ one fixed-step move.");
+            Assert.LessOrEqual(worstSpeed, MaxAnomalousSpeed,
+                $"{sceneName}: peak speed {worstSpeed:F3} exceeds {MaxAnomalousSpeed:F3} — the solve PROPELLED the "
+                    + "character (it must never add energy; projection only shortens velocity).");
+            Assert.Less(maxY, startY + 6f,
+                $"{sceneName}: flung vertically (maxY {maxY:F3} vs start {startY:F3}).");
+            if (moveX > 0f)
+                Assert.GreaterOrEqual(extremeBack, startX - 0.25f,
+                    $"{sceneName}: jumped BACKWARD (−X) past start while walking +X: start {startX:F3}, furthest back {extremeBack:F3}");
+            else
+                Assert.LessOrEqual(extremeBack, startX + 0.25f,
+                    $"{sceneName}: jumped BACKWARD (+X) past start while walking −X: start {startX:F3}, furthest back {extremeBack:F3}");
+
+            var endX = Position().x;
+            if (requireProgress)
+            {
+                if (moveX > 0f)
+                    Assert.Greater(endX, startX + 1f, $"{sceneName}: must make forward (+X) progress: {startX:F3} -> {endX:F3}");
+                else
+                    Assert.Less(endX, startX - 1f, $"{sceneName}: must make forward (−X) progress: {startX:F3} -> {endX:F3}");
+            }
+        }
+
+        // One fixed step driven by the Platformer GroundMove / AirMove dynamics (interpolated ground-line velocity
+        // when grounded; gravity + interpolated horizontal when airborne), then ticks the fixed group.
+        void DriveOneStep(float moveX, float2 up)
+        {
+            var e = TheCharacter();
+            var b = _world.EntityManager.GetComponentData<KinematicCharacterBody2D>(e);
+            if (b.IsGrounded)
+            {
+                var v = b.RelativeVelocity;
+                CharacterControlUtilities2D.StandardGroundMove_Interpolated(
+                    ref v, new float2(moveX * ClusterGroundSpeed, 0f), ClusterGroundSharpness, FixedDt, up,
+                    b.GroundHit.Normal);
+                b.RelativeVelocity = v;
+            }
+            else
+            {
+                var v = b.RelativeVelocity;
+                v += new float2(0f, -ClusterGravity) * FixedDt;
+                v.x = lerp(v.x, moveX * ClusterGroundSpeed, saturate(ClusterAirSharpness * FixedDt));
+                b.RelativeVelocity = v;
+            }
+            _world.EntityManager.SetComponentData(e, b);
+            _fixedGroup.Update();
+        }
     }
 }
