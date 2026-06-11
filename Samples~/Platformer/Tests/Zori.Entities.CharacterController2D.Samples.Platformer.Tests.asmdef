@@ -1,0 +1,28 @@
+{
+  "name": "Zori.Entities.CharacterController2D.Samples.Platformer.Tests",
+  "rootNamespace": "Zori.Entities.CharacterController2D.Samples.Platformer.Tests",
+  "references": [
+    "Zori.Entities.CharacterController2D.Samples.Platformer",
+    "Zori.Entities.CharacterController2D.Runtime",
+    "Zori.Entities.Physics2D.Runtime",
+    "Unity.Entities",
+    "Unity.Entities.Hybrid",
+    "Unity.Transforms",
+    "Unity.Mathematics",
+    "Unity.Collections",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

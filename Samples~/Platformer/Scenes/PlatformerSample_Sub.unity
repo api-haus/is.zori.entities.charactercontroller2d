@@ -224,7 +224,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 97932859}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 867cdc7456a4f75328d19a764a799f20, type: 3}
+  m_Script: {fileID: 800000001}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.FrictionModifier2DAuthoring
   m_Friction: 3
@@ -316,7 +316,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 98364556}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0774b29173ffc40d3ac5c94411eec094, type: 3}
+  m_Script: {fileID: 800000002}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.PlatformerCharacterAuthoring
   m_GravityMagnitude: 20
@@ -422,7 +422,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 148004324}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c6202e5eecd08c695ac606124b4177f1, type: 3}
+  m_Script: {fileID: 800000003}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.Pushable2DAuthoring
 --- !u!114 &148004326
@@ -543,7 +543,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 283200363}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 867cdc7456a4f75328d19a764a799f20, type: 3}
+  m_Script: {fileID: 800000001}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.FrictionModifier2DAuthoring
   m_Friction: 0.15
@@ -870,7 +870,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 666653376}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 416e62b277da5c4e0adfbabc68711250, type: 3}
+  m_Script: {fileID: 800000004}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.MovingPlatform2DAuthoring
   m_TravelHalfExtent: {x: 4, y: 0}
@@ -993,7 +993,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 760303527}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 653067fcb160649efbd5a77dd5f1115e, type: 3}
+  m_Script: {fileID: 800000005}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.Teleporter2DAuthoring
   m_Destination: {fileID: 1102229958}
@@ -1162,7 +1162,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 991076596}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c6202e5eecd08c695ac606124b4177f1, type: 3}
+  m_Script: {fileID: 800000003}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.Pushable2DAuthoring
 --- !u!114 &991076598
@@ -1283,7 +1283,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1046109315}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 867cdc7456a4f75328d19a764a799f20, type: 3}
+  m_Script: {fileID: 800000001}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.FrictionModifier2DAuthoring
   m_Friction: 1
@@ -1375,7 +1375,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1075346943}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1cd20a9f976da340bd5f364d9949bb2, type: 3}
+  m_Script: {fileID: 800000006}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.WindZone2DAuthoring
   m_Force: {x: 2, y: 14}
@@ -1575,7 +1575,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1493687935}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 416e62b277da5c4e0adfbabc68711250, type: 3}
+  m_Script: {fileID: 800000004}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.MovingPlatform2DAuthoring
   m_TravelHalfExtent: {x: 0, y: 3}
@@ -1698,7 +1698,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1729313485}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 454837ae9a2430c3884042e1c016159b, type: 3}
+  m_Script: {fileID: 800000007}
   m_Name: 
   m_EditorClassIdentifier: Zori.Entities.CharacterController2D.Samples.Platformer::Zori.Entities.CharacterController2D.Samples.Platformer.RopeAnchor2DAuthoring
 --- !u!114 &1729313487
@@ -1861,3 +1861,108 @@ SceneRoots:
   - {fileID: 1102229959}
   - {fileID: 760303530}
   - {fileID: 98364559}
+--- !u!115 &800000001
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: FrictionModifier2DAuthoring
+  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
+  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
+--- !u!115 &800000002
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: PlatformerCharacterAuthoring
+  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
+  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
+--- !u!115 &800000003
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: Pushable2DAuthoring
+  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
+  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
+--- !u!115 &800000004
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: MovingPlatform2DAuthoring
+  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
+  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
+--- !u!115 &800000005
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: Teleporter2DAuthoring
+  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
+  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
+--- !u!115 &800000006
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: WindZone2DAuthoring
+  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
+  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
+--- !u!115 &800000007
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: RopeAnchor2DAuthoring
+  m_Namespace: Zori.Entities.CharacterController2D.Samples.Platformer
+  m_AssemblyName: Zori.Entities.CharacterController2D.Samples.Platformer
