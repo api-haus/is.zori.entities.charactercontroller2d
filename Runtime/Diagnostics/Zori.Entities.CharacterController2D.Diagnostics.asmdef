@@ -1,0 +1,21 @@
+{
+  "name": "Zori.Entities.CharacterController2D.Diagnostics",
+  "rootNamespace": "Zori.Entities.CharacterController2D.Diagnostics",
+  "references": [
+    "Zori.Entities.CharacterController2D.Runtime",
+    "Zori.Entities.Physics2D.Runtime",
+    "Unity.Entities",
+    "Unity.Transforms",
+    "Unity.Collections",
+    "Unity.Mathematics"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
