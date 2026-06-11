@@ -75,6 +75,25 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string CapsuleWallParent = FixtureRoot + "/CC2D_CapsuleWall.unity";
         public const string CapsuleWallChild = FixtureRoot + "/CC2D_CapsuleWall_Sub.unity";
 
+        // ---- step + ADJACENT-SLOPE fixtures (the directional step-up lateral-jump regression) --------------
+        // A low step (top 0.3, mountable) whose TOP-RIGHT corner an upward slope rises from — the
+        // Platformer course's step-next-to-slope cluster. The character is spawned on the LOWER floor to the
+        // LEFT (walks +X up onto the step, with the slope rising off the step's far edge) in the *L2R fixture,
+        // and on the slope/ledge to the RIGHT (walks −X down onto the step) in the *R2L fixture, so the same
+        // step+slope junction is approached from both directions. Capsule + box variants of each.
+        public const string CapsuleStepSlopeL2RParent =
+            FixtureRoot + "/CC2D_CapsuleStepSlopeL2R.unity";
+        public const string CapsuleStepSlopeL2RChild =
+            FixtureRoot + "/CC2D_CapsuleStepSlopeL2R_Sub.unity";
+        public const string CapsuleStepSlopeR2LParent =
+            FixtureRoot + "/CC2D_CapsuleStepSlopeR2L.unity";
+        public const string CapsuleStepSlopeR2LChild =
+            FixtureRoot + "/CC2D_CapsuleStepSlopeR2L_Sub.unity";
+        public const string BoxStepSlopeL2RParent = FixtureRoot + "/CC2D_BoxStepSlopeL2R.unity";
+        public const string BoxStepSlopeL2RChild = FixtureRoot + "/CC2D_BoxStepSlopeL2R_Sub.unity";
+        public const string BoxStepSlopeR2LParent = FixtureRoot + "/CC2D_BoxStepSlopeR2L.unity";
+        public const string BoxStepSlopeR2LChild = FixtureRoot + "/CC2D_BoxStepSlopeR2L_Sub.unity";
+
         // ---- sensor / trigger pass-through fixture (the negative-space case: a kinematic character must NOT
         // ground on a sensor; it passes through and the trigger Begin fires) -------------------------------
         public const string SensorPassThroughParent = FixtureRoot + "/CC2D_SensorPassThrough.unity";
@@ -177,6 +196,12 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildCapsuleGround();
             BuildCapsuleWall();
             BuildCapsuleStepLow();
+
+            // Step + adjacent-slope, both approach directions, capsule + box (the directional step-up regression).
+            BuildCapsuleStepSlopeL2R();
+            BuildCapsuleStepSlopeR2L();
+            BuildBoxStepSlopeL2R();
+            BuildBoxStepSlopeR2L();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -394,6 +419,122 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                         new Vector3(0f, CapsuleBottomReach + 0.05f, 0f)
                     );
                     EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        // ---- step + ADJACENT-SLOPE fixtures (the directional step-up lateral-jump regression) --------------
+        // The LITERAL Platformer Station-2 step+slope cluster (PlatformerSceneBuilder.BuildChild), shifted −24 in
+        // X so StepLow's left face lands near X=0 and the spawn numbers stay small. Reproduced verbatim so the
+        // user-observed left-to-right lateral jump at the step-next-to-slope spot is exercised here, not a guess:
+        //   Platformer StepLow box (26,-0.7) size(4,2)  → top 0.3, X[24,28]   → shifted (2,-0.7),  top 0.3, X[0,4]
+        //   Platformer StepHigh box (31,-0.6) size(4,3) → top 0.9, X[29,33]   → shifted (7,-0.6),  top 0.9, X[5,9]
+        //   Platformer slope lip (34,0), len 12, 30°    → rising right        → shifted lip (10,0), rising right
+        const float StepSlopeDeg = 30f; // within the 60° MaxGroundedSlopeAngle → a climbable slope
+        const float StepSlopeApproachX = -3f; // L2R spawn (on the approach floor, left of StepLow)
+        const float StepSlopeSlopeLipX = 10f;
+
+        static void BuildStepSlopeWorld(GameObject root)
+        {
+            // Approach floor (top 0) under the spawn, up to StepLow's left face X=0. Platformer sticky floor X[14,24].
+            AddFloor(root, new Vector2(-7f, FloorTopY - 0.5f), new Vector2(14f, 1f)); // top 0, X[-14,0]
+            // StepLow: top LowStepTopY=0.3, X[0,4] (mountable, ≤ 0.5 max).
+            AddFloor(root, new Vector2(2f, LowStepTopY - 1f), new Vector2(4f, 2f)); // top 0.3, X[0,4]
+            // StepHigh: top 0.9, X[5,9] (over the 0.5 max — a wall the gate-3 high-step test proves is not climbed).
+            AddFloor(root, new Vector2(7f, HighStepTopY - 1.5f), new Vector2(4f, 3f)); // top 0.9, X[5,9]
+            // The 30° slope-within-limit, lip at (StepSlopeSlopeLipX, 0) at FLOOR level, len 12, rising right —
+            // exactly the Platformer AddRamp (a thin box rotated about the lip). A short floor bridges StepHigh's
+            // right edge (X=9) to the slope lip (X=10) so the slope lip is a step-up off flat floor as authored.
+            AddFloor(root, new Vector2(9.5f, FloorTopY - 0.5f), new Vector2(1f, 1f)); // top 0, X[9,10]
+            const float lengthAlong = 12f;
+            var ramp = AddFloor(
+                root,
+                new Vector2(StepSlopeSlopeLipX + lengthAlong * 0.5f, FloorTopY - 0.5f),
+                new Vector2(lengthAlong, 1f)
+            );
+            ramp.transform.RotateAround(
+                new Vector3(StepSlopeSlopeLipX, FloorTopY, 0f),
+                Vector3.forward,
+                StepSlopeDeg
+            );
+            // A flat top LEDGE where the slope tops out (so the −X-walking character has a stable flat start, then
+            // walks DOWN the slope into the step+slope corner — rather than spawning wedged on the slope itself).
+            // The ramp top at X = StepSlopeSlopeLipX + lengthAlong*cos(30) reaches Y = lengthAlong*sin(30) = 6; put
+            // a small flat ledge butted at the ramp's high corner.
+            float topX = StepSlopeSlopeLipX + lengthAlong * Mathf.Cos(Mathf.Deg2Rad * StepSlopeDeg);
+            float topY = lengthAlong * Mathf.Sin(Mathf.Deg2Rad * StepSlopeDeg);
+            AddFloor(root, new Vector2(topX + 3f, topY - 0.5f), new Vector2(6f, 1f));
+        }
+
+        // The flat slope-top ledge spawn (top Y, a little right of the ramp's high corner) for the −X-walking
+        // characters: a stable flat rest from which they walk DOWN the slope into the step+slope corner.
+        static Vector3 R2LSpawnOnLedge(float bottomReach)
+        {
+            const float lengthAlong = 12f;
+            float topX = StepSlopeSlopeLipX + lengthAlong * Mathf.Cos(Mathf.Deg2Rad * StepSlopeDeg);
+            float topY = lengthAlong * Mathf.Sin(Mathf.Deg2Rad * StepSlopeDeg);
+            return new Vector3(topX + 1.5f, topY + bottomReach + 0.05f, 0f);
+        }
+
+        static void BuildCapsuleStepSlopeL2R()
+        {
+            BuildFixture(
+                CapsuleStepSlopeL2RChild,
+                CapsuleStepSlopeL2RParent,
+                root =>
+                {
+                    BuildStepSlopeWorld(root);
+                    // Capsule on the approach floor, left of StepLow, walking +X into the step+slope cluster.
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(StepSlopeApproachX, CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        static void BuildCapsuleStepSlopeR2L()
+        {
+            BuildFixture(
+                CapsuleStepSlopeR2LChild,
+                CapsuleStepSlopeR2LParent,
+                root =>
+                {
+                    BuildStepSlopeWorld(root);
+                    var c = AddCapsuleCharacter(root, R2LSpawnOnLedge(CapsuleBottomReach));
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        static void BuildBoxStepSlopeL2R()
+        {
+            BuildFixture(
+                BoxStepSlopeL2RChild,
+                BoxStepSlopeL2RParent,
+                root =>
+                {
+                    BuildStepSlopeWorld(root);
+                    var c = AddBoxCharacter(
+                        root,
+                        new Vector3(StepSlopeApproachX, CharacterRadius + 0.05f, 0f)
+                    );
+                    EnableStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        static void BuildBoxStepSlopeR2L()
+        {
+            BuildFixture(
+                BoxStepSlopeR2LChild,
+                BoxStepSlopeR2LParent,
+                root =>
+                {
+                    BuildStepSlopeWorld(root);
+                    var c = AddBoxCharacter(root, R2LSpawnOnLedge(CharacterRadius));
+                    EnableStepHandling(c, maxStepHeight: 0.5f);
                 }
             );
         }

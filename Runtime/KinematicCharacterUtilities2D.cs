@@ -1530,6 +1530,20 @@ namespace Zori.Entities.CharacterController2D
                 // character center is PAST first contact:
                 float centerTravelToTouch = distanceToContact - boundingRadius;
                 overlapDepth = max(0f, clearance - centerTravelToTouch);
+
+                // Project the along-axis overlap onto the TRUE contact normal. The cast-back assumes
+                // dirToCharacter is the separating axis — valid for a circle/box/capsule proxy against a convex
+                // body whose centre lies along that axis (the recovered depth then equals the MTV). Against a LARGE
+                // flat-faced body whose origin sits far from the contact — a tall step block beside a character
+                // resting on an adjacent slope — the body→character axis is badly skewed from the contact normal,
+                // and the swept cast-back along it reports a grazing/resting contact as a multi-unit penetration.
+                // Scaling by |dot(dirToCharacter, normal)| reduces the axis-aligned overlap to its component along
+                // the real normal: an aligned contact (the normal grounding / resting / wall case, dot≈1) is left
+                // unchanged, while a badly-skewed one collapses toward zero. Without this the inflated depth fed the
+                // grounded vertical-decollide's reverse-projection (decollisionDistance / dot(up, normal)) and flung
+                // the character several units up-and-back — but only from the approach direction that wedged it at
+                // the step/slope corner with a skewed centre offset, which is why the lateral jump was directional.
+                overlapDepth *= abs(dot(dirToCharacter, overlapNormal));
                 return true;
             }
 

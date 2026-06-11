@@ -679,5 +679,85 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                     + "maximumLinearSpeed clamp, so distance does not matter."
             );
         }
+
+        // ---- step + adjacent-slope DIRECTIONAL regression (the lateral-jump fix) ----------------------------
+        //
+        // The real course Station-2 step+slope cluster — StepLow (26,-0.7) top 0.3 X[24,28], StepHigh (31,-0.6) top
+        // 0.9 X[29,33], the slope-within-limit lip (34,0) rising right at 30° — is exactly the user-reported spot
+        // where the capsule was "teleported" laterally instead of traversing it. The bug was directional (one
+        // approach direction wedged the capsule at the step/slope corner with a body→character axis badly skewed
+        // from the contact normal, so the D2 depenetration's cast-back over-reported a grazing contact as a multi-
+        // unit overlap and the grounded vertical-decollide flung the character up-and-back). Root cause + fix:
+        // KinematicCharacterUtilities2D.ReconstructOverlap (project the recovered depth onto the true normal).
+        //
+        // This gate drives the REAL course capsule across the cluster in BOTH directions and asserts it never
+        // jumps backward past its start (the lateral teleport) and is never flung vertically off the cluster.
+        // Pre-fix the −X (down-the-slope) run jumped ~2.3 u backward + ~4.5 u up in a single fixed step at the
+        // corner; this is RED on that.
+
+        [UnityTest]
+        public IEnumerator StepSlope_CapsuleWalksAcrossCluster_LeftToRight_NoLateralJump()
+        {
+            yield return LoadCourse();
+            // Place on the sticky floor (top Y=0) a few units left of StepLow's left face (X=24), drive +X.
+            yield return StepSlopeNoLateralJump(new float2(21f, 1.1f), +1f);
+        }
+
+        [UnityTest]
+        public IEnumerator StepSlope_CapsuleWalksAcrossCluster_RightToLeft_NoLateralJump()
+        {
+            yield return LoadCourse();
+            // Place up the slope-within-limit (lip 34, rising right; at X=40 the slope top Y ≈ (40−34)·tan30 ≈ 3.46)
+            // and drive −X down the slope and back across the steps — the direction that exhibited the jump.
+            yield return StepSlopeNoLateralJump(new float2(40f, 3.46f + 1.1f), -1f);
+        }
+
+        IEnumerator StepSlopeNoLateralJump(float2 placeAt, float moveX)
+        {
+            PlaceCharacter(placeAt);
+            Step(25); // settle onto the surface
+            Assert.IsTrue(Body().IsGrounded, "character must settle grounded on the step+slope cluster before walking");
+
+            var startX = Position().x;
+            // The backward bound: walking +X the character must never cross more than a small tolerance below its
+            // start; walking −X never above start+tol. A backward overshoot is the lateral teleport (it jumped ~2.3 u).
+            const float backTol = 0.25f;
+            // The cluster + slope top stays well under this; the bug flung the character to Y > 5 in one step.
+            const float maxReachableY = 9f;
+            var extremeBack = startX;
+            var prevX = startX;
+            for (var i = 0; i < 200; i++)
+            {
+                Step(1, moveX: moveX);
+                var p = Position();
+                Assert.IsFalse(float.IsNaN(p.x) || float.IsNaN(p.y), $"no NaN at step {i}");
+                var stepDx = p.x - prevX;
+                // No multi-unit single-step jump in EITHER axis (the teleport was a single-frame lurch).
+                Assert.Less(abs(stepDx), 1.0f,
+                    $"single-step X lurch of {stepDx} at step {i} (pos {p}) — the lateral teleport");
+                Assert.Less(p.y, maxReachableY,
+                    $"character flung vertically off the cluster at step {i} (y={p.y}) — the up-fling of the lateral jump");
+                if (moveX > 0f)
+                    extremeBack = min(extremeBack, p.x);
+                else
+                    extremeBack = max(extremeBack, p.x);
+                prevX = p.x;
+            }
+
+            if (moveX > 0f)
+                Assert.GreaterOrEqual(extremeBack, startX - backTol,
+                    $"character jumped BACKWARD (−X) past its start while walking +X: start {startX}, furthest back {extremeBack}");
+            else
+                Assert.LessOrEqual(extremeBack, startX + backTol,
+                    $"character jumped BACKWARD (+X) past its start while walking −X: start {startX}, furthest back {extremeBack}");
+
+            // It actually traversed the cluster (net progress in the drive direction).
+            var endX = Position().x;
+            if (moveX > 0f)
+                Assert.Greater(endX, startX + 1f, $"character must make forward (+X) progress across the cluster: {startX} -> {endX}");
+            else
+                Assert.Less(endX, startX - 1f, $"character must make forward (−X) progress across the cluster: {startX} -> {endX}");
+            yield return null;
+        }
     }
 }

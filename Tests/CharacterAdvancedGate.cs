@@ -323,6 +323,111 @@ namespace Zori.Entities.CharacterController2D.Tests
             Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "no NaN");
         }
 
+        // ---- step + adjacent-slope DIRECTIONAL regression (the lateral-jump fix) ----------------------------
+        //
+        // The directional gap gate-4 / P0 left: a character walking a step that sits next to a climbable slope (the
+        // Platformer course Station-2 cluster) is flung laterally + vertically backward when approached from one
+        // direction but not the other. Root cause (trace-diagnosed): the D2 depenetration's ReconstructOverlap
+        // double-counted the proxy bounding radius, inflating a grazing/resting contact at the step+slope corner
+        // into a multi-unit "overlap"; the grounded vertical-decollide then reverse-projected that bogus depth into
+        // an up-and-back fling. The fix (KinematicCharacterUtilities2D.ReconstructOverlap) removes the double-count.
+        //
+        // The regression walks the step+adjacent-slope geometry from BOTH directions, capsule AND box, with the
+        // Platformer sample's own GroundMove dynamics (interpolated ground-line velocity + carry-over + airborne
+        // gravity — NOT a forced constant velocity, which masks the carried-velocity / corner-overlap interaction).
+        // It asserts the character makes net forward progress in the drive direction, NEVER overshoots backward past
+        // its start, and never flings vertically off the cluster — symmetric in both directions. Pre-fix the −X
+        // (R2L) capsule run jumped ~2.3 u backward + ~4.5 u up at the step/slope corner; this is RED on that.
+
+        [UnityTest]
+        public IEnumerator StepSlope_CapsuleWalksRight_NoLateralJump() =>
+            StepSlopeNoLateralJump("CC2D_CapsuleStepSlopeL2R", +1f);
+
+        [UnityTest]
+        public IEnumerator StepSlope_CapsuleWalksLeft_NoLateralJump() =>
+            StepSlopeNoLateralJump("CC2D_CapsuleStepSlopeR2L", -1f);
+
+        [UnityTest]
+        public IEnumerator StepSlope_BoxWalksRight_NoLateralJump() =>
+            StepSlopeNoLateralJump("CC2D_BoxStepSlopeL2R", +1f);
+
+        [UnityTest]
+        public IEnumerator StepSlope_BoxWalksLeft_NoLateralJump() =>
+            StepSlopeNoLateralJump("CC2D_BoxStepSlopeR2L", -1f);
+
+        // Drives the character with the Platformer sample's own GroundMove / AirMove dynamics (interpolated velocity
+        // along the ground line + gravity-when-airborne + carry-over) so the corner-overlap interaction the bug
+        // needs is reproduced, then asserts no backward overshoot, no vertical fling, and net forward progress.
+        IEnumerator StepSlopeNoLateralJump(string sceneName, float moveX)
+        {
+            yield return LoadAndPrepare(sceneName, 1);
+            Step(20); // settle on the starting surface
+            Assert.IsTrue(Body().IsGrounded, "character starts grounded on the step+slope cluster");
+
+            var startX = Position().x;
+            var startY = Position().y;
+            // The backward bound: the character must never cross more than a small tolerance past its start in the
+            // direction OPPOSITE its drive (a backward overshoot is the lateral jump). The vertical bound: it must
+            // never be flung far above the cluster's reachable height (the up-fling component of the bug).
+            const float backTol = 0.15f; // a fraction of a fixed-step move; the bug overshot ~2.3 u
+            const float maxReachableY = 12f; // the cluster + slope top stays well under this; the fling hit Y huge
+            var extremeBack = startX;
+            var maxY = startY;
+            var up = new float2(0f, 1f);
+            const float groundMoveSpeed = 7f;
+            const float groundedSharpness = 90f;
+            const float gravityMag = 20f;
+            const float airSharpness = 30f;
+            const float airSpeed = 7f;
+            for (var i = 0; i < 240; i++)
+            {
+                var e = TheCharacter();
+                var b = _world.EntityManager.GetComponentData<KinematicCharacterBody2D>(e);
+                if (b.IsGrounded)
+                {
+                    var v = b.RelativeVelocity;
+                    CharacterControlUtilities2D.StandardGroundMove_Interpolated(
+                        ref v, new float2(moveX * groundMoveSpeed, 0f), groundedSharpness, FixedDt, up, b.GroundHit.Normal);
+                    b.RelativeVelocity = v;
+                }
+                else
+                {
+                    var v = b.RelativeVelocity;
+                    v += new float2(0f, -gravityMag) * FixedDt;
+                    v.x = lerp(v.x, moveX * airSpeed, saturate(airSharpness * FixedDt));
+                    b.RelativeVelocity = v;
+                }
+                _world.EntityManager.SetComponentData(e, b);
+                _fixedGroup.Update();
+
+                var p = Position();
+                Assert.IsFalse(float.IsNaN(p.x) || float.IsNaN(p.y), $"no NaN at step {i}");
+                // Backward overshoot (the lateral jump): for +X drive a position below start−tol; for −X above start+tol.
+                if (moveX > 0f)
+                    extremeBack = min(extremeBack, p.x);
+                else
+                    extremeBack = max(extremeBack, p.x);
+                maxY = max(maxY, p.y);
+                Assert.Less(p.y, maxReachableY,
+                    $"character flung vertically off the cluster at step {i} (y={p.y}) — the up-fling component of the lateral-jump bug");
+            }
+
+            // No backward overshoot past the start (the lateral teleport).
+            if (moveX > 0f)
+                Assert.GreaterOrEqual(extremeBack, startX - backTol,
+                    $"character jumped BACKWARD (−X) past its start while walking +X: start {startX}, furthest back {extremeBack}");
+            else
+                Assert.LessOrEqual(extremeBack, startX + backTol,
+                    $"character jumped BACKWARD (+X) past its start while walking −X: start {startX}, furthest back {extremeBack}");
+
+            // Net forward progress in the drive direction (it actually traversed the cluster, not stuck).
+            var endX = Position().x;
+            if (moveX > 0f)
+                Assert.Greater(endX, startX + 1f, $"character must make forward (+X) progress: {startX} -> {endX}");
+            else
+                Assert.Less(endX, startX - 1f, $"character must make forward (−X) progress: {startX} -> {endX}");
+        }
+
         // ---- Jump ------------------------------------------------------------------------------------------
 
         [UnityTest]
