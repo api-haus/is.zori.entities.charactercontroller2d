@@ -335,5 +335,10 @@ namespace Zori.Entities.CharacterController2D.Tests
     public static class CharacterFixtureBuilderConstants
     {
         public const float FloorTopY = 0f;
+
+        // C4b moving-platform: the lateral speed (m/s) the runtime gate drives the kinematic platform at. The
+        // gate asserts the ridden character's X travel tracks the platform's; the editor builder references this
+        // so the platform geometry and the drive speed share one home.
+        public const float PlatformSpeedX = 2f;
     }
 }

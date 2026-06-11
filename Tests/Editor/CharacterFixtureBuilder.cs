@@ -5,6 +5,10 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using Zori.Entities.CharacterController2D.Authoring;
+using PhysicsBody2DAuthoring = Zori.Entities.Physics2D.Authoring.PhysicsBody2DAuthoring;
+using PhysicsBody2DMotionType = Zori.Entities.Physics2D.Authoring.PhysicsBody2DMotionType;
+using PhysicsShape2DAuthoring = Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring;
+using PhysicsShape2DKind = Zori.Entities.Physics2D.PhysicsShape2DKind;
 
 namespace Zori.Entities.CharacterController2D.Tests.Editor
 {
@@ -45,6 +49,38 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string OverlapGroundParent = FixtureRoot + "/CC2D_OverlapGround.unity";
         public const string OverlapGroundChild = FixtureRoot + "/CC2D_OverlapGround_Sub.unity";
 
+        // ---- C4b advanced-feature fixtures -----------------------------------------------------------------
+        public const string StepLowParent = FixtureRoot + "/CC2D_StepLow.unity";
+        public const string StepLowChild = FixtureRoot + "/CC2D_StepLow_Sub.unity";
+        public const string StepHighParent = FixtureRoot + "/CC2D_StepHigh.unity";
+        public const string StepHighChild = FixtureRoot + "/CC2D_StepHigh_Sub.unity";
+        public const string JumpParent = FixtureRoot + "/CC2D_Jump.unity";
+        public const string JumpChild = FixtureRoot + "/CC2D_Jump_Sub.unity";
+        public const string CharCharParent = FixtureRoot + "/CC2D_CharChar.unity";
+        public const string CharCharChild = FixtureRoot + "/CC2D_CharChar_Sub.unity";
+        public const string DynamicPushParent = FixtureRoot + "/CC2D_DynamicPush.unity";
+        public const string DynamicPushChild = FixtureRoot + "/CC2D_DynamicPush_Sub.unity";
+        public const string DynamicPushHeavyParent = FixtureRoot + "/CC2D_DynamicPushHeavy.unity";
+        public const string DynamicPushHeavyChild = FixtureRoot + "/CC2D_DynamicPushHeavy_Sub.unity";
+        public const string MovingPlatformParent = FixtureRoot + "/CC2D_MovingPlatform.unity";
+        public const string MovingPlatformChild = FixtureRoot + "/CC2D_MovingPlatform_Sub.unity";
+
+        // Step geometry: the lower step is below MaxStepHeight (0.5), the higher step is above it. The runtime
+        // gate asserts the character steps up onto the low one and is blocked by the high one. The step's top
+        // surface Y is what the character's grounded settle height tracks after stepping up.
+        public const float LowStepTopY = 0.3f;
+        public const float HighStepTopY = 0.9f;
+
+        // Dynamic-push: the box's left face starts here so the character (walking +X) reaches it. The two
+        // push fixtures differ only in the box's authored mass — the adversarial "heavier pushes less" pair.
+        public const float DynamicBoxLeftFaceX = 1.6f;
+        public const float DynamicBoxLightMass = 1f;
+        public const float DynamicBoxHeavyMass = 50f;
+
+        // Moving-platform: the platform top surface. The lateral drive speed lives in the runtime-side
+        // CharacterFixtureBuilderConstants.PlatformSpeedX (the runtime gate drives it; one canonical home).
+        public const float PlatformTopY = 0f;
+
         // The character circle proxy radius used across all fixtures — the runtime test asserts the grounded settle
         // height against this.
         public const float CharacterRadius = 0.5f;
@@ -67,6 +103,15 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildOverlapShallow();
             BuildOverlapDeep();
             BuildOverlapGround();
+
+            // C4b advanced features.
+            BuildStepLow();
+            BuildStepHigh();
+            BuildJump();
+            BuildCharChar();
+            BuildDynamicPush();
+            BuildDynamicPushHeavy();
+            BuildMovingPlatform();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -189,6 +234,132 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                 });
         }
 
+        // ---- C4b advanced-feature fixtures -----------------------------------------------------------------
+
+        // Step within limit: a grounded character walks +X into a low step (top at LowStepTopY = 0.3, below the
+        // 0.5 MaxStepHeight). With step handling enabled it must climb onto the step top and stay grounded.
+        static void BuildStepLow()
+        {
+            BuildFixture(
+                StepLowChild,
+                StepLowParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
+                    // The step: a box whose top is at LowStepTopY and whose left face is at X = 2.
+                    AddFloor(root, new Vector2(4.5f, LowStepTopY - 1f), new Vector2(5f, 2f));
+                    var c = AddBoxCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
+                    EnableStepHandling(c, maxStepHeight: 0.5f);
+                });
+        }
+
+        // Step over limit: the same walk into a step whose top (HighStepTopY = 0.9) exceeds MaxStepHeight (0.5).
+        // The character must be blocked (not climb), sliding into the step wall like an ordinary wall.
+        static void BuildStepHigh()
+        {
+            BuildFixture(
+                StepHighChild,
+                StepHighParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
+                    AddFloor(root, new Vector2(4.5f, HighStepTopY - 1f), new Vector2(5f, 2f));
+                    var c = AddBoxCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
+                    EnableStepHandling(c, maxStepHeight: 0.5f);
+                });
+        }
+
+        // Jump: a grounded character on a flat floor. The runtime test calls StandardJump2D, then asserts the
+        // character ungrounds, rises in Y, falls, and re-grounds.
+        static void BuildJump()
+        {
+            BuildFixture(
+                JumpChild,
+                JumpParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
+                    AddCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
+                });
+        }
+
+        // Character ↔ character: two SimulateDynamicBody characters spawned overlapping on a flat floor. The
+        // hit-dynamics impulse exchange must separate them (each pushed away from the other along the contact).
+        static void BuildCharChar()
+        {
+            BuildFixture(
+                CharCharChild,
+                CharCharParent,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
+                    // Two characters overlapping: centres 0.6 apart, each radius 0.5, so they overlap by ~0.4.
+                    // Both SimulateDynamicBody (the default) so they exchange deferred impulses.
+                    AddCharacter(root, new Vector3(-0.3f, CharacterRadius + 0.05f, 0f));
+                    AddCharacter(root, new Vector3(0.3f, CharacterRadius + 0.05f, 0f));
+                });
+        }
+
+        // Dynamic-body push (light box): a kinematic character (SimulateDynamicBody on) walks +X into a regular
+        // dynamic box (gravity off so it stays at platform height). The box must move +X and the character must
+        // not penetrate it.
+        static void BuildDynamicPush()
+        {
+            BuildDynamicPushFixture(DynamicPushChild, DynamicPushParent, DynamicBoxLightMass);
+        }
+
+        // Dynamic-body push (heavy box): identical to BuildDynamicPush save the box's authored mass (50× heavier).
+        // The adversarial pair: a heavier authored mass must be pushed LESS for the same character push.
+        static void BuildDynamicPushHeavy()
+        {
+            BuildDynamicPushFixture(DynamicPushHeavyChild, DynamicPushHeavyParent, DynamicBoxHeavyMass);
+        }
+
+        static void BuildDynamicPushFixture(string childPath, string parentPath, float boxMass)
+        {
+            BuildFixture(
+                childPath,
+                parentPath,
+                root =>
+                {
+                    AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
+                    // Dynamic box: left face at DynamicBoxLeftFaceX, 1×1 box (centre at leftFace + 0.5). Gravity
+                    // off so it neither falls nor is held by the floor's friction differently per mass — a pure
+                    // horizontal push. Explicit mass (UseAutoMass off) so StoredDynamicBodyData2D.Mass is exactly
+                    // boxMass, the value the impulse exchange scales by.
+                    AddDynamicBox(
+                        root,
+                        new Vector3(DynamicBoxLeftFaceX + 0.5f, CharacterRadius + 0.05f, 0f),
+                        new Unity.Mathematics.float2(1f, 1f),
+                        boxMass);
+                    var c = AddCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
+                    // SimulateDynamicBody is on by default — the character pushes the box. Leave it.
+                    _ = c;
+                });
+        }
+
+        // Moving platform: a kinematic platform body the runtime test drives laterally via MovePosition, with a
+        // character standing on it. The character is auto-parented to the platform (TrackedTransform2D added at
+        // runtime) and carried along in X.
+        static void BuildMovingPlatform()
+        {
+            BuildFixture(
+                MovingPlatformChild,
+                MovingPlatformParent,
+                root =>
+                {
+                    // The platform: a wide, thin KINEMATIC box whose top is at PlatformTopY. Kinematic so the
+                    // runtime test can drive its pose with MovePosition each step (a static body cannot move; a
+                    // dynamic body would fall). Centre placed so the top surface sits at PlatformTopY.
+                    AddKinematicPlatform(
+                        root,
+                        new Vector3(0f, PlatformTopY - 0.5f, 0f),
+                        new Unity.Mathematics.float2(8f, 1f));
+                    // Character standing on the platform top.
+                    AddCharacter(root, new Vector3(0f, PlatformTopY + CharacterRadius + 0.05f, 0f));
+                });
+        }
+
         // ---- authoring helpers -----------------------------------------------------------------------------
 
         static GameObject AddFloor(GameObject parent, Vector2 center, Vector2 size)
@@ -221,6 +392,25 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             return auth;
         }
 
+        // A box-proxy character: a flat-bottomed box (full extents 2*radius wide, 2*radius tall) so a step-up
+        // down-cast lands cleanly on the step top with an up-pointing normal (a circle proxy can catch the step's
+        // top-left CORNER with a diagonal normal that fails the bottom-of-character grounding gate). The step
+        // gates use this so the step feature is tested without the round-base corner ambiguity.
+        static CharacterController2DAuthoring AddBoxCharacter(GameObject parent, Vector3 position)
+        {
+            var go = new GameObject("Character");
+            go.transform.SetParent(parent.transform, false);
+            go.transform.position = position;
+            var auth = go.AddComponent<CharacterController2DAuthoring>();
+
+            var props = AuthoringKinematicCharacterProperties2D.GetDefault();
+            auth.CharacterProperties = props;
+            auth.ProxyShape = CharacterProxyShape2D.Box;
+            auth.ProxyBoxSize = new Unity.Mathematics.float2(2f * CharacterRadius, 2f * CharacterRadius);
+            auth.InterpolateRendering = false;
+            return auth;
+        }
+
         static void DisableGrounding(CharacterController2DAuthoring auth)
         {
             var props = auth.CharacterProperties;
@@ -234,6 +424,54 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             var props = auth.CharacterProperties;
             props.MaxOverlapDecollisionIterations = iterations;
             auth.CharacterProperties = props;
+        }
+
+        // Step handling is OFF by default (BasicStepAndSlopeHandlingParameters2D.GetDefault). The step fixtures
+        // turn it on and set the max step height. CharacterWidthForStepGroundingCheck is 2x the radius for a
+        // circle proxy (the param's documented value).
+        static void EnableStepHandling(CharacterController2DAuthoring auth, float maxStepHeight)
+        {
+            var step = auth.StepAndSlopeHandling;
+            step.StepHandling = true;
+            step.MaxStepHeight = maxStepHeight;
+            step.CharacterWidthForStepGroundingCheck = 2f * CharacterRadius;
+            auth.StepAndSlopeHandling = step;
+        }
+
+        // A regular DYNAMIC body the character can push: a PhysicsBody2DAuthoring (Dynamic, explicit mass, gravity
+        // off) + a box PhysicsShape2DAuthoring. The explicit mass (UseAutoMass off) is the exact value the
+        // StoredDynamicBodyData2D snapshot carries and the hit-dynamics impulse exchange scales by.
+        static GameObject AddDynamicBox(GameObject parent, Vector3 position, Unity.Mathematics.float2 size, float mass)
+        {
+            var go = new GameObject("DynamicBox");
+            go.transform.SetParent(parent.transform, false);
+            go.transform.position = position;
+            var body = go.AddComponent<PhysicsBody2DAuthoring>();
+            body.BodyType = PhysicsBody2DMotionType.Dynamic;
+            body.UseAutoMass = false;
+            body.Mass = mass;
+            body.GravityScale = 0f; // a pure horizontal push — no fall, no per-mass settling difference.
+            var shape = go.AddComponent<PhysicsShape2DAuthoring>();
+            shape.Kind = PhysicsShape2DKind.Box;
+            shape.BoxSize = size;
+            shape.Density = 1f;
+            return go;
+        }
+
+        // A KINEMATIC platform body the runtime test drives with MovePosition. Kinematic so its pose is moved
+        // directly (a static body cannot move, a dynamic body would fall). The runtime test adds a
+        // TrackedTransform2D to it so the controller treats it as a moving platform.
+        static GameObject AddKinematicPlatform(GameObject parent, Vector3 position, Unity.Mathematics.float2 size)
+        {
+            var go = new GameObject("MovingPlatform");
+            go.transform.SetParent(parent.transform, false);
+            go.transform.position = position;
+            var body = go.AddComponent<PhysicsBody2DAuthoring>();
+            body.BodyType = PhysicsBody2DMotionType.Kinematic;
+            var shape = go.AddComponent<PhysicsShape2DAuthoring>();
+            shape.Kind = PhysicsShape2DKind.Box;
+            shape.BoxSize = size;
+            return go;
         }
 
         // ---- scene plumbing (mirrors the substrate builders) -----------------------------------------------

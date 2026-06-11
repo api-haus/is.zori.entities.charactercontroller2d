@@ -6,6 +6,7 @@
     "Zori.Entities.CharacterController2D.Authoring",
     "Zori.Entities.CharacterController2D.Baking",
     "Zori.Entities.Physics2D.Runtime",
+    "Zori.Entities.Physics2D.Authoring",
     "Unity.Entities",
     "Unity.Entities.Hybrid",
     "Unity.Scenes",
