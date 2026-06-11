@@ -53,9 +53,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         static readonly float2 RopeAnchorPos = new float2(85f, 16f);
         static readonly float2 TeleporterPadPos = new float2(97f, 9.5f);
         static readonly float2 TeleportDestinationPos = new float2(0f, 1.1f);
+
         // Wind zone: sensor at (73,11); the character standing on Ledge_HighWind (top Y ~9) is below it — we place the
         // character inside the sensor region and confirm the updraft adds +Y velocity.
         static readonly float2 WindZoneCenter = new float2(73f, 11f);
+
         // Moving platforms: lateral home (58, 5.75), vertical home (66, 5).
         static readonly float2 LateralPlatformHome = new float2(58f, 5.75f);
 
@@ -93,7 +95,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             var charQuery = _em.CreateEntityQuery(
                 ComponentType.ReadOnly<PlatformerCharacterTag>(),
                 ComponentType.ReadOnly<KinematicCharacterBody2D>(),
-                ComponentType.ReadOnly<LocalToWorld>());
+                ComponentType.ReadOnly<LocalToWorld>()
+            );
             var frames = 0;
             while (charQuery.CalculateEntityCount() == 0 && frames < LoadTimeoutFrames)
             {
@@ -103,13 +106,17 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             Assert.Greater(
                 charQuery.CalculateEntityCount(),
                 0,
-                $"No baked Platformer character appeared after {frames} frames — the course SubScene did not bake.");
+                $"No baked Platformer character appeared after {frames} frames — the course SubScene did not bake."
+            );
 
             using (var ents = charQuery.ToEntityArray(Allocator.Temp))
                 _character = ents[0];
 
             _fixedGroup = _world.GetExistingSystemManaged<FixedStepSimulationSystemGroup>();
-            Assert.IsNotNull(_fixedGroup, "No FixedStepSimulationSystemGroup in the default world.");
+            Assert.IsNotNull(
+                _fixedGroup,
+                "No FixedStepSimulationSystemGroup in the default world."
+            );
             _savedRateManager = _fixedGroup.RateManager;
             _fixedGroup.RateManager = new Unity.Entities.RateUtils.FixedRateSimpleManager(FixedDt);
 
@@ -126,7 +133,13 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             _fixedGroup.Update();
         }
 
-        void Step(int count, float moveX = 0f, bool jump = false, bool grab = false, bool release = false)
+        void Step(
+            int count,
+            float moveX = 0f,
+            bool jump = false,
+            bool grab = false,
+            bool release = false
+        )
         {
             for (var i = 0; i < count; i++)
             {
@@ -136,9 +149,12 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 // and clears it — matching the real control system's edge latch.
                 if (i == 0)
                 {
-                    if (jump) c.JumpPressed = true;
-                    if (grab) c.GrabPressed = true;
-                    if (release) c.ReleasePressed = true;
+                    if (jump)
+                        c.JumpPressed = true;
+                    if (grab)
+                        c.GrabPressed = true;
+                    if (release)
+                        c.ReleasePressed = true;
                 }
                 _em.SetComponentData(_character, c);
                 _fixedGroup.Update();
@@ -150,9 +166,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             return _em.GetComponentData<LocalToWorld>(_character).Position.xy;
         }
 
-        KinematicCharacterBody2D Body() => _em.GetComponentData<KinematicCharacterBody2D>(_character);
+        KinematicCharacterBody2D Body() =>
+            _em.GetComponentData<KinematicCharacterBody2D>(_character);
 
-        PlatformerStance2D Stance() => _em.GetComponentData<PlatformerCharacterState2D>(_character).Stance;
+        PlatformerStance2D Stance() =>
+            _em.GetComponentData<PlatformerCharacterState2D>(_character).Stance;
 
         // Place the kinematic character at a world position. Two facts make this non-trivial: (1) the
         // PhysicsBody2DWriteBackSystem scatters the simulated body pose into LocalToWorld each step, so writing
@@ -211,7 +229,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         // PlaceCharacter does not wedge on a wall on the way), then dropping straight to the target. Used for stations
         // hemmed in by geometry (the wind sensor sits beside the right wall of Ledge_HighWind, which a horizontal
         // approach catches on).
-        void PlaceCharacterViaSky(float2 pos, PlatformerStance2D stance = PlatformerStance2D.GroundMove)
+        void PlaceCharacterViaSky(
+            float2 pos,
+            PlatformerStance2D stance = PlatformerStance2D.GroundMove
+        )
         {
             PlaceCharacter(new float2(pos.x, pos.y + 25f), stance);
             PlaceCharacter(pos, stance);
@@ -223,7 +244,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         {
             var q = _em.CreateEntityQuery(
                 ComponentType.ReadOnly<MovingPlatform2D>(),
-                ComponentType.ReadOnly<LocalToWorld>());
+                ComponentType.ReadOnly<LocalToWorld>()
+            );
             using var plats = q.ToComponentDataArray<MovingPlatform2D>(Allocator.Temp);
             using var ltws = q.ToComponentDataArray<LocalToWorld>(Allocator.Temp);
             for (var i = 0; i < plats.Length; i++)
@@ -250,11 +272,19 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         // Count trigger events currently in the substrate's per-step buffer (on the PhysicsWorldSingleton2D entity).
         int TriggerEventCount()
         {
-            var q = _em.CreateEntityQuery(ComponentType.ReadOnly<Zori.Entities.Physics2D.PhysicsWorldSingleton2D>());
+            var q = _em.CreateEntityQuery(
+                ComponentType.ReadOnly<Zori.Entities.Physics2D.PhysicsWorldSingleton2D>()
+            );
             using var ents = q.ToEntityArray(Allocator.Temp);
-            if (ents.Length == 0 || !_em.HasBuffer<Zori.Entities.Physics2D.PhysicsTriggerEvent2D>(ents[0]))
+            if (
+                ents.Length == 0
+                || !_em.HasBuffer<Zori.Entities.Physics2D.PhysicsTriggerEvent2D>(ents[0])
+            )
                 return 0;
-            return _em.GetBuffer<Zori.Entities.Physics2D.PhysicsTriggerEvent2D>(ents[0], true).Length;
+            return _em.GetBuffer<Zori.Entities.Physics2D.PhysicsTriggerEvent2D>(
+                ents[0],
+                true
+            ).Length;
         }
 
         // ----- per-feature gates ----------------------------------------------------------------------------------
@@ -268,14 +298,21 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             PlaceCharacter(new float2(-1f, 1.5f));
             Step(20); // settle onto the normal floor
 
-            Assert.IsTrue(Body().IsGrounded, "character should be grounded on the normal floor after settling");
+            Assert.IsTrue(
+                Body().IsGrounded,
+                "character should be grounded on the normal floor after settling"
+            );
             var startX = Position().x;
             var restY = Position().y;
 
             // Walk right for ~0.8s; the character should advance meaningfully in +X.
             Step(50, moveX: 1f);
             var walkedX = Position().x;
-            Assert.Greater(walkedX, startX + 1.5f, $"GroundMove: character should walk right ({startX} -> {walkedX})");
+            Assert.Greater(
+                walkedX,
+                startX + 1.5f,
+                $"GroundMove: character should walk right ({startX} -> {walkedX})"
+            );
 
             // Jump: the character must leave the ground (peak Y above the grounded rest). JumpSpeed 9 / gravity 20
             // gives an ideal apex rise of 9^2/(2*20) ≈ 2.0; assert a conservative 0.4 to absorb the one-step pose
@@ -293,8 +330,15 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 Step(1);
                 peakY = max(peakY, Position().y);
             }
-            Assert.Greater(peakY, restY + 0.4f, $"Jump: peak Y {peakY} should rise above rest {restY}");
-            Assert.IsFalse(Body().IsGrounded && abs(peakY - restY) < 0.1f, "Jump: the character must actually leave the ground");
+            Assert.Greater(
+                peakY,
+                restY + 0.4f,
+                $"Jump: peak Y {peakY} should rise above rest {restY}"
+            );
+            Assert.IsFalse(
+                Body().IsGrounded && abs(peakY - restY) < 0.1f,
+                "Jump: the character must actually leave the ground"
+            );
         }
 
         [UnityTest]
@@ -326,7 +370,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 stickySpeed,
                 iceSpeed + 0.25f,
                 $"Materials: sticky speed {stickySpeed} should exceed ice speed {iceSpeed} under the same accel window "
-                    + "(ice's low friction = slow to gain speed = slippery feel)");
+                    + "(ice's low friction = slow to gain speed = slippery feel)"
+            );
         }
 
         [UnityTest]
@@ -340,7 +385,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // added by PlatformInitSystem2D at load; MovingPlatformSystem2D drives it each fixed step. With NO player
             // input, the C4b-verified auto-parent carry (Update_ParentMovement) should sweep the rider in X.
             var platformX = FindPlatformX();
-            PlaceCharacterViaSky(new float2(platformX, LateralPlatformHome.y + 1.0f), PlatformerStance2D.AirMove);
+            PlaceCharacterViaSky(
+                new float2(platformX, LateralPlatformHome.y + 1.0f),
+                PlatformerStance2D.AirMove
+            );
             // Let the character settle onto the platform and ground.
             for (var i = 0; i < 120; i++)
             {
@@ -373,61 +421,111 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 minX = min(minX, x);
                 maxX = max(maxX, x);
             }
-            Assert.Greater(groundedFrames, 10, "character should ride the platform grounded for a sustained window");
+            Assert.Greater(
+                groundedFrames,
+                10,
+                "character should ride the platform grounded for a sustained window"
+            );
             Assert.Greater(
                 maxX - minX,
                 0.3f,
                 $"Moving platform: a standing character with no input should be carried in X by the platform "
-                    + $"(grounded X sweep {maxX - minX:F3} over {groundedFrames} grounded frames)");
+                    + $"(grounded X sweep {maxX - minX:F3} over {groundedFrames} grounded frames)"
+            );
         }
 
         [UnityTest]
-        public IEnumerator D_WindZone_KnownLimitation_CharacterGroundsOnSensorAndNoTriggerFires()
+        public IEnumerator D_WindZone_CharacterPassesIntoSensorAndUpdraftAppliesForce()
         {
             yield return LoadCourse();
 
-            // KNOWN LIMITATION (root-caused). The wind zone is a sensor (CollisionResponse=Sensor → isTrigger=true);
-            // WindZoneSystem2D reads the trigger Begin and adds the zone's force to the character's RelativeVelocity.
-            // BUT the kinematic controller's grounding / collide-and-slide casts (PhysicsQueries2D) do NOT exclude
-            // sensor (isTrigger) shapes, so the character COLLIDES WITH / GROUNDS ON the sensor instead of passing
-            // through it. It never enters the sensor's interior, so the trigger Begin never fires, the InWindZone2D
-            // Stay tag is never added, and the wind force is never applied. The same root cause breaks the teleporter
-            // (test F). This is a substrate/controller binding gap (the cast queries should filter out trigger shapes),
-            // surfaced by the sample — NOT a sample-authoring bug. It is asserted here as the observed reality so that
-            // when the controller starts excluding sensors from its casts, these assertions flip RED and the feature
-            // can be re-enabled.
+            // The wind zone is a sensor (CollisionResponse=Sensor → isTrigger=true); WindZoneSystem2D reads the
+            // trigger Begin and adds the zone's force to the character's RelativeVelocity while inside. Now that the
+            // controller's grounding / collide-and-slide casts EXCLUDE sensor (isTrigger) shapes (the sensor fix), the
+            // character passes INTO the sensor as a visitor instead of grounding on it: the trigger Begin fires, the
+            // InWindZone2D Stay tag lands, and the updraft applies. This test was the P7 known-limitation case; it now
+            // asserts the working behaviour — the sensor fix flipped it from RED to a real feature gate.
             //
-            // Drop the character straight down onto the wind sensor (sensor at (73,11)). It should ground ON the sensor
-            // and the in-zone tag should NEVER be set.
-            PlaceCharacter(new float2(WindZoneCenter.x, WindZoneCenter.y + 4f), PlatformerStance2D.AirMove);
+            // Place the character ABOVE the wind sensor (sensor at (73,11)) and let it FALL through under gravity. A
+            // clean not-touching → touching TRANSITION as it enters the sensor is what fires the substrate trigger
+            // Begin (warping the body already-overlapping the sensor produces no transition, hence no Begin — the
+            // substrate's begin-on-entry semantics, mirrored from the substrate's own Trigger_BodyPassesThroughSensor
+            // test). Now that the controller's casts exclude the isTrigger sensor, the character does not ground on it
+            // — it falls through it as a visitor, the Begin fires, and the updraft applies.
+            // The decisive, force-driven observable is the updraft ARRESTING the fall (not an absolute upward
+            // velocity — during a brief fast pass-through gravity, −20·dt/step, can outweigh the +14·dt/step
+            // updraft in absolute terms). We measure it as a controlled A/B over the same fall window, varying ONLY
+            // the wind (negative-space measurement rule): the character falls through the sensor WITH the wind zone
+            // applied, then the wind zone's force is zeroed and the SAME fall is repeated; the with-wind descent must
+            // be measurably slower (a less-negative vertical velocity) than the no-wind free-fall.
+            var startWindFall = new float2(WindZoneCenter.x, WindZoneCenter.y + 6f);
+
+            // --- WITH wind: fall through the sensor; record the most-positive (least-negative) vertical velocity
+            //     observed while inside the zone, and confirm the character enters the sensor without grounding on it.
+            PlaceCharacterViaSky(startWindFall, PlatformerStance2D.AirMove);
             var everInZone = false;
-            Entity groundEntity = Entity.Null;
-            for (var i = 0; i < 60; i++)
+            var groundedOnSensor = false;
+            var bestVyWithWind = float.MinValue;
+            for (var i = 0; i < 80; i++)
             {
                 Step(1, moveX: 0f);
                 if (_em.HasComponent<InWindZone2D>(_character))
+                {
                     everInZone = true;
-                if (Body().IsGrounded)
-                    groundEntity = Body().GroundHit.Entity;
+                    bestVyWithWind = max(bestVyWithWind, Body().RelativeVelocity.y);
+                }
+                if (Body().IsGrounded && _em.HasComponent<WindZone2D>(Body().GroundHit.Entity))
+                    groundedOnSensor = true;
             }
 
-            var groundedOnSensor = groundEntity != Entity.Null && _em.HasComponent<WindZone2D>(groundEntity);
-            UnityEngine.Debug.Log(
-                $"[P7-WIND-LIMITATION] everInZone={everInZone} grounded-on-WindZone-sensor={groundedOnSensor}. "
-                    + "The controller's grounding cast treats the sensor as solid ground, so the character never enters "
-                    + "the trigger interior and the wind force is never applied — a substrate/controller binding gap "
-                    + "(casts do not exclude isTrigger shapes), the same root cause as the teleport gap.");
+            // --- NO wind (control): zero every wind zone's force, repeat the identical fall, and record the
+            //     least-negative vertical velocity over the matching in-volume window (the character is now never
+            //     tagged in-zone — the force is zero — so sample over the same Y band the sensor occupies).
+            using (var q = _em.CreateEntityQuery(ComponentType.ReadWrite<WindZone2D>()))
+            using (var zoneEnts = q.ToEntityArray(Allocator.Temp))
+            {
+                foreach (var z in zoneEnts)
+                    _em.SetComponentData(z, new WindZone2D { Force = new float2(0f, 0f) });
+            }
+            PlaceCharacterViaSky(startWindFall, PlatformerStance2D.AirMove);
+            var bestVyNoWind = float.MinValue;
+            var sensorTop = WindZoneCenter.y + 1f;
+            var sensorBottom = WindZoneCenter.y - 1f;
+            for (var i = 0; i < 80; i++)
+            {
+                Step(1, moveX: 0f);
+                var y = Position().y;
+                if (y <= sensorTop && y >= sensorBottom)
+                    bestVyNoWind = max(bestVyNoWind, Body().RelativeVelocity.y);
+            }
 
-            // The documented reality: the character grounds ON the wind sensor (treating the trigger as solid), and the
-            // wind force is therefore never applied (the in-zone tag never sets). If the controller is later fixed to
-            // exclude sensors from its casts, BOTH asserts flip and this feature works — re-enable it then.
-            Assert.IsTrue(groundedOnSensor,
-                "Wind zone (known limitation): the character grounds ON the wind sensor — the controller cast treats "
-                    + "the trigger as solid ground instead of passing through it.");
-            Assert.IsFalse(everInZone,
-                "Wind zone (known limitation): because the character never enters the sensor interior (it grounds on "
-                    + "top), the trigger Begin never fires and the wind force is never applied. Re-enable when the "
-                    + "controller excludes isTrigger shapes from its casts.");
+            UnityEngine.Debug.Log(
+                $"[P7-WIND] everInZone={everInZone} groundedOnSensor={groundedOnSensor} "
+                    + $"bestVyWithWind={bestVyWithWind:F3} bestVyNoWind={bestVyNoWind:F3}. The controller now excludes "
+                    + "the isTrigger sensor from its casts, so the character enters the trigger interior — the wind "
+                    + "Begin fires, InWindZone2D is set, and the updraft arrests the fall relative to free-fall."
+            );
+
+            // The sensor fix: the character must NOT ground on the wind sensor (it passes through as a visitor)…
+            Assert.IsFalse(
+                groundedOnSensor,
+                "Wind zone: the character must NOT ground on the wind sensor — the controller casts now exclude "
+                    + "isTrigger shapes, so it passes into the sensor as a visitor rather than standing on it."
+            );
+            // …the trigger Begin therefore fires and the zone tags the character…
+            Assert.IsTrue(
+                everInZone,
+                "Wind zone: the character must enter the sensor interior (InWindZone2D set) — the trigger Begin fires "
+                    + "now that the controller passes through the sensor instead of grounding on it."
+            );
+            // …and the updraft applies its +Y force: the with-wind descent through the sensor is measurably slower
+            // (a less-negative vertical velocity) than the no-wind free-fall over the same band.
+            Assert.Greater(
+                bestVyWithWind,
+                bestVyNoWind + 0.1f,
+                $"Wind zone: the updraft must arrest the fall — the in-zone vertical velocity with wind "
+                    + $"({bestVyWithWind:F3}) must exceed the no-wind free-fall ({bestVyNoWind:F3}) over the same band."
+            );
         }
 
         [UnityTest]
@@ -437,7 +535,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
 
             // Place the character airborne just below the rope anchor (anchor at (85,16), RopeLength authored 6) so a
             // grab finds it. Put it slightly off-centre so gravity drives a swing rather than hanging straight down.
-            PlaceCharacter(new float2(RopeAnchorPos.x - 2f, RopeAnchorPos.y - 5f), PlatformerStance2D.AirMove);
+            PlaceCharacter(
+                new float2(RopeAnchorPos.x - 2f, RopeAnchorPos.y - 5f),
+                PlatformerStance2D.AirMove
+            );
             Step(2); // let the airborne pose settle into the solve
 
             // Grab: in AirMove, the GrabPressed edge runs the anchor query and should enter RopeSwing.
@@ -445,10 +546,16 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             Assert.AreEqual(
                 PlatformerStance2D.RopeSwing,
                 Stance(),
-                "Rope: a grab within RopeLength of the anchor should enter the RopeSwing stance");
+                "Rope: a grab within RopeLength of the anchor should enter the RopeSwing stance"
+            );
 
             var rope = _em.GetComponentData<RopeSwingState2D>(_character);
-            Assert.AreEqual(RopeAnchorPos.x, rope.AnchorPoint.x, 0.5f, "rope anchor X should match the scene anchor");
+            Assert.AreEqual(
+                RopeAnchorPos.x,
+                rope.AnchorPoint.x,
+                0.5f,
+                "rope anchor X should match the scene anchor"
+            );
 
             // Swing: with the character off-centre, gravity + the rope clamp produce pendulum motion. Track the X
             // range over the swing — a real pendulum sweeps a horizontal arc; a frozen/non-swinging body would not.
@@ -463,57 +570,85 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 maxX = max(maxX, x);
                 // The character must stay within RopeLength + a margin of the anchor (the clamp holds it on the circle).
                 var d = length(Position() - RopeAnchorPos);
-                Assert.LessOrEqual(d, rope.RopeLength + 0.6f, $"Rope: character must stay on the rope circle (dist {d:F3})");
+                Assert.LessOrEqual(
+                    d,
+                    rope.RopeLength + 0.6f,
+                    $"Rope: character must stay on the rope circle (dist {d:F3})"
+                );
             }
-            Assert.Greater(maxX - minX, 0.8f, $"Rope: the swing should sweep a horizontal arc (X range {maxX - minX:F3})");
+            Assert.Greater(
+                maxX - minX,
+                0.8f,
+                $"Rope: the swing should sweep a horizontal arc (X range {maxX - minX:F3})"
+            );
 
             // Release by jump: should leave RopeSwing back to AirMove, carrying swing momentum + the jump impulse.
             Step(1, jump: true);
             Assert.AreEqual(
                 PlatformerStance2D.AirMove,
                 Stance(),
-                "Rope: a jump should release the rope back to AirMove");
+                "Rope: a jump should release the rope back to AirMove"
+            );
         }
 
         [UnityTest]
-        public IEnumerator F_Teleport_Probe_TriggerNeverFiresAndSweptMovePositionWouldStopShort()
+        public IEnumerator F_Teleport_TriggerNowFiresOnPad_ButFarMovePositionStillStopsShort()
         {
             yield return LoadCourse();
 
-            // THE P7 TELEPORT PROBE — the verdict has TWO layers, both binding gaps.
+            // THE P7 TELEPORT PROBE, re-resolved after the sensor fix. The verdict HAD two layers; the dominant one
+            // is now fixed and only the second residual remains.
             //
-            // LAYER 1 (the dominant gap, root-caused). The teleporter is a sensor (CollisionResponse=Sensor →
-            // isTrigger=true) and TeleporterSystem2D fires on its trigger Begin. But the kinematic controller's
-            // grounding / collide-and-slide casts do NOT exclude sensor (isTrigger) shapes, so the character GROUNDS
-            // ON the teleporter pad instead of passing into it — the trigger Begin NEVER fires and the teleport never
-            // even attempts. (Same root cause as the wind zone, test D.) So the FIRST observable is: no trigger event
-            // is ever produced while the character sits on the pad.
+            // LAYER 1 (the dominant gap — NOW FIXED). The teleporter is a sensor (CollisionResponse=Sensor →
+            // isTrigger=true) and TeleporterSystem2D fires on its trigger Begin. Before the sensor fix the kinematic
+            // controller's casts treated the sensor as solid ground, so the character grounded ON the pad and the
+            // trigger Begin never fired. Now that the controller's casts EXCLUDE isTrigger shapes, the character
+            // passes INTO the pad as a visitor and the trigger Begin DOES fire — the teleporter system runs. (Same
+            // fix re-enabled the wind zone, test D.)
             //
-            // LAYER 2 (the gap behind the gap, measured separately). EVEN IF the trigger fired, the teleport is
-            // best-effort: it writes LocalToWorld := destination and enqueues a swept MovePosition(destination). The
-            // substrate has no instantaneous SetTransform — MovePosition maps to SetTransformTarget(target, dt), and
-            // Box2D clamps the implied velocity to PhysicsWorld2DConfig.maximumLinearSpeed = 400 u/s (~6.67 u/step at
-            // 60 Hz). A ~97-unit cross-course teleport would therefore advance only ~6.67 u/step and STOP SHORT,
-            // sweeping through the world over ~15 steps rather than teleporting. We measure this directly by driving a
-            // far MovePosition and watching the body fail to reach the target in a step.
+            // LAYER 2 (the residual binding gap — STILL OPEN, documented). The teleport is best-effort: it writes
+            // LocalToWorld := destination and enqueues a swept MovePosition(destination). The substrate has no
+            // instantaneous SetTransform — MovePosition maps to SetTransformTarget(target, dt), and Box2D clamps the
+            // implied velocity to PhysicsWorld2DConfig.maximumLinearSpeed = 400 u/s (~6.67 u/step at 60 Hz). A
+            // ~97-unit cross-course teleport therefore advances only ~6.67 u/step and STOPS SHORT, sweeping through the
+            // world over ~15 steps rather than landing in one. This is the known instantaneous-SetTransform binding
+            // gap (teleport decision A), NOT a new bug — measured directly below.
 
-            // LAYER 1: pin the character on the teleporter pad and confirm NO trigger event fires.
-            PlaceCharacterViaSky(TeleporterPadPos, PlatformerStance2D.AirMove);
+            // LAYER 1 (now passes): place the character ABOVE the teleporter pad and let it FALL through. A clean
+            // not-touching → touching transition as it enters the pad sensor is what fires the substrate trigger Begin
+            // (warping the body already-overlapping produces no transition — the substrate's begin-on-entry
+            // semantics). Now that the controller's casts exclude the isTrigger pad, the character falls through it as
+            // a visitor and the trigger Begin fires.
+            PlaceCharacterViaSky(
+                new float2(TeleporterPadPos.x, TeleporterPadPos.y + 6f),
+                PlatformerStance2D.AirMove
+            );
             var anyTrigger = false;
-            for (var i = 0; i < 20; i++)
+            var groundedOnPad = false;
+            for (var i = 0; i < 80; i++)
             {
-                PinStep(TeleporterPadPos);
+                Step(1, moveX: 0f);
                 if (TriggerEventCount() > 0)
                     anyTrigger = true;
+                if (Body().IsGrounded && _em.HasComponent<Teleporter2D>(Body().GroundHit.Entity))
+                    groundedOnPad = true;
             }
-            Assert.IsFalse(anyTrigger,
-                "Teleport (layer 1, binding gap): the teleporter is a sensor, but the controller's casts treat it as "
-                    + "solid ground, so the character sits ON the pad and never enters it — the trigger Begin never "
-                    + "fires and the teleport never attempts. Re-enable when the controller excludes isTrigger shapes "
-                    + "from its casts.");
+            Assert.IsFalse(
+                groundedOnPad,
+                "Teleport (layer 1, fixed): the character must NOT ground on the teleporter pad sensor — the "
+                    + "controller casts now exclude isTrigger shapes, so it passes into the pad as a visitor."
+            );
+            Assert.IsTrue(
+                anyTrigger,
+                "Teleport (layer 1, fixed): a trigger Begin must fire while the character is in the teleporter pad "
+                    + "sensor — the controller now passes through the sensor instead of grounding on it, so the "
+                    + "teleporter system runs."
+            );
 
-            // LAYER 2: directly drive a far MovePosition (the body, tag off so only the move acts) and confirm the
-            // swept SetTransformTarget cannot cross the course in one step — it advances ≤ ~6.67 u (the 400 u/s clamp).
+            // LAYER 2 (still open, documented): directly drive a far MovePosition (the body, tag off so only the move
+            // acts) and confirm the swept SetTransformTarget cannot cross the course in one step — it advances ≤ ~6.67
+            // u (the 400 u/s clamp). This is the residual instantaneous-SetTransform binding gap, unchanged by the
+            // sensor fix.
             _em.RemoveComponent<PlatformerCharacterTag>(_character);
             var fromX = Position().x;
             var farCmds = _em.GetBuffer<PhysicsBody2DCommand>(_character);
@@ -523,18 +658,23 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             _em.AddComponent<PlatformerCharacterTag>(_character);
 
             UnityEngine.Debug.Log(
-                $"[P7-TELEPORT-PROBE] LAYER1: trigger fired on pad = {anyTrigger} (it does NOT — the character grounds "
-                    + $"on the sensor). LAYER2: a far MovePosition (~97 u) advanced only {advancedOneStep:F2} u in one "
-                    + "step (the 400 u/s ≈ 6.67 u/step maximumLinearSpeed clamp), so even if it fired the swept move "
-                    + "STOPS SHORT. VERDICT: teleport is NON-FUNCTIONAL — the trigger never fires (dominant gap), and "
-                    + "the swept MovePosition could not instantaneously reach anyway (the substrate lacks an "
-                    + "instantaneous SetTransform — teleport decision A, unbuilt).");
+                $"[P7-TELEPORT-PROBE] LAYER1 (fixed): trigger fired on pad = {anyTrigger}, grounded-on-pad = "
+                    + $"{groundedOnPad} (the character now passes INTO the pad and the trigger fires). LAYER2 "
+                    + $"(residual): a far MovePosition (~97 u) advanced only {advancedOneStep:F2} u in one step (the "
+                    + "400 u/s ≈ 6.67 u/step maximumLinearSpeed clamp), so the swept move STOPS SHORT of a cross-course "
+                    + "teleport. VERDICT: the teleporter now FIRES (sensor fix), but a far cross-course jump cannot "
+                    + "complete in one step — the substrate lacks an instantaneous SetTransform (teleport decision A, "
+                    + "unbuilt). A clear-path / short teleport whose per-step distance fits within ~6.67 u completes."
+            );
 
-            Assert.Less(advancedOneStep, 10f,
-                $"Teleport (layer 2, binding gap): a far ~97-unit MovePosition advanced only {advancedOneStep:F2} u in "
-                    + "one step — the swept SetTransformTarget is clamped to ~6.67 u/step (400 u/s maximumLinearSpeed) "
-                    + "and STOPS SHORT of a cross-course teleport. An instantaneous substrate SetTransform (decision A) "
-                    + "would land it in one step and flip this RED.");
+            Assert.Less(
+                advancedOneStep,
+                10f,
+                $"Teleport (layer 2, residual binding gap): a far ~97-unit MovePosition advanced only "
+                    + $"{advancedOneStep:F2} u in one step — the swept SetTransformTarget is clamped to ~6.67 u/step "
+                    + "(400 u/s maximumLinearSpeed) and STOPS SHORT of a cross-course teleport. An instantaneous "
+                    + "substrate SetTransform (decision A) would land it in one step; that remains unbuilt."
+            );
         }
     }
 }

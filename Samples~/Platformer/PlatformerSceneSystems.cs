@@ -43,9 +43,15 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         {
             float dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (platform, commands, ltw) in
-                     SystemAPI.Query<RefRW<MovingPlatform2D>, DynamicBuffer<PhysicsBody2DCommand>, RefRO<LocalToWorld>>()
-                         .WithAll<Simulate>())
+            foreach (
+                var (platform, commands, ltw) in SystemAPI
+                    .Query<
+                        RefRW<MovingPlatform2D>,
+                        DynamicBuffer<PhysicsBody2DCommand>,
+                        RefRO<LocalToWorld>
+                    >()
+                    .WithAll<Simulate>()
+            )
             {
                 // Capture the home from the baked pose on the first update (so the oscillation centres on where the
                 // platform was authored, not on world origin).
@@ -93,16 +99,24 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         {
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            foreach (var (_, entity) in
-                     SystemAPI.Query<RefRO<MovingPlatform2D>>().WithNone<TrackedTransform2D>().WithEntityAccess())
+            foreach (
+                var (_, entity) in SystemAPI
+                    .Query<RefRO<MovingPlatform2D>>()
+                    .WithNone<TrackedTransform2D>()
+                    .WithEntityAccess()
+            )
             {
                 ecb.AddComponent(entity, new TrackedTransform2D());
             }
 
             // The command buffer is added in a separate pass (WithNone keyed on the buffer type) so a platform missing
             // both gets both, and a platform missing only one gets only the one.
-            foreach (var (_, entity) in
-                     SystemAPI.Query<RefRO<MovingPlatform2D>>().WithNone<PhysicsBody2DCommand>().WithEntityAccess())
+            foreach (
+                var (_, entity) in SystemAPI
+                    .Query<RefRO<MovingPlatform2D>>()
+                    .WithNone<PhysicsBody2DCommand>()
+                    .WithEntityAccess()
+            )
             {
                 ecb.AddBuffer<PhysicsBody2DCommand>(entity);
             }
@@ -136,8 +150,12 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         {
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            foreach (var (_, entity) in
-                     SystemAPI.Query<RefRO<Pushable2D>>().WithNone<PhysicsBody2DCommand>().WithEntityAccess())
+            foreach (
+                var (_, entity) in SystemAPI
+                    .Query<RefRO<Pushable2D>>()
+                    .WithNone<PhysicsBody2DCommand>()
+                    .WithEntityAccess()
+            )
             {
                 ecb.AddBuffer<PhysicsBody2DCommand>(entity);
             }
@@ -210,6 +228,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
         public void OnUpdate(ref SystemState state)
         {
+            // The Stay-force loop writes ComponentLookup<KinematicCharacterBody2D> on the main thread; the character
+            // solve job also writes it. Finish the scheduled writer before the main-thread read/write.
+            state.CompleteDependency();
+
             _windZoneLookup.Update(ref state);
             _characterTagLookup.Update(ref state);
             _bodyLookup.Update(ref state);
@@ -238,15 +260,24 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 {
                     float2 force = _windZoneLookup[ev.triggerEntity].Force;
                     if (_inZoneLookup.HasComponent(visitor))
-                        ecb.SetComponent(visitor, new InWindZone2D { Zone = ev.triggerEntity, Force = force });
+                        ecb.SetComponent(
+                            visitor,
+                            new InWindZone2D { Zone = ev.triggerEntity, Force = force }
+                        );
                     else
-                        ecb.AddComponent(visitor, new InWindZone2D { Zone = ev.triggerEntity, Force = force });
+                        ecb.AddComponent(
+                            visitor,
+                            new InWindZone2D { Zone = ev.triggerEntity, Force = force }
+                        );
                 }
                 else // End
                 {
                     // Only clear if the character is leaving the SAME zone it last entered (a character could overlap
                     // two zones; the latest Begin wins, and an End from the other zone must not strip the active one).
-                    if (_inZoneLookup.HasComponent(visitor) && _inZoneLookup[visitor].Zone == ev.triggerEntity)
+                    if (
+                        _inZoneLookup.HasComponent(visitor)
+                        && _inZoneLookup[visitor].Zone == ev.triggerEntity
+                    )
                         ecb.RemoveComponent<InWindZone2D>(visitor);
                 }
             }
@@ -254,9 +285,18 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             ecb.Playback(state.EntityManager);
             ecb.Dispose();
 
+            // The ECB playback above is a structural change (add/remove the in-zone tag), which invalidates every
+            // ComponentLookup captured before it. Re-acquire the writable body lookup against the post-structural-
+            // change state before the Stay-force loop reads/writes it (else: ObjectDisposedException).
+            _bodyLookup.Update(ref state);
+
             // --- Stay: apply each in-zone character's cached force to its relative velocity this step ------------
-            foreach (var (inZone, entity) in
-                     SystemAPI.Query<RefRO<InWindZone2D>>().WithAll<PlatformerCharacterTag>().WithEntityAccess())
+            foreach (
+                var (inZone, entity) in SystemAPI
+                    .Query<RefRO<InWindZone2D>>()
+                    .WithAll<PlatformerCharacterTag>()
+                    .WithEntityAccess()
+            )
             {
                 if (!_bodyLookup.HasComponent(entity))
                     continue;
@@ -328,6 +368,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
         public void OnUpdate(ref SystemState state)
         {
+            // This main-thread system reads/writes ComponentLookup<LocalToWorld> (and the body lookup), both written
+            // by scheduled jobs (the transform-export BatchTransformToLocalToWorldJob and the character solve). Finish
+            // those before touching the lookups, or reading LocalToWorld throws (a scheduled writer is still live).
+            state.CompleteDependency();
+
             _teleporterLookup.Update(ref state);
             _characterTagLookup.Update(ref state);
             _bodyLookup.Update(ref state);

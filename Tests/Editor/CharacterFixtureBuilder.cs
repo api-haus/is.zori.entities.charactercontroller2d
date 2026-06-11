@@ -7,6 +7,7 @@ using UnityEngine;
 using Zori.Entities.CharacterController2D.Authoring;
 using PhysicsBody2DAuthoring = Zori.Entities.Physics2D.Authoring.PhysicsBody2DAuthoring;
 using PhysicsBody2DMotionType = Zori.Entities.Physics2D.Authoring.PhysicsBody2DMotionType;
+using PhysicsCollisionResponse2D = Zori.Entities.Physics2D.PhysicsCollisionResponse2D;
 using PhysicsShape2DAuthoring = Zori.Entities.Physics2D.Authoring.PhysicsShape2DAuthoring;
 using PhysicsShape2DKind = Zori.Entities.Physics2D.PhysicsShape2DKind;
 
@@ -61,7 +62,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string DynamicPushParent = FixtureRoot + "/CC2D_DynamicPush.unity";
         public const string DynamicPushChild = FixtureRoot + "/CC2D_DynamicPush_Sub.unity";
         public const string DynamicPushHeavyParent = FixtureRoot + "/CC2D_DynamicPushHeavy.unity";
-        public const string DynamicPushHeavyChild = FixtureRoot + "/CC2D_DynamicPushHeavy_Sub.unity";
+        public const string DynamicPushHeavyChild =
+            FixtureRoot + "/CC2D_DynamicPushHeavy_Sub.unity";
         public const string MovingPlatformParent = FixtureRoot + "/CC2D_MovingPlatform.unity";
         public const string MovingPlatformChild = FixtureRoot + "/CC2D_MovingPlatform_Sub.unity";
 
@@ -72,6 +74,12 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string CapsuleGroundChild = FixtureRoot + "/CC2D_CapsuleGround_Sub.unity";
         public const string CapsuleWallParent = FixtureRoot + "/CC2D_CapsuleWall.unity";
         public const string CapsuleWallChild = FixtureRoot + "/CC2D_CapsuleWall_Sub.unity";
+
+        // ---- sensor / trigger pass-through fixture (the negative-space case: a kinematic character must NOT
+        // ground on a sensor; it passes through and the trigger Begin fires) -------------------------------
+        public const string SensorPassThroughParent = FixtureRoot + "/CC2D_SensorPassThrough.unity";
+        public const string SensorPassThroughChild =
+            FixtureRoot + "/CC2D_SensorPassThrough_Sub.unity";
 
         // ---- gate-4 future-slope / downward-ledge fixtures -------------------------------------------------
         public const string DownLedgeParent = FixtureRoot + "/CC2D_DownLedge.unity";
@@ -107,6 +115,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // asserts the capsule grounds, slides, and steps up using these dims.
         public const float CapsuleWidth = 1f;
         public const float CapsuleHeight = 2f;
+
         // Distance from the capsule centre to its bottom-most point (cap radius + cap offset).
         public const float CapsuleBottomReach = CapsuleHeight * 0.5f;
 
@@ -124,6 +133,15 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // a cross-assembly reference (the editor builder and the all-platforms runtime test do not reference each
         // other).
         public const float FloorTopY = 0f;
+
+        // Sensor pass-through fixture: a SENSOR (isTrigger) box straddling the character's fall path, with a SOLID
+        // floor below it. A correct controller passes the character THROUGH the sensor (firing a trigger Begin) and
+        // lands it on the solid floor below; the bug grounds the character ON the sensor. The sensor box is centred
+        // at Y=0 with a 2-tall extent (so its volume is Y∈[-1,1]); the solid floor top sits at SensorSolidFloorTopY,
+        // well below the sensor. The runtime gate references these (kept in sync by convention).
+        public const float SensorBoxCenterY = 0f;
+        public const float SensorBoxHalfHeight = 1f;
+        public const float SensorSolidFloorTopY = -4f;
 
         [MenuItem("Tools/Zori/Build Character Controller 2D Gate Fixtures")]
         public static void BuildAll()
@@ -152,6 +170,9 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildDownSlopeGentle();
             BuildDownSlopeSteep();
 
+            // Sensor / trigger pass-through (the negative-space regression case).
+            BuildSensorPassThrough();
+
             // P0 capsule-proxy character (the capsule mandate).
             BuildCapsuleGround();
             BuildCapsuleWall();
@@ -174,7 +195,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                 {
                     AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
                     AddCharacter(root, new Vector3(0f, 3f, 0f));
-                });
+                }
+            );
         }
 
         // Collide-and-slide into a wall: character starts grounded near the floor, the test drives +X velocity into
@@ -190,7 +212,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     // Wall: a tall thin box whose left face is at X = 3 (centre at 3 + 0.5).
                     AddFloor(root, new Vector2(3.5f, 3f), new Vector2(1f, 10f));
                     AddCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
-                });
+                }
+            );
         }
 
         // Slope within limit: a 30-degree ramp the character climbs. The ramp is a rotated thin box; the character
@@ -206,7 +229,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     ramp.transform.rotation = Quaternion.Euler(0f, 0f, 30f);
                     // Character starts above the low end of the ramp (left side), close to its top surface.
                     AddCharacter(root, new Vector3(-4f, 1.5f, 0f));
-                });
+                }
+            );
         }
 
         // Wall while grounded: character grounded on a flat floor, walks into a vertical wall. It must slide along
@@ -221,7 +245,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
                     AddFloor(root, new Vector2(3.5f, 3f), new Vector2(1f, 10f));
                     AddCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
-                });
+                }
+            );
         }
 
         // Depenetration shallow: character spawned overlapping a wall by a little less than the radius.
@@ -237,7 +262,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     var c = AddCharacter(root, new Vector3(0.2f, 5f, 0f));
                     // No grounding/gravity confound: this is a pure horizontal-overlap probe.
                     DisableGrounding(c);
-                });
+                }
+            );
         }
 
         // Depenetration DEEP (the adversarial probe): character centre well INSIDE the wall, deeper than the
@@ -258,7 +284,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     // Give depenetration more iterations per step so a deep overlap resolves quickly and the test can
                     // assert convergence within a bounded number of fixed steps.
                     BumpOverlapIterations(c, 8);
-                });
+                }
+            );
         }
 
         // Depenetration against the GROUND while grounded: a character spawned sunk into the floor. It must pop
@@ -275,7 +302,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     // (~0.51), so it is penetrating the floor by ~0.4.
                     var c = AddCharacter(root, new Vector3(0f, 0.1f, 0f));
                     BumpOverlapIterations(c, 8);
-                });
+                }
+            );
         }
 
         // ---- C4b advanced-feature fixtures -----------------------------------------------------------------
@@ -294,7 +322,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     AddFloor(root, new Vector2(4.5f, LowStepTopY - 1f), new Vector2(5f, 2f));
                     var c = AddBoxCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
                     EnableStepHandling(c, maxStepHeight: 0.5f);
-                });
+                }
+            );
         }
 
         // Step over limit: the same walk into a step whose top (HighStepTopY = 0.9) exceeds MaxStepHeight (0.5).
@@ -310,7 +339,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     AddFloor(root, new Vector2(4.5f, HighStepTopY - 1f), new Vector2(5f, 2f));
                     var c = AddBoxCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
                     EnableStepHandling(c, maxStepHeight: 0.5f);
-                });
+                }
+            );
         }
 
         // ---- P0 capsule-proxy fixtures ---------------------------------------------------------------------
@@ -326,7 +356,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                 {
                     AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
                     AddCapsuleCharacter(root, new Vector3(0f, CapsuleBottomReach + 2f, 0f));
-                });
+                }
+            );
         }
 
         // Capsule collide-and-slide: a grounded CAPSULE walks +X into a vertical wall whose left face is at X=3;
@@ -341,7 +372,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
                     AddFloor(root, new Vector2(3.5f, 3f), new Vector2(1f, 10f));
                     AddCapsuleCharacter(root, new Vector3(0f, CapsuleBottomReach + 0.05f, 0f));
-                });
+                }
+            );
         }
 
         // Capsule step-up (the UNVERIFIED case the box-only gate-4 fix left open): a grounded CAPSULE walks +X
@@ -357,9 +389,13 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                 {
                     AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
                     AddFloor(root, new Vector2(4.5f, LowStepTopY - 1f), new Vector2(5f, 2f));
-                    var c = AddCapsuleCharacter(root, new Vector3(0f, CapsuleBottomReach + 0.05f, 0f));
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(0f, CapsuleBottomReach + 0.05f, 0f)
+                    );
                     EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
-                });
+                }
+            );
         }
 
         // Jump: a grounded character on a flat floor. The runtime test calls StandardJump2D, then asserts the
@@ -373,7 +409,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                 {
                     AddFloor(root, new Vector2(0f, FloorTopY - 0.5f), new Vector2(40f, 1f));
                     AddCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
-                });
+                }
+            );
         }
 
         // Character ↔ character: two SimulateDynamicBody characters spawned overlapping on a flat floor. The
@@ -390,7 +427,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     // Both SimulateDynamicBody (the default) so they exchange deferred impulses.
                     AddCharacter(root, new Vector3(-0.3f, CharacterRadius + 0.05f, 0f));
                     AddCharacter(root, new Vector3(0.3f, CharacterRadius + 0.05f, 0f));
-                });
+                }
+            );
         }
 
         // Dynamic-body push (light box): a kinematic character (SimulateDynamicBody on) walks +X into a regular
@@ -405,7 +443,11 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // The adversarial pair: a heavier authored mass must be pushed LESS for the same character push.
         static void BuildDynamicPushHeavy()
         {
-            BuildDynamicPushFixture(DynamicPushHeavyChild, DynamicPushHeavyParent, DynamicBoxHeavyMass);
+            BuildDynamicPushFixture(
+                DynamicPushHeavyChild,
+                DynamicPushHeavyParent,
+                DynamicBoxHeavyMass
+            );
         }
 
         static void BuildDynamicPushFixture(string childPath, string parentPath, float boxMass)
@@ -424,11 +466,13 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                         root,
                         new Vector3(DynamicBoxLeftFaceX + 0.5f, CharacterRadius + 0.05f, 0f),
                         new Unity.Mathematics.float2(1f, 1f),
-                        boxMass);
+                        boxMass
+                    );
                     var c = AddCharacter(root, new Vector3(0f, CharacterRadius + 0.05f, 0f));
                     // SimulateDynamicBody is on by default — the character pushes the box. Leave it.
                     _ = c;
-                });
+                }
+            );
         }
 
         // Moving platform: a kinematic platform body the runtime test drives laterally via MovePosition, with a
@@ -447,10 +491,12 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                     AddKinematicPlatform(
                         root,
                         new Vector3(0f, PlatformTopY - 0.5f, 0f),
-                        new Unity.Mathematics.float2(8f, 1f));
+                        new Unity.Mathematics.float2(8f, 1f)
+                    );
                     // Character standing on the platform top.
                     AddCharacter(root, new Vector3(0f, PlatformTopY + CharacterRadius + 0.05f, 0f));
-                });
+                }
+            );
         }
 
         // ---- gate-4 future-slope / downward-ledge fixtures -------------------------------------------------
@@ -467,12 +513,20 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                 root =>
                 {
                     // Platform top at Y=0, ending at X = LedgeEdgeX (right face). Beyond it is empty space.
-                    AddFloor(root, new Vector2((LedgeEdgeX - 10f) * 0.5f, FloorTopY - 0.5f), new Vector2(10f + LedgeEdgeX, 1f));
-                    var c = AddCharacter(root, new Vector3(LedgeEdgeX - 3f, CharacterRadius + 0.05f, 0f));
+                    AddFloor(
+                        root,
+                        new Vector2((LedgeEdgeX - 10f) * 0.5f, FloorTopY - 0.5f),
+                        new Vector2(10f + LedgeEdgeX, 1f)
+                    );
+                    var c = AddCharacter(
+                        root,
+                        new Vector3(LedgeEdgeX - 3f, CharacterRadius + 0.05f, 0f)
+                    );
                     // PreventGroundingWhenMovingTowardsNoGrounding is on by default in the params; leave it. No
                     // HasMaxDownwardSlopeChangeAngle needed — the ledge is the no-grounding case.
                     _ = c;
-                });
+                }
+            );
         }
 
         // Gentle downslope (within the max downward slope-change angle): a flat top that transitions to a shallow
@@ -485,7 +539,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildFixture(
                 DownSlopeGentleChild,
                 DownSlopeGentleParent,
-                root => BuildDownSlopeScene(root, GentleDownSlopeDeg));
+                root => BuildDownSlopeScene(root, GentleDownSlopeDeg)
+            );
         }
 
         // Steep downslope (over the max downward slope-change angle): the same flat-to-downhill transition but a
@@ -499,7 +554,8 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildFixture(
                 DownSlopeSteepChild,
                 DownSlopeSteepParent,
-                root => BuildDownSlopeScene(root, SteepDownSlopeDeg));
+                root => BuildDownSlopeScene(root, SteepDownSlopeDeg)
+            );
         }
 
         // A flat top platform (so the character starts grounded on flat ground, currentGroundUp = +Y) butted up
@@ -512,9 +568,45 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             // Downhill ramp: a long thin box rotated -downSlopeDeg (descending to the right), its high (left) end
             // butted at the lip so its top surface continues down-right from (SlopeLipX, 0).
             var ramp = AddFloor(root, new Vector2(SlopeLipX + 5f, -0.5f), new Vector2(12f, 1f));
-            ramp.transform.RotateAround(new Vector3(SlopeLipX, 0f, 0f), Vector3.forward, -downSlopeDeg);
+            ramp.transform.RotateAround(
+                new Vector3(SlopeLipX, 0f, 0f),
+                Vector3.forward,
+                -downSlopeDeg
+            );
             // Character on the flat top, a little left of the lip, close to the surface.
             AddCharacter(root, new Vector3(SlopeLipX - 2f, CharacterRadius + 0.05f, 0f));
+        }
+
+        // Sensor pass-through (the negative-space regression case): a character dropped from above a SENSOR box
+        // that straddles its fall path, with a SOLID floor far below. A kinematic character must treat the sensor
+        // as NON-SOLID — pass THROUGH it (firing a trigger Begin as it enters) and land on the solid floor below —
+        // not ground on the sensor as if it were floor. The runtime gate asserts (a) the character never grounds on
+        // the sensor entity and (b) a trigger Begin fires for the character entering the sensor, and (c) it settles
+        // on the solid floor below.
+        static void BuildSensorPassThrough()
+        {
+            BuildFixture(
+                SensorPassThroughChild,
+                SensorPassThroughParent,
+                root =>
+                {
+                    // The sensor: a wide box centred at Y=0 (volume Y∈[-1,1]), CollisionResponse = Sensor so it
+                    // bakes isTrigger=true. The character falls through its top face at Y=+1.
+                    AddSensorBox(
+                        root,
+                        new Vector3(0f, SensorBoxCenterY, 0f),
+                        new Unity.Mathematics.float2(8f, 2f * SensorBoxHalfHeight)
+                    );
+                    // The solid floor the character should ACTUALLY land on, well below the sensor.
+                    AddFloor(
+                        root,
+                        new Vector2(0f, SensorSolidFloorTopY - 0.5f),
+                        new Vector2(40f, 1f)
+                    );
+                    // Character dropped above the sensor so it falls through it onto the solid floor.
+                    AddCharacter(root, new Vector3(0f, SensorBoxHalfHeight + 2f, 0f));
+                }
+            );
         }
 
         // ---- authoring helpers -----------------------------------------------------------------------------
@@ -563,7 +655,10 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             var props = AuthoringKinematicCharacterProperties2D.GetDefault();
             auth.CharacterProperties = props;
             auth.ProxyShape = CharacterProxyShape2D.Box;
-            auth.ProxyBoxSize = new Unity.Mathematics.float2(2f * CharacterRadius, 2f * CharacterRadius);
+            auth.ProxyBoxSize = new Unity.Mathematics.float2(
+                2f * CharacterRadius,
+                2f * CharacterRadius
+            );
             auth.InterpolateRendering = false;
             return auth;
         }
@@ -571,7 +666,10 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // A capsule-proxy character: a vertical capsule (width CapsuleWidth → cap radius 0.5, height CapsuleHeight
         // → caps at ±0.5). The proxy cast is a CapsuleCast, the world body shape a capsule, both derived from the
         // same authored size — the P0 capsule mandate end-to-end.
-        static CharacterController2DAuthoring AddCapsuleCharacter(GameObject parent, Vector3 position)
+        static CharacterController2DAuthoring AddCapsuleCharacter(
+            GameObject parent,
+            Vector3 position
+        )
         {
             var go = new GameObject("Character");
             go.transform.SetParent(parent.transform, false);
@@ -589,7 +687,10 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
 
         // Step handling for a capsule: the grounding-width check uses the cap diameter (the capsule's width), the
         // capsule analogue of EnableStepHandling's 2*CharacterRadius for a circle.
-        static void EnableCapsuleStepHandling(CharacterController2DAuthoring auth, float maxStepHeight)
+        static void EnableCapsuleStepHandling(
+            CharacterController2DAuthoring auth,
+            float maxStepHeight
+        )
         {
             var step = auth.StepAndSlopeHandling;
             step.StepHandling = true;
@@ -628,7 +729,12 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // A regular DYNAMIC body the character can push: a PhysicsBody2DAuthoring (Dynamic, explicit mass, gravity
         // off) + a box PhysicsShape2DAuthoring. The explicit mass (UseAutoMass off) is the exact value the
         // StoredDynamicBodyData2D snapshot carries and the hit-dynamics impulse exchange scales by.
-        static GameObject AddDynamicBox(GameObject parent, Vector3 position, Unity.Mathematics.float2 size, float mass)
+        static GameObject AddDynamicBox(
+            GameObject parent,
+            Vector3 position,
+            Unity.Mathematics.float2 size,
+            float mass
+        )
         {
             var go = new GameObject("DynamicBox");
             go.transform.SetParent(parent.transform, false);
@@ -645,10 +751,36 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             return go;
         }
 
+        // A static SENSOR (isTrigger) box: a PhysicsBody2DAuthoring (Static) + a box PhysicsShape2DAuthoring with
+        // CollisionResponse = Sensor (which bakes PhysicsShape2D.isTrigger = true). A sensor overlaps and reports
+        // trigger events but produces no collision response — the controller must pass through it. Authored via the
+        // package authoring (not a bare BoxCollider2D) because CollisionResponse lives on PhysicsShape2DAuthoring.
+        static GameObject AddSensorBox(
+            GameObject parent,
+            Vector3 position,
+            Unity.Mathematics.float2 size
+        )
+        {
+            var go = new GameObject("SensorZone");
+            go.transform.SetParent(parent.transform, false);
+            go.transform.position = position;
+            var body = go.AddComponent<PhysicsBody2DAuthoring>();
+            body.BodyType = PhysicsBody2DMotionType.Static;
+            var shape = go.AddComponent<PhysicsShape2DAuthoring>();
+            shape.Kind = PhysicsShape2DKind.Box;
+            shape.BoxSize = size;
+            shape.CollisionResponse = PhysicsCollisionResponse2D.Sensor;
+            return go;
+        }
+
         // A KINEMATIC platform body the runtime test drives with MovePosition. Kinematic so its pose is moved
         // directly (a static body cannot move, a dynamic body would fall). The runtime test adds a
         // TrackedTransform2D to it so the controller treats it as a moving platform.
-        static GameObject AddKinematicPlatform(GameObject parent, Vector3 position, Unity.Mathematics.float2 size)
+        static GameObject AddKinematicPlatform(
+            GameObject parent,
+            Vector3 position,
+            Unity.Mathematics.float2 size
+        )
         {
             var go = new GameObject("MovingPlatform");
             go.transform.SetParent(parent.transform, false);
@@ -663,7 +795,11 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
 
         // ---- scene plumbing (mirrors the substrate builders) -----------------------------------------------
 
-        static void BuildFixture(string childPath, string parentPath, System.Action<GameObject> populate)
+        static void BuildFixture(
+            string childPath,
+            string parentPath,
+            System.Action<GameObject> populate
+        )
         {
             var child = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var root = new GameObject("FixtureRoot");
@@ -672,7 +808,9 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             EditorSceneManager.SaveScene(child, childPath);
 
             var parent = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            var subSceneGo = new GameObject(Path.GetFileNameWithoutExtension(childPath) + " SubScene");
+            var subSceneGo = new GameObject(
+                Path.GetFileNameWithoutExtension(childPath) + " SubScene"
+            );
             var subScene = subSceneGo.AddComponent<SubScene>();
             subScene.SceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(childPath);
             subScene.AutoLoadScene = true;
