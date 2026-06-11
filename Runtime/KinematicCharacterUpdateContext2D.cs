@@ -63,6 +63,17 @@ namespace Zori.Entities.CharacterController2D
         public ComponentLookup<TrackedTransform2D> TrackedTransformLookup;
 
         /// <summary>
+        /// Lookup for the <see cref="StoredDynamicBodyData2D"/> component — the main-thread pre-solve snapshot of a
+        /// regular (non-character) dynamic body's velocity and mass (written by
+        /// <see cref="StoreDynamicBodyDataSystem2D"/>). It is how the Burst character solve reads another body's
+        /// motion for the hit-dynamics impulse exchange without touching the managed <c>PhysicsBody</c> handle (the
+        /// D5 resolution — the velocity read is not Burst-callable, so it is snapshotted on the main thread and read
+        /// here as a Burst-safe component).
+        /// </summary>
+        [ReadOnly]
+        public ComponentLookup<StoredDynamicBodyData2D> DynamicBodyDataLookup;
+
+        /// <summary>
         /// The one reusable hit list every query writes into during the update (raycast, circle/box cast, and
         /// overlap all return <see cref="PhysicsQueryHit2D"/>). Created lazily inside the job via
         /// <see cref="EnsureCreationOfTmpCollections"/>. <see cref="NativeDisableContainerSafetyRestrictionAttribute"/>
@@ -82,6 +93,7 @@ namespace Zori.Entities.CharacterController2D
         {
             StoredCharacterBodyPropertiesLookup = state.GetComponentLookup<StoredKinematicCharacterData2D>(true);
             TrackedTransformLookup = state.GetComponentLookup<TrackedTransform2D>(true);
+            DynamicBodyDataLookup = state.GetComponentLookup<StoredDynamicBodyData2D>(true);
         }
 
         /// <summary>
@@ -100,6 +112,7 @@ namespace Zori.Entities.CharacterController2D
 
             StoredCharacterBodyPropertiesLookup.Update(ref state);
             TrackedTransformLookup.Update(ref state);
+            DynamicBodyDataLookup.Update(ref state);
 
             TmpQueryHits = default;
         }

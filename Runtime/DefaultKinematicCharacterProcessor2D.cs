@@ -1,3 +1,4 @@
+using Unity.Entities;
 using Unity.Mathematics;
 
 namespace Zori.Entities.CharacterController2D
@@ -45,10 +46,15 @@ namespace Zori.Entities.CharacterController2D
         public KinematicCharacterProperties2D CharacterProperties;
 
         /// <summary>
-        /// Whether velocity is constrained to the ground plane on a non-grounded-slope hit. From the character's
-        /// <see cref="BasicStepAndSlopeHandlingParameters2D.ConstrainVelocityToGroundPlane"/>.
+        /// The character's step- and slope-handling parameters, so the grounding callback can evaluate step
+        /// grounding (<see cref="KinematicCharacterUtilities2D.IsGroundedOnSteps"/>) and the constrain-to-ground flag.
         /// </summary>
-        public bool ConstrainVelocityToGroundPlane;
+        public BasicStepAndSlopeHandlingParameters2D StepAndSlopeHandling;
+
+        /// <summary>
+        /// The character entity, needed by the step-grounding raycasts so they can skip the character's own body.
+        /// </summary>
+        public Entity CharacterEntity;
 
         /// <inheritdoc/>
         public void UpdateGroundingUp(
@@ -83,8 +89,10 @@ namespace Zori.Entities.CharacterController2D
         {
             return KinematicCharacterUtilities2D.Default_IsGroundedOnHit(
                 ref baseContext,
+                CharacterEntity,
                 in CharacterBodySnapshot,
                 in CharacterProperties,
+                in StepAndSlopeHandling,
                 in hit,
                 groundingEvaluationType);
         }
@@ -122,7 +130,7 @@ namespace Zori.Entities.CharacterController2D
                 ref characterGroundHit,
                 in velocityProjectionHits,
                 originalVelocityDirection,
-                ConstrainVelocityToGroundPlane,
+                StepAndSlopeHandling.ConstrainVelocityToGroundPlane,
                 in CharacterBodySnapshot);
         }
 

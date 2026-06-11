@@ -183,10 +183,15 @@ namespace Zori.Entities.CharacterController2D
                 {
                     CharacterBodySnapshot = characterBody,
                     CharacterProperties = characterProperties,
-                    ConstrainVelocityToGroundPlane = stepAndSlopeHandling.ConstrainVelocityToGroundPlane,
+                    StepAndSlopeHandling = stepAndSlopeHandling,
+                    CharacterEntity = entity,
                 };
 
                 var userContext = new DefaultCharacterUpdateContext2D();
+
+                // The gravity the default path applies (above) is also the gravity the ground-pushing step presses
+                // the dynamic ground down with — keep them the same so the push force matches the character's weight.
+                float2 gravity = new float2(0f, -DefaultGravityMagnitude);
 
                 KinematicCharacterPhysicsUpdate2D.PhysicsUpdate2D(
                     ref characterContext,
@@ -195,6 +200,8 @@ namespace Zori.Entities.CharacterController2D
                     ref userContext,
                     ref BaseContext,
                     in BodyTransformLookup,
+                    in stepAndSlopeHandling,
+                    gravity,
                     DeltaTime);
             }
         }

@@ -122,6 +122,8 @@ namespace Zori.Entities.CharacterController2D
             ref C context,
             ref KinematicCharacterUpdateContext2D baseContext,
             in ComponentLookup<LocalToWorld> bodyTransformLookup,
+            in BasicStepAndSlopeHandlingParameters2D stepAndSlopeHandling,
+            float2 gravity,
             float deltaTime)
             where T : unmanaged, IKinematicCharacterProcessor2D<C>
             where C : unmanaged
@@ -140,7 +142,17 @@ namespace Zori.Entities.CharacterController2D
                 characterContext.VelocityProjectionHits,
                 deltaTime);
 
-            // C4b: Update_ParentMovement chains in HERE (after Initialize, before Grounding).
+            // Step 2 — Parent movement (C4b): carry the pose rigidly with a TrackedTransform2D parent's delta.
+            KinematicCharacterUtilities2D.Update_ParentMovement(
+                in processor,
+                ref context,
+                ref baseContext,
+                characterContext.Entity,
+                ref characterBody,
+                in characterContext.CharacterProperties,
+                in characterContext.ColliderProxy,
+                characterRotation,
+                ref characterPosition);
 
             // Step 3 — Grounding (detect ground, snap, project velocity onto it).
             KinematicCharacterUtilities2D.Update_Grounding(
@@ -156,9 +168,17 @@ namespace Zori.Entities.CharacterController2D
                 characterContext.CharacterHitsBuffer,
                 ref characterPosition);
 
-            // C4b: Update_PreventGroundingFromFutureSlopeChange chains in HERE (after Grounding, before Movement).
+            // Step 4 — Prevent grounding from a future slope change (C4b): launch off a ledge cleanly.
+            KinematicCharacterUtilities2D.Update_PreventGroundingFromFutureSlopeChange(
+                in processor,
+                ref context,
+                ref baseContext,
+                characterContext.Entity,
+                ref characterBody,
+                in characterContext.CharacterProperties,
+                in stepAndSlopeHandling);
 
-            // Step 5 — Movement and decollisions (collide-and-slide + depenetration).
+            // Step 5 — Movement and decollisions (collide-and-slide + depenetration + step-up + hit dynamics).
             KinematicCharacterUtilities2D.Update_MovementAndDecollisions(
                 in processor,
                 ref context,
@@ -167,6 +187,7 @@ namespace Zori.Entities.CharacterController2D
                 ref characterBody,
                 in characterContext.CharacterProperties,
                 in characterContext.ColliderProxy,
+                in stepAndSlopeHandling,
                 characterRotation,
                 in bodyTransformLookup,
                 characterContext.VelocityProjectionHits,
@@ -174,8 +195,25 @@ namespace Zori.Entities.CharacterController2D
                 characterContext.DeferredImpulsesBuffer,
                 ref characterPosition);
 
-            // C4b: ground pushing, moving-platform detection + parent momentum, and the stateful-hit Enter/Stay/Exit
-            // diff (ProcessStatefulCharacterHits over StatefulHitsBuffer) chain in HERE, after Movement.
+            // Step 6 — Ground pushing (C4b): press the dynamic ground down with the character's weight.
+            KinematicCharacterUtilities2D.Update_GroundPushing(
+                in processor,
+                ref context,
+                ref baseContext,
+                ref characterBody,
+                in characterContext.CharacterProperties,
+                characterPosition,
+                characterContext.DeferredImpulsesBuffer,
+                gravity);
+
+            // Step 7 — Moving-platform detection + parent momentum (C4b): auto-parent to a tracked ground and carry
+            // momentum across a parent change.
+            KinematicCharacterUtilities2D.Update_MovingPlatformDetection(ref baseContext, ref characterBody);
+            KinematicCharacterUtilities2D.Update_ParentMomentum(ref baseContext, ref characterBody, characterPosition);
+
+            // Step 8 — Stateful-hit Enter/Stay/Exit diff (C4b).
+            KinematicCharacterUtilities2D.Update_ProcessStatefulCharacterHits(
+                characterContext.CharacterHitsBuffer, characterContext.StatefulHitsBuffer);
 
             // Deliver the solved pose: one swept MovePosition the substrate drains before the next step (design §6).
             // The solve already resolved collisions, so this move is short and obstruction-free by construction.
