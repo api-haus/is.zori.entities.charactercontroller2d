@@ -213,17 +213,26 @@ namespace Zori.Entities.CharacterController2D
 
         /// <summary>
         /// Reorients a vector onto the line whose normal is <paramref name="onLineNormal"/>, preserving the
-        /// vector's length and choosing the on-line direction nearest <paramref name="alongDirection"/>. This is
-        /// the 2D reduction of the 3D double-cross reorient REF/MathUtilities.cs:171 (design D6): the 3D version
-        /// builds <c>cross(onPlaneNormal, cross(vector, alongDirection))</c> to find the in-plane direction
-        /// closest to <paramref name="alongDirection"/>. In 2D a line has exactly one direction (up to sign), so
-        /// the reorient is: take the line direction <c>perp(onLineNormal)</c>, pick the sign that points the same
-        /// way as <paramref name="alongDirection"/>, and scale by the original length.
+        /// vector's length and choosing the on-line direction the 3D double-cross would. This is the faithful 2D
+        /// reduction of the 3D reorient REF/MathUtilities.cs:171 (design D6):
+        /// <c>normalize(cross(onPlaneNormal, cross(vector, alongDirection))) * length</c>. Reducing both
+        /// cross-products for planar (z=0) inputs:
+        /// <list type="bullet">
+        /// <item><c>cross(vector, alongDirection)</c> is the pure-z vector <c>(0, 0, cross2(vector, alongDirection))</c>.</item>
+        /// <item><c>cross(onPlaneNormal, (0,0,z))</c> is <c>z * (n.y, -n.x)</c> = <c>-z * perp(onLineNormal)</c>.</item>
+        /// </list>
+        /// So the reoriented direction is <c>-cross2(vector, alongDirection) * perp(onLineNormal)</c>, scaled to the
+        /// original length. The SIGN is set by <c>cross2(vector, alongDirection)</c> — the original vector's turn
+        /// relative to <paramref name="alongDirection"/> — NOT by <c>dot(lineDir, alongDirection)</c>: when
+        /// <paramref name="alongDirection"/> is perpendicular to the line (e.g. grounding-up on flat ground, the
+        /// dominant case) that dot is zero and gives no left/right information, which is exactly the case a
+        /// dot-based disambiguation flips the wrong way. The cross-based sign matches the 3D result (a character
+        /// walking +X on flat ground keeps +X, not -X).
         /// </summary>
-        /// <param name="vector"> The original vector to reorient (only its length is used) </param>
+        /// <param name="vector"> The original vector to reorient (its length is preserved and its turn sets the sign) </param>
         /// <param name="onLineNormal"> The normal of the line the result must lie on </param>
-        /// <param name="alongDirection"> The target direction that disambiguates which of the two line directions to take </param>
-        /// <returns> The reoriented vector — length-preserved, on the line, biased toward <paramref name="alongDirection"/> </returns>
+        /// <param name="alongDirection"> The reference direction the 3D double-cross crosses the vector against </param>
+        /// <returns> The reoriented vector — length-preserved, on the line, with the 3D double-cross's sign </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float2 ReorientVectorOnPlaneAlongDirection2D(float2 vector, float2 onLineNormal, float2 alongDirection)
         {
@@ -231,18 +240,13 @@ namespace Zori.Entities.CharacterController2D
             if (len <= EPSILON)
                 return Unity.Mathematics.float2.zero;
 
-            // The line is everything orthogonal to its normal; its direction is perp(normal).
-            float2 lineDir = normalizesafe(perp(onLineNormal));
-            if (lengthsq(lineDir) <= EPSILON)
+            // -cross2(vector, alongDirection) * perp(onLineNormal) — the reduction of cross(n, cross(v, along)).
+            float z = cross2(vector, alongDirection);
+            float2 reoriented = normalizesafe(-z * perp(onLineNormal));
+            if (lengthsq(reoriented) <= EPSILON)
                 return Unity.Mathematics.float2.zero;
 
-            // Pick the line direction that points the same way as alongDirection (the 3D version constrains the
-            // result to lie between the original vector and alongDirection; in 2D "between" on a single line is
-            // just the matching half-line).
-            if (dot(lineDir, alongDirection) < 0f)
-                lineDir = -lineDir;
-
-            return lineDir * len;
+            return reoriented * len;
         }
     }
 }

@@ -1,0 +1,28 @@
+{
+  "name": "Zori.Entities.CharacterController2D.Tests.EditorMath",
+  "rootNamespace": "Zori.Entities.CharacterController2D.Tests.EditorMath",
+  "references": [
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "Zori.Entities.CharacterController2D.Runtime",
+    "Zori.Entities.Physics2D.Runtime",
+    "Unity.Entities",
+    "Unity.Collections",
+    "Unity.Mathematics"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
