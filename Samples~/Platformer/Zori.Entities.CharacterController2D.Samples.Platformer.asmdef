@@ -1,0 +1,24 @@
+{
+  "name": "Zori.Entities.CharacterController2D.Samples.Platformer",
+  "rootNamespace": "Zori.Entities.CharacterController2D.Samples.Platformer",
+  "references": [
+    "Zori.Entities.CharacterController2D.Runtime",
+    "Zori.Entities.CharacterController2D.Authoring",
+    "Zori.Entities.Physics2D.Runtime",
+    "Unity.Entities",
+    "Unity.Transforms",
+    "Unity.Mathematics",
+    "Unity.Collections",
+    "Unity.Burst",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

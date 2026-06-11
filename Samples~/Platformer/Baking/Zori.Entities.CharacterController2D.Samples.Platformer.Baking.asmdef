@@ -1,0 +1,24 @@
+{
+  "name": "Zori.Entities.CharacterController2D.Samples.Platformer.Baking",
+  "rootNamespace": "Zori.Entities.CharacterController2D.Samples.Platformer.Baking",
+  "references": [
+    "Zori.Entities.CharacterController2D.Runtime",
+    "Zori.Entities.CharacterController2D.Samples.Platformer",
+    "Zori.Entities.Physics2D.Runtime",
+    "Unity.Entities",
+    "Unity.Entities.Hybrid",
+    "Unity.Collections",
+    "Unity.Mathematics"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
