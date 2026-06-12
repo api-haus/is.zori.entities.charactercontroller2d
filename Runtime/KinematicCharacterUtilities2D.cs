@@ -115,7 +115,16 @@ namespace Zori.Entities.CharacterController2D
             float rotationRadians,
             float2 direction,
             float distance
-        ) => CastProxyInto(ref baseContext, in proxy, origin, rotationRadians, direction, distance, baseContext.TmpQueryHits);
+        ) =>
+            CastProxyInto(
+                ref baseContext,
+                in proxy,
+                origin,
+                rotationRadians,
+                direction,
+                distance,
+                baseContext.TmpQueryHits
+            );
 
         // The proxy cast against an explicit target hit list. The OUTER move/grounding/overlap iterations cast into
         // TmpQueryHits (the list they then walk); the INNER step/depenetration helpers cast into TmpInnerQueryHits so
@@ -2990,24 +2999,17 @@ namespace Zori.Entities.CharacterController2D
             // does not engage (a character must not "step up" a 75° ramp it cannot climb — doing so lets the grounded
             // magnitude-preserving reorient pump gravity into a lateral fling / propulsion).
             //
-            // forwardSlopeCheckDirection MUST be the DOWN-SLOPE tangent of the step top (pointing INTO the slope,
-            // with the slope's vertical component), the 2D reduction of the 3D's
-            // -normalize(cross(cross(GroundingUp, stepHit.Normal), stepHit.Normal)) (REF/KinematicCharacterUtilities.cs:3998).
-            // Reducing that double-cross: cross(cross(up, n), n) = -cross(n, cross(up, n)), and
-            // ReorientVectorOnPlaneAlongDirection2D(up, n, up) IS cross(n, cross(up, n)) length-preserved, so the
-            // 3D's negated-normalized direction equals normalize(ReorientVectorOnPlaneAlongDirection2D(up, n, up)).
-            // The previous ProjectOnPlane(stepHit.Normal, GroundingUp) was the wrong reduction — it gives the
-            // normal's purely-horizontal component (pointing AWAY from the slope, no vertical part), so the
-            // down-probe sampled the flat floor behind the contact, found a 0° slope, added zero extra height, and
-            // the step-up wrongly engaged on the over-limit ramp.
+            // The down-probe samples the surface a short offset along the step top's UP-SLOPE tangent
+            // (MathUtilities2D.StepTopUpSlopeTangent2D — the 2D reduction of the 3D's
+            // -normalize(cross(cross(GroundingUp, stepHit.Normal), stepHit.Normal)), REF/KinematicCharacterUtilities.cs:3998),
+            // so it reads the slope AHEAD of the step lip. The helper's doc records the two earlier mis-ports this
+            // replaces; the degenerate one (a zero direction sampling straight down at the lip) over-rejected an
+            // in-range step at a step+slope corner.
             if (characterWidthForStepGroundingCheck > 0f)
             {
-                float2 forwardSlopeCheckDirection = normalizesafe(
-                    MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
-                        characterBody.GroundingUp,
-                        stepHit.Normal,
-                        characterBody.GroundingUp
-                    )
+                float2 forwardSlopeCheckDirection = MathUtilities2D.StepTopUpSlopeTangent2D(
+                    stepHit.Normal,
+                    characterBody.GroundingUp
                 );
                 if (
                     RaycastClosestNonCharacter(

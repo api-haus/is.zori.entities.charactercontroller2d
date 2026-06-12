@@ -103,6 +103,16 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string ClusterR2LParent = FixtureRoot + "/CC2D_ClusterR2L.unity";
         public const string ClusterR2LChild = FixtureRoot + "/CC2D_ClusterR2L_Sub.unity";
 
+        // The "tall step in the user's regime" fixtures (geometry 2 — a plain single step near MaxStepHeight). A
+        // capsule (~2 u tall, the platformer proxy) walks onto a step whose top is TallStepTopY = 0.45, just under
+        // the 0.5 Max Step Height the user runs — the height where the user reports "correct Y, incorrect X" (the
+        // capsule ends at the step-top height but snapped back to the X where the climb began). On a long floor so
+        // the traversal is interior (no edge-fall confound). L2R and R2L so both approach directions are exercised.
+        public const string TallStepL2RParent = FixtureRoot + "/CC2D_TallStepL2R.unity";
+        public const string TallStepL2RChild = FixtureRoot + "/CC2D_TallStepL2R_Sub.unity";
+        public const string TallStepR2LParent = FixtureRoot + "/CC2D_TallStepR2L.unity";
+        public const string TallStepR2LChild = FixtureRoot + "/CC2D_TallStepR2L_Sub.unity";
+
         // The capsule SPAWNED wedged in the diagonal-ramp + step corner (an initial overlap), so the per-step
         // SolveOverlaps depenetration fires against a skewed-normal contact — the path c719d90 patched. This is the
         // state the walk-in fixtures never reach (they approach cleanly); the user's "teleport/propel" is at a
@@ -151,6 +161,11 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // surface Y is what the character's grounded settle height tracks after stepping up.
         public const float LowStepTopY = 0.3f;
         public const float HighStepTopY = 0.9f;
+
+        // The "user regime" step top: 0.45, just under the 0.5 Max Step Height the user runs (a 2-u capsule, so the
+        // step is ~1/4 of the character height — the user's exact configuration). The plain-single-step geometry 2
+        // where the user reports "correct Y, incorrect X".
+        public const float TallStepTopY = 0.45f;
 
         // Dynamic-push: the box's left face starts here so the character (walking +X) reaches it. The two
         // push fixtures differ only in the box's authored mass — the adversarial "heavier pushes less" pair.
@@ -244,14 +259,110 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             // The literal Platformer Station-2 cluster (verbatim spacing + the rotated ramp), both directions.
             BuildClusterL2R();
             BuildClusterR2L();
+
+            // Plain single step in the user's regime (geometry 2), both directions.
+            BuildTallStepL2R();
+            BuildTallStepR2L();
+
             BuildCornerWedge();
             BuildSkewBlock();
             BuildSteepRamp();
             BuildSteepRampNoStep();
 
+            // The user's exact step+downslope corner (geometry 1), both climb directions.
+            BuildSlopeStepCornerR2L();
+            BuildSlopeStepCornerL2R();
+
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("Character Controller 2D gate fixtures built.");
+        }
+
+        // ---- the user's step+DOWNSLOPE corner (geometry 1) -------------------------------------------------
+        // The user's exact spot: a horizontal platform (the STEP TOP) whose LEFT end meets BOTH a thin near-vertical
+        // STEP FACE and a downward SLOPE descending to the lower-left. The capsule traverses the corner. The R-to-L
+        // direction (walking LEFT, climbing UP the step face) is the one the user reports is now BLOCKED; the L-to-R
+        // direction is "pushed away" laterally. The geometry is built so that when the capsule mounts the step top
+        // and the step-up's slope-width down-probe samples NEAR the step's left edge, that sample lands on the
+        // downslope (not flat floor) — exactly the case the 606d056 zero-direction mis-sample (straight down at the
+        // contact) turns into a spurious over-limit extraHeight that blocks the step-up.
+        //
+        // Layout (top surfaces): a lower floor at Y=0 on the left, a downward ramp rising from the lower floor up to
+        // a SMALL STEP whose top is StepCornerTopY = 0.4 (within MaxStepHeight 0.5), then a long flat step-top
+        // platform to the right. The downslope's high end meets the step's left vertical face at the corner.
+        const float StepCornerTopY = 0.4f;
+        const float StepCornerFaceX = 0f; // the step's left vertical face / corner X
+
+        static void BuildSlopeStepCornerWorld(GameObject root)
+        {
+            // The user's corner reduced to its load-bearing shape: a climbable STEP (left vertical face at the corner
+            // X=0, flat top at StepCornerTopY) whose top is SHORT, and immediately past the step's right edge an
+            // upward SLOPE rises. When the capsule climbs the step, the step-up's slope-width down-probe samples ALONG
+            // the step-top tangent toward the slope ahead and lands on that rising slope — the surface whose normal
+            // the extraHeight gate reads. The slope is WITHIN the grounded limit (climbable), so the correct
+            // extraHeight keeps steppedHeight under MaxStepHeight and the step-up ENGAGES; the 606d056 zero-direction
+            // mis-samples (straight down at the contact, the step lip / slope edge) and over-rejects, BLOCKING the
+            // climb — the user's "step in range but blocked."
+
+            // The continuous lower walking surface (top Y=0), X[−24, 0], butting the step's left face. Gap-free.
+            AddFloor(root, new Vector2(-12f, FloorTopY - 0.5f), new Vector2(24f, 1f)); // top 0, X[−24,0]
+            // The STEP: top at StepCornerTopY, left vertical face at the corner X=0, a SHORT top X[0,2] so the slope
+            // sits within a capsule cap-radius of the step edge (the down-probe reaches it).
+            AddFloor(root, new Vector2(1f, StepCornerTopY - 1f), new Vector2(2f, 2f)); // top 0.4, X[0,2]
+            // The upward slope rising right from the step's far edge (lip at (2, StepCornerTopY)), a climbable 30°.
+            // The step-top down-probe sampling along the tangent toward +X lands on this slope.
+            const float slopeDeg = 30f;
+            const float rampLen = 12f;
+            var ramp = AddFloor(
+                root,
+                new Vector2(2f + rampLen * 0.5f, StepCornerTopY - 0.5f),
+                new Vector2(rampLen, 1f)
+            );
+            ramp.transform.RotateAround(
+                new Vector3(2f, StepCornerTopY, 0f),
+                Vector3.forward,
+                slopeDeg // rising to the RIGHT off the step's far edge
+            );
+        }
+
+        static void BuildSlopeStepCornerR2L()
+        {
+            BuildFixture(
+                FixtureRoot + "/CC2D_SlopeStepCornerR2L_Sub.unity",
+                FixtureRoot + "/CC2D_SlopeStepCornerR2L.unity",
+                root =>
+                {
+                    BuildSlopeStepCornerWorld(root);
+                    // Capsule on the STEP TOP (X[0,2]), walking −X toward + off the step's left face onto the lower
+                    // floor — the descend direction. Spawn at X=1 (centred on the short step top).
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(1f, StepCornerTopY + CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        static void BuildSlopeStepCornerL2R()
+        {
+            BuildFixture(
+                FixtureRoot + "/CC2D_SlopeStepCornerL2R_Sub.unity",
+                FixtureRoot + "/CC2D_SlopeStepCornerL2R.unity",
+                root =>
+                {
+                    BuildSlopeStepCornerWorld(root);
+                    // Capsule on the lower-left FLAT floor (X[−20,−6]), clear of the ramp overlap, walking +X UP the
+                    // downslope toward the corner, then it must STEP UP the thin face onto the step top — the climb
+                    // the step-up governs (the down-probe at the step top samples the slope behind/ahead). This is
+                    // the direction whose step-up the 606d056 zero-direction over-rejects.
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(-10f, CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
         }
 
         // ---- individual fixtures ---------------------------------------------------------------------------
@@ -663,6 +774,64 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             );
         }
 
+        // ---- the plain single step in the user's regime (geometry 2) ---------------------------------------
+        // A long flat floor (top 0) and a single raised step (top TallStepTopY=0.45) abutting it. The capsule walks
+        // the step interior so the traversal is not confounded by a floor-edge fall. Spawn a few units before the
+        // step face in the drive direction. The step box left face is at X=4 (L2R approach) / the same step, but the
+        // R2L spawn sits ON the step top so it walks −X DOWN off the step's far edge then back, exercising the
+        // descend+climb the user runs.
+        const float TallStepLeftFaceX = 4f;
+        const float TallStepWidth = 30f; // wide so both the climb and a long stand on top are interior
+
+        static void BuildTallStepWorld(GameObject root)
+        {
+            // Approach floor (top 0), X[−20, 4], up to the step's left face.
+            AddFloor(root, new Vector2(-8f, FloorTopY - 0.5f), new Vector2(24f, 1f)); // top 0, X[−20,4]
+            // The raised step: top TallStepTopY, left face at TallStepLeftFaceX, wide.
+            AddFloor(
+                root,
+                new Vector2(TallStepLeftFaceX + TallStepWidth * 0.5f, TallStepTopY - 1f),
+                new Vector2(TallStepWidth, 2f)
+            ); // top 0.45, X[4, 34]
+        }
+
+        static void BuildTallStepL2R()
+        {
+            BuildFixture(
+                TallStepL2RChild,
+                TallStepL2RParent,
+                root =>
+                {
+                    BuildTallStepWorld(root);
+                    // Capsule on the approach floor, left of the step, walking +X up onto it.
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(0f, CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
+        static void BuildTallStepR2L()
+        {
+            BuildFixture(
+                TallStepR2LChild,
+                TallStepR2LParent,
+                root =>
+                {
+                    BuildTallStepWorld(root);
+                    // Capsule standing ON the step top, well right of the left face, walking −X toward + off the
+                    // step's left edge (descending the step) — the R2L approach.
+                    var c = AddCapsuleCharacter(
+                        root,
+                        new Vector3(12f, TallStepTopY + CapsuleBottomReach + 0.05f, 0f)
+                    );
+                    EnableCapsuleStepHandling(c, maxStepHeight: 0.5f);
+                }
+            );
+        }
+
         // The capsule spawned right at the step lip where the diagonal ramp beam meets the step top — overlapping
         // both the step block and the rotated ramp box at once. This forces SolveOverlaps to reconstruct two
         // overlaps with skewed normals on the first step (the c719d90 path) rather than approaching cleanly. The
@@ -736,7 +905,11 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                         new Vector2(lipX + lenAlong * 0.5f, FloorTopY - 0.5f),
                         new Vector2(lenAlong, 1f)
                     );
-                    ramp.transform.RotateAround(new Vector3(lipX, FloorTopY, 0f), Vector3.forward, 75f);
+                    ramp.transform.RotateAround(
+                        new Vector3(lipX, FloorTopY, 0f),
+                        Vector3.forward,
+                        75f
+                    );
                     var c = AddCapsuleCharacter(
                         root,
                         new Vector3(2f, CapsuleBottomReach + 0.05f, 0f)
@@ -762,7 +935,11 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
                         new Vector2(lipX + lenAlong * 0.5f, FloorTopY - 0.5f),
                         new Vector2(lenAlong, 1f)
                     );
-                    ramp.transform.RotateAround(new Vector3(lipX, FloorTopY, 0f), Vector3.forward, 75f);
+                    ramp.transform.RotateAround(
+                        new Vector3(lipX, FloorTopY, 0f),
+                        Vector3.forward,
+                        75f
+                    );
                     var c = AddCapsuleCharacter(
                         root,
                         new Vector3(2f, CapsuleBottomReach + 0.05f, 0f)

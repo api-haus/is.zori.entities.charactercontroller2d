@@ -119,7 +119,11 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="maxLength"> The maximum length of the de-projected vector (de-projection can blow up for near-perpendicular directions) </param>
         /// <returns> The de-projected vector </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float2 ReverseProjectOnVector(float2 projectedVector, float2 onNormalizedVector, float maxLength)
+        public static float2 ReverseProjectOnVector(
+            float2 projectedVector,
+            float2 onNormalizedVector,
+            float maxLength
+        )
         {
             float projectionRatio = dot(normalizesafe(projectedVector), onNormalizedVector);
             if (projectionRatio == 0f)
@@ -127,7 +131,11 @@ namespace Zori.Entities.CharacterController2D
                 return projectedVector;
             }
 
-            float deprojectedLength = clamp(length(projectedVector) / projectionRatio, 0f, maxLength);
+            float deprojectedLength = clamp(
+                length(projectedVector) / projectionRatio,
+                0f,
+                maxLength
+            );
             return onNormalizedVector * deprojectedLength;
         }
 
@@ -234,7 +242,11 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="alongDirection"> The reference direction the 3D double-cross crosses the vector against </param>
         /// <returns> The reoriented vector — length-preserved, on the line, with the 3D double-cross's sign </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float2 ReorientVectorOnPlaneAlongDirection2D(float2 vector, float2 onLineNormal, float2 alongDirection)
+        public static float2 ReorientVectorOnPlaneAlongDirection2D(
+            float2 vector,
+            float2 onLineNormal,
+            float2 alongDirection
+        )
         {
             float len = length(vector);
             if (len <= EPSILON)
@@ -247,6 +259,44 @@ namespace Zori.Entities.CharacterController2D
                 return Unity.Mathematics.float2.zero;
 
             return reoriented * len;
+        }
+
+        /// <summary>
+        /// The unit UP-SLOPE tangent of a step top whose surface normal is <paramref name="stepNormal"/> and whose
+        /// up axis is <paramref name="groundingUp"/>. The step-up slope-width check (<c>CheckForSteppingUpHit</c>)
+        /// samples the surface a short step along this direction to read the slope ahead of the step lip; the
+        /// direction MUST be the in-plane tangent that leans up-into the surface (a positive grounding-up component),
+        /// the 2D reduction of the 3D's <c>-normalize(cross(cross(GroundingUp, stepNormal), stepNormal))</c>
+        /// (REF/KinematicCharacterUtilities.cs:3998).
+        ///
+        /// <para>With <paramref name="groundingUp"/> = +Y and a normal <c>n = (n.x, n.y)</c>:
+        /// <c>cross(up, n).z = -n.x</c>, and <c>cross((0,0,-n.x), (n.x, n.y, 0)) = (n.x·n.y, -n.x², 0)</c>; the 3D
+        /// negates and normalizes that, giving <c>-normalize((n.x·n.y, -n.x²))</c>. This is orientation-aware — it
+        /// points up-into the surface for a slope rising in EITHER direction — and is zero only for a flat top
+        /// (<c>n = up</c>). Two earlier 2D reductions were wrong: <c>ProjectOnPlane(n, up)</c> gave the normal's
+        /// purely-horizontal component (away from the slope, no vertical part), and
+        /// <c>ReorientVectorOnPlaneAlongDirection2D(up, n, up)</c> is DEGENERATE (vector == alongDirection, so its
+        /// cross2 is identically zero and it returns the zero vector for every normal — the sample then drops
+        /// straight down at the step lip and a step+slope corner mis-reads a steep normal there, over-rejecting an
+        /// in-range step). The general <c>groundingUp</c> form rotates the +Y derivation into the body's up frame.</para>
+        /// </summary>
+        /// <param name="stepNormal"> The step top's surface normal </param>
+        /// <param name="groundingUp"> The character's grounding-up axis </param>
+        /// <returns> The unit up-slope tangent, or zero for a flat step top </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 StepTopUpSlopeTangent2D(float2 stepNormal, float2 groundingUp)
+        {
+            // n.x is the normal's component along the in-plane (perp-to-up) axis; n.y along up.
+            float nx = cross2(groundingUp, stepNormal); // = -stepNormal.x when groundingUp = +Y
+            float ny = dot(stepNormal, groundingUp);
+            // -normalize((nx·ny, -nx²)) expressed in the (perp(up), up) frame, then mapped back to world.
+            float2 inPlane = new float2(nx * ny, -nx * nx);
+            float2 t = normalizesafe(-inPlane);
+            if (lengthsq(t) <= EPSILON)
+                return Unity.Mathematics.float2.zero;
+            // Map (perpComponent, upComponent) back to world: perp axis is perp(up) = (-up.y, up.x), up axis is up.
+            float2 perpUp = perp(groundingUp);
+            return (t.x * perpUp) + (t.y * groundingUp);
         }
     }
 }

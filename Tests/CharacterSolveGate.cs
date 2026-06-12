@@ -453,6 +453,16 @@ namespace Zori.Entities.CharacterController2D.Tests
         // the geometry and the assertion share one home.
         public const float LowStepTopY = 0.3f;
 
+        // The "user regime" plain single step (geometry 2): top 0.45, just under the 0.5 Max Step Height the user
+        // runs with a 2-u capsule. The step e2e trace asserts the climbed stand at this top + CapsuleBottomReach.
+        public const float TallStepTopY = 0.45f;
+
+        // The user's step+DOWNSLOPE corner (geometry 1): the step top is at 0.4 (within MaxStepHeight 0.5), its left
+        // vertical face / corner at X=0, where a downslope descends to the lower-left. The trace asserts the capsule
+        // climbs the step and crosses the corner without being blocked or flung.
+        public const float StepCornerTopY = 0.4f;
+        public const float StepCornerFaceX = 0f;
+
         // Gate-4 future-slope: the max downward slope-change angle (degrees) the gate configures on the character
         // via HasMaxDownwardSlopeChangeAngle. The gentle downhill (20°, BuildDownSlopeScene) is UNDER it → stays
         // grounded; the steep downhill (55°) is OVER it → ungrounds. Chosen strictly between the two authored slope

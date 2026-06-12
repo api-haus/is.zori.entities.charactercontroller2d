@@ -79,18 +79,29 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             bool grounded,
             float2 groundNormal,
             bool constrainToGroundPlane,
-            params (float2 normal, bool groundedOnHit)[] lines)
+            params (float2 normal, bool groundedOnHit)[] lines
+        )
         {
             var buffer = Buffer();
             buffer.Clear();
             foreach (var (normal, groundedOnHit) in lines)
-                buffer.Add(new KinematicVelocityProjectionHit2D(normal, Unity.Mathematics.float2.zero, groundedOnHit));
+                buffer.Add(
+                    new KinematicVelocityProjectionHit2D(
+                        normal,
+                        Unity.Mathematics.float2.zero,
+                        groundedOnHit
+                    )
+                );
 
             var characterBody = KinematicCharacterBody2D.GetDefault();
             characterBody.GroundingUp = Up;
             characterBody.IsGrounded = grounded;
 
-            var groundHit = new BasicHit2D(Entity.Null, Unity.Mathematics.float2.zero, groundNormal);
+            var groundHit = new BasicHit2D(
+                Entity.Null,
+                Unity.Mathematics.float2.zero,
+                groundNormal
+            );
 
             KinematicCharacterUtilities2D.Default_ProjectVelocityOnHits(
                 ref velocity,
@@ -99,7 +110,8 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
                 in buffer,
                 originalVelocityDirection,
                 constrainToGroundPlane,
-                in characterBody);
+                in characterBody
+            );
 
             return velocity;
         }
@@ -121,17 +133,27 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
                 grounded: false,
                 groundNormal: Unity.Mathematics.float2.zero,
                 constrainToGroundPlane: false,
-                (wallNormal, false));
+                (wallNormal, false)
+            );
 
             // Slides along the wall: the component INTO the wall (along the normal) is gone.
-            Assert.AreEqual(0f, dot(result, wallNormal), Eps, "velocity must end parallel to the wall (no into-wall component)");
+            Assert.AreEqual(
+                0f,
+                dot(result, wallNormal),
+                Eps,
+                "velocity must end parallel to the wall (no into-wall component)"
+            );
             // The remaining component is the tangential (vertical) part, magnitude-preserved on that axis.
             Assert.AreEqual(-2f, result.y, Eps, "tangential (Y) component preserved");
             // Not reversed: it did not bounce back out along +X.
             Assert.LessOrEqual(result.x, Eps, "velocity must not reverse out of the wall (+X)");
             // Magnitude reduced (the into-wall part removed), not grown.
             Assert.Less(length(result), length(velocity) + Eps, "magnitude reduced, not amplified");
-            Assert.Greater(length(result), 0f, "a single non-head-on wall slide keeps some velocity");
+            Assert.Greater(
+                length(result),
+                0f,
+                "a single non-head-on wall slide keeps some velocity"
+            );
         }
 
         [Test]
@@ -142,9 +164,9 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             // wall (normal -X) the character is already touching (prior line) and a ceiling-ish wall (normal
             // pointing down-left) as the latest hit. After projecting on the latest, the velocity re-enters the
             // first wall → wedged corner → killed.
-            var firstWallNormal = new float2(-1f, 0f);       // prior line: vertical wall facing left
+            var firstWallNormal = new float2(-1f, 0f); // prior line: vertical wall facing left
             var secondWallNormal = normalize(new float2(-1f, -1f)); // latest hit: a wall facing down-left
-            var velocity = new float2(4f, 3f);               // moving up-right into both
+            var velocity = new float2(4f, 3f); // moving up-right into both
             var dir = normalize(velocity);
 
             var result = Project(
@@ -155,9 +177,13 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
                 constrainToGroundPlane: false,
                 // order: prior line first, latest (the "first hit") last.
                 (firstWallNormal, false),
-                (secondWallNormal, false));
+                (secondWallNormal, false)
+            );
 
-            Assert.IsTrue(Approx(result, Unity.Mathematics.float2.zero), $"wedged corner must kill velocity, got {result}");
+            Assert.IsTrue(
+                Approx(result, Unity.Mathematics.float2.zero),
+                $"wedged corner must kill velocity, got {result}"
+            );
         }
 
         [Test]
@@ -181,9 +207,14 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
                 groundNormal: Unity.Mathematics.float2.zero,
                 constrainToGroundPlane: false,
                 (firstWallNormal, false),
-                (secondWallNormal, false));
+                (secondWallNormal, false)
+            );
 
-            Assert.Greater(length(result), 0.1f, $"near-parallel walls are one line, not a wedge — must keep sliding, got {result}");
+            Assert.Greater(
+                length(result),
+                0.1f,
+                $"near-parallel walls are one line, not a wedge — must keep sliding, got {result}"
+            );
         }
 
         [Test]
@@ -194,9 +225,9 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             // bottom of the V. Projecting onto the latest wall (facing up-LEFT) leaves a velocity that re-enters the
             // prior wall (facing up-RIGHT) → wedged corner → killed. Together with the near-parallel test this
             // brackets the corner branch: near-parallel = one line, keep sliding; wide-angle V into the vertex = kill.
-            var firstWallNormal = normalize(new float2(1f, 1f));   // prior line: wall facing up-right
+            var firstWallNormal = normalize(new float2(1f, 1f)); // prior line: wall facing up-right
             var secondWallNormal = normalize(new float2(-1f, 1f)); // latest hit: wall facing up-left
-            var v = new float2(0f, -3f);                           // driven straight into the bottom of the V
+            var v = new float2(0f, -3f); // driven straight into the bottom of the V
 
             var result = Project(
                 v,
@@ -205,9 +236,13 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
                 groundNormal: Unity.Mathematics.float2.zero,
                 constrainToGroundPlane: false,
                 (firstWallNormal, false),
-                (secondWallNormal, false));
+                (secondWallNormal, false)
+            );
 
-            Assert.IsTrue(Approx(result, Unity.Mathematics.float2.zero), $"a wide-angle wedge driven into the vertex must kill velocity, got {result}");
+            Assert.IsTrue(
+                Approx(result, Unity.Mathematics.float2.zero),
+                $"a wide-angle wedge driven into the vertex must kill velocity, got {result}"
+            );
         }
 
         [Test]
@@ -217,8 +252,8 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             // projected velocity must (a) not drive into the wall and (b) stay constrained to the ground plane (the
             // ground-constrained slide: project on the ground line, then on the wall line — REF :1446 branch).
             var groundNormal = normalize(new float2(0f, 1f)); // flat ground for a clean constraint read
-            var wallNormal = new float2(-1f, 0f);             // a vertical wall, non-grounded
-            var velocity = new float2(6f, 0f);                // walking right along the ground into the wall
+            var wallNormal = new float2(-1f, 0f); // a vertical wall, non-grounded
+            var velocity = new float2(6f, 0f); // walking right along the ground into the wall
             var dir = normalize(velocity);
 
             var result = Project(
@@ -227,14 +262,23 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
                 grounded: true,
                 groundNormal: groundNormal,
                 constrainToGroundPlane: true,
-                (wallNormal, false));
+                (wallNormal, false)
+            );
 
             Assert.LessOrEqual(dot(result, wallNormal), Eps, "must not drive into the wall");
             // Constrained to the (flat) ground plane: no vertical climb out of the ground.
-            Assert.AreEqual(0f, result.y, Eps, "ground-plane constraint: no vertical component on flat ground");
+            Assert.AreEqual(
+                0f,
+                result.y,
+                Eps,
+                "ground-plane constraint: no vertical component on flat ground"
+            );
             // Walking straight into a perpendicular wall along flat ground stops horizontal motion (wall removes +X,
             // ground removes any +Y).
-            Assert.IsTrue(Approx(result, Unity.Mathematics.float2.zero), $"head-on into a wall while grounded on flat ground stops, got {result}");
+            Assert.IsTrue(
+                Approx(result, Unity.Mathematics.float2.zero),
+                $"head-on into a wall while grounded on flat ground stops, got {result}"
+            );
         }
 
         [Test]
@@ -253,9 +297,13 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
                 grounded: false,
                 groundNormal: Unity.Mathematics.float2.zero,
                 constrainToGroundPlane: true,
-                (floorNormal, true));
+                (floorNormal, true)
+            );
 
-            Assert.IsTrue(Approx(result, Unity.Mathematics.float2.zero), $"straight fall onto flat ground stops, got {result}");
+            Assert.IsTrue(
+                Approx(result, Unity.Mathematics.float2.zero),
+                $"straight fall onto flat ground stops, got {result}"
+            );
         }
 
         // ===================== Slope grounding threshold (boundary / over / under) =====================
@@ -271,11 +319,17 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
 
             // A slope normal exactly maxAngleDeg from up: normal = up rotated by maxAngleDeg.
             var atBoundary = Dir(90f - maxAngleDeg); // 90-50 = 40 deg from +X == 50 deg from +Y
-            Assert.AreEqual(maxDot, dot(Up, atBoundary), 1e-5f, "constructed boundary normal sanity");
+            Assert.AreEqual(
+                maxDot,
+                dot(Up, atBoundary),
+                1e-5f,
+                "constructed boundary normal sanity"
+            );
 
             Assert.IsFalse(
                 KinematicCharacterUtilities2D.IsGroundedOnSlopeNormal(maxDot, atBoundary, Up),
-                "a normal EXACTLY at the max slope angle is not grounded (strict >)");
+                "a normal EXACTLY at the max slope angle is not grounded (strict >)"
+            );
         }
 
         [Test]
@@ -285,14 +339,16 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             float maxDot = cos(radians(maxAngleDeg));
 
             var justUnder = Dir(90f - (maxAngleDeg - 0.5f)); // a shallower slope (smaller angle from up)
-            var justOver = Dir(90f - (maxAngleDeg + 0.5f));  // a steeper slope (larger angle from up)
+            var justOver = Dir(90f - (maxAngleDeg + 0.5f)); // a steeper slope (larger angle from up)
 
             Assert.IsTrue(
                 KinematicCharacterUtilities2D.IsGroundedOnSlopeNormal(maxDot, justUnder, Up),
-                "a slope just shallower than the max is grounded");
+                "a slope just shallower than the max is grounded"
+            );
             Assert.IsFalse(
                 KinematicCharacterUtilities2D.IsGroundedOnSlopeNormal(maxDot, justOver, Up),
-                "a slope just steeper than the max is not grounded");
+                "a slope just steeper than the max is not grounded"
+            );
         }
 
         [Test]
@@ -304,10 +360,18 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             const float maxAngleDeg = 45f;
             float maxDot = MathUtilities2D.AngleRadiansToDotRatio(radians(maxAngleDeg));
 
-            Assert.IsTrue(KinematicCharacterUtilities2D.IsGroundedOnSlopeNormal(maxDot, Dir(90f - 44f), Up));
-            Assert.IsFalse(KinematicCharacterUtilities2D.IsGroundedOnSlopeNormal(maxDot, Dir(90f - 46f), Up));
+            Assert.IsTrue(
+                KinematicCharacterUtilities2D.IsGroundedOnSlopeNormal(maxDot, Dir(90f - 44f), Up)
+            );
+            Assert.IsFalse(
+                KinematicCharacterUtilities2D.IsGroundedOnSlopeNormal(maxDot, Dir(90f - 46f), Up)
+            );
             // and the inverse conversion recovers the angle.
-            Assert.AreEqual(radians(maxAngleDeg), MathUtilities2D.DotRatioToAngleRadians(maxDot), 1e-4f);
+            Assert.AreEqual(
+                radians(maxAngleDeg),
+                MathUtilities2D.DotRatioToAngleRadians(maxDot),
+                1e-4f
+            );
         }
 
         // ===================== ProjectVelocityOnGrounding (parallel / along-up / between) =====================
@@ -321,12 +385,18 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             var groundNormal = Dir(90f + slopeDeg); // normal of a slope rising to the right
             var slopeDir = normalize(MathUtilities2D.perp(groundNormal)); // a direction along the slope line
             // pick the uphill-right half-line.
-            if (slopeDir.x < 0f) slopeDir = -slopeDir;
+            if (slopeDir.x < 0f)
+                slopeDir = -slopeDir;
             var velocity = slopeDir * 7f;
 
             ProjectGround(ref velocity, groundNormal);
 
-            Assert.AreEqual(7f, length(velocity), 1e-2f, "velocity already along the slope keeps its magnitude");
+            Assert.AreEqual(
+                7f,
+                length(velocity),
+                1e-2f,
+                "velocity already along the slope keeps its magnitude"
+            );
         }
 
         [Test]
@@ -339,7 +409,10 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
 
             ProjectGround(ref velocity, groundNormal);
 
-            Assert.IsTrue(Approx(velocity, Unity.Mathematics.float2.zero), $"velocity along grounding-up reorients to zero, got {velocity}");
+            Assert.IsTrue(
+                Approx(velocity, Unity.Mathematics.float2.zero),
+                $"velocity along grounding-up reorients to zero, got {velocity}"
+            );
         }
 
         [Test]
@@ -354,27 +427,45 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
 
             ProjectGround(ref velocity, groundNormal);
 
-            Assert.AreEqual(0f, dot(velocity, groundNormal), Eps, "reoriented velocity lies on the slope line");
+            Assert.AreEqual(
+                0f,
+                dot(velocity, groundNormal),
+                Eps,
+                "reoriented velocity lies on the slope line"
+            );
             Assert.Greater(length(velocity), 0f, "an in-between velocity keeps some magnitude");
-            Assert.Less(length(velocity), originalMag + Eps, "magnitude not amplified by the reorient");
+            Assert.Less(
+                length(velocity),
+                originalMag + Eps,
+                "magnitude not amplified by the reorient"
+            );
         }
 
         static void ProjectGround(ref float2 velocity, float2 groundNormal)
         {
-            KinematicCharacterUtilities2D.ProjectVelocityOnGrounding(ref velocity, groundNormal, new float2(0f, 1f));
+            KinematicCharacterUtilities2D.ProjectVelocityOnGrounding(
+                ref velocity,
+                groundNormal,
+                new float2(0f, 1f)
+            );
         }
 
         // ===================== MathUtilities2D — round-trips and length preservation =====================
 
         [Test]
-        public void Math_AngleDirectionRoundTrip([Values(-179f, -90f, -33f, 0f, 1f, 47f, 90f, 178f)] float deg)
+        public void Math_AngleDirectionRoundTrip(
+            [Values(-179f, -90f, -33f, 0f, 1f, 47f, 90f, 178f)] float deg
+        )
         {
             // AngleOfDirection(RightFromAngle(a)) == a, compared as a direction so the ±180 wrap is not a false fail.
             float rad = radians(deg);
             var dir = MathUtilities2D.RightFromAngle(rad);
             float recovered = MathUtilities2D.AngleOfDirection(dir);
             var reDir = MathUtilities2D.RightFromAngle(recovered);
-            Assert.IsTrue(Approx(reDir, dir), $"angle {deg} did not round-trip: {recovered * (180f / PI)}deg");
+            Assert.IsTrue(
+                Approx(reDir, dir),
+                $"angle {deg} did not round-trip: {recovered * (180f / PI)}deg"
+            );
         }
 
         [Test]
@@ -393,7 +484,8 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
         [Test]
         public void Math_ReorientOnLine_PreservesLength_AndMatchesThe3DDoubleCross(
             [Values(0f, 30f, 75f, 120f, 200f)] float lineDeg,
-            [Values(0f, 45f, 135f, 250f)] float velDeg)
+            [Values(0f, 45f, 135f, 250f)] float velDeg
+        )
         {
             // ReorientVectorOnPlaneAlongDirection2D must preserve the vector's length, put the result on the line
             // (zero component along the line's normal), and reproduce the 3D double-cross sign — NOT a dot-based
@@ -404,16 +496,28 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             var vector = Dir(velDeg) * 3f;
             var along = new float2(1f, 0.2f);
 
-            var result = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(vector, lineNormal, along);
+            var result = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
+                vector,
+                lineNormal,
+                along
+            );
 
-            Assert.AreEqual(0f, dot(result, lineNormal), Eps, "result lies on the line (no normal component)");
+            Assert.AreEqual(
+                0f,
+                dot(result, lineNormal),
+                Eps,
+                "result lies on the line (no normal component)"
+            );
             Assert.AreEqual(3f, length(result), Eps, "length preserved by the reorient");
 
             float z = vector.x * along.y - vector.y * along.x; // cross2(vector, along)
             var expectedDir = normalize(-z * MathUtilities2D.perp(lineNormal));
             // Skip the degenerate case where vector is parallel to along (z==0 → no defined sign).
             if (abs(z) > 1e-3f)
-                Assert.IsTrue(Approx(normalize(result), expectedDir), "result matches the 3D double-cross direction");
+                Assert.IsTrue(
+                    Approx(normalize(result), expectedDir),
+                    "result matches the 3D double-cross direction"
+                );
         }
 
         [Test]
@@ -424,7 +528,10 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             // double-cross keeps the velocity +X; a dot(lineDir, up)-based pick flips it to -X (the dot is zero, so
             // it never flips off the arbitrary perp(up) = -X). This regression pins the +X result.
             var result = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
-                new float2(4f, 0f), new float2(0f, 1f), new float2(0f, 1f));
+                new float2(4f, 0f),
+                new float2(0f, 1f),
+                new float2(0f, 1f)
+            );
             Assert.Greater(result.x, 0f, $"walking +X on flat ground must stay +X, got {result}");
             Assert.AreEqual(4f, result.x, Eps, "magnitude preserved on the flat ground line");
             Assert.AreEqual(0f, result.y, Eps, "stays on the flat ground line");
@@ -434,12 +541,20 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
         public void Math_ReorientOnLine_ZeroVector_ReturnsZero()
         {
             var result = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
-                Unity.Mathematics.float2.zero, new float2(0f, 1f), new float2(1f, 0f));
-            Assert.IsTrue(Approx(result, Unity.Mathematics.float2.zero), "a zero input vector reorients to zero (no NaN)");
+                Unity.Mathematics.float2.zero,
+                new float2(0f, 1f),
+                new float2(1f, 0f)
+            );
+            Assert.IsTrue(
+                Approx(result, Unity.Mathematics.float2.zero),
+                "a zero input vector reorients to zero (no NaN)"
+            );
         }
 
         [Test]
-        public void Math_ProjectOnPlane_RemovesNormalComponent([Values(0f, 37f, 91f, 200f)] float normalDeg)
+        public void Math_ProjectOnPlane_RemovesNormalComponent(
+            [Values(0f, 37f, 91f, 200f)] float normalDeg
+        )
         {
             var n = Dir(normalDeg);
             var v = new float2(3f, -5f);
@@ -474,12 +589,24 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             var downhillNormal = normalize(new float2(0.5f, 0.866f));
 
             float angle = KinematicCharacterUtilities2D.CalculateAngleOfHitWithGroundUp(
-                currentGroundUp, downhillNormal, velocityDir, groundingUp);
+                currentGroundUp,
+                downhillNormal,
+                velocityDir,
+                groundingUp
+            );
 
-            Assert.Less(degrees(angle), 0f,
+            Assert.Less(
+                degrees(angle),
+                0f,
                 $"a downward slope change in the movement direction must be a NEGATIVE angle (so the "
-                    + $"degrees(angle) < -MaxDownwardSlopeChangeAngle ledge test can fire); got {degrees(angle)}°");
-            Assert.AreEqual(-30f, degrees(angle), 0.5f, "magnitude is the 30° slope change between the two normals");
+                    + $"degrees(angle) < -MaxDownwardSlopeChangeAngle ledge test can fire); got {degrees(angle)}°"
+            );
+            Assert.AreEqual(
+                -30f,
+                degrees(angle),
+                0.5f,
+                "magnitude is the 30° slope change between the two normals"
+            );
         }
 
         [Test]
@@ -493,12 +620,24 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             var uphillNormal = normalize(new float2(-0.5f, 0.866f));
 
             float angle = KinematicCharacterUtilities2D.CalculateAngleOfHitWithGroundUp(
-                currentGroundUp, uphillNormal, velocityDir, groundingUp);
+                currentGroundUp,
+                uphillNormal,
+                velocityDir,
+                groundingUp
+            );
 
-            Assert.Greater(degrees(angle), 0f,
+            Assert.Greater(
+                degrees(angle),
+                0f,
                 $"an upward slope change in the movement direction must be a POSITIVE angle (so it never trips the "
-                    + $"downward-ledge ungrounding test); got {degrees(angle)}°");
-            Assert.AreEqual(30f, degrees(angle), 0.5f, "magnitude is the 30° slope change between the two normals");
+                    + $"downward-ledge ungrounding test); got {degrees(angle)}°"
+            );
+            Assert.AreEqual(
+                30f,
+                degrees(angle),
+                0.5f,
+                "magnitude is the 30° slope change between the two normals"
+            );
         }
 
         [Test]
@@ -513,12 +652,124 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             var surfaceNormal = normalize(new float2(0.5f, 0.866f)); // tilts down to the right
 
             float walkingRight = KinematicCharacterUtilities2D.CalculateAngleOfHitWithGroundUp(
-                currentGroundUp, surfaceNormal, new float2(1f, 0f), groundingUp);
+                currentGroundUp,
+                surfaceNormal,
+                new float2(1f, 0f),
+                groundingUp
+            );
             float walkingLeft = KinematicCharacterUtilities2D.CalculateAngleOfHitWithGroundUp(
-                currentGroundUp, surfaceNormal, new float2(-1f, 0f), groundingUp);
+                currentGroundUp,
+                surfaceNormal,
+                new float2(-1f, 0f),
+                groundingUp
+            );
 
-            Assert.Less(degrees(walkingRight), 0f, "walking toward the downhill is a downward (negative) change");
-            Assert.Greater(degrees(walkingLeft), 0f, "walking the other way the same surface is an upward (positive) change");
+            Assert.Less(
+                degrees(walkingRight),
+                0f,
+                "walking toward the downhill is a downward (negative) change"
+            );
+            Assert.Greater(
+                degrees(walkingLeft),
+                0f,
+                "walking the other way the same surface is an upward (positive) change"
+            );
+        }
+
+        // ---- step-up slope-width check direction (the 606d056 regression: a degenerate-zero forwardSlopeCheckDirection) -
+
+        // The step-up slope-width down-probe samples along StepTopUpSlopeTangent2D to read the slope ahead of the
+        // step lip. The direction MUST be the up-slope tangent (a positive grounding-up component), the 2D reduction
+        // of the 3D's -normalize(cross(cross(up, n), n)). 606d056 used ReorientVectorOnPlaneAlongDirection2D(up, n,
+        // up), which is DEGENERATE — vector == alongDirection, so it returns (0,0) for EVERY step normal, dropping
+        // the probe straight down at the lip and over-rejecting an in-range step at a step+slope corner. These cases
+        // are RED on that zero-direction and GREEN on the correct tangent.
+
+        [Test]
+        public void Math_StepTopUpSlopeTangent_AngledTop_PointsUpSlope_NotZero(
+            [Values(15f, 30f, 75f)] float slopeDeg,
+            [Values(-1f, +1f)] float normalLeanSign
+        )
+        {
+            // A step top whose normal leans by slopeDeg to the left (normalLeanSign +1 → normal.x < 0 → surface
+            // rises to the RIGHT) or to the right (−1 → rises LEFT). The tangent must be a non-zero unit vector with
+            // a POSITIVE grounding-up component (it leans up-into the surface), on the step-top plane (perpendicular
+            // to the normal). The degenerate zero-direction (606d056) is RED on the non-zero + up-component checks.
+            var up = new float2(0f, 1f);
+            float r = radians(slopeDeg);
+            // normalLeanSign +1 → normal.x = −sin (leans left) → surface rises right.
+            var n = normalize(new float2(normalLeanSign * -sin(r), cos(r)));
+
+            var t = MathUtilities2D.StepTopUpSlopeTangent2D(n, up);
+
+            Assert.Greater(
+                length(t),
+                0.5f,
+                $"the slope-check tangent must be non-zero for an angled step top ({slopeDeg}°) — a degenerate "
+                    + "zero-direction (the 606d056 mis-port) samples straight down at the lip and over-rejects the step"
+            );
+            Assert.Less(abs(length(t) - 1f), Eps, "the tangent must be unit length");
+            Assert.Greater(
+                t.y,
+                0.05f,
+                "the tangent must lean UP-into the slope (positive grounding-up component)"
+            );
+            Assert.Less(
+                abs(dot(t, n)),
+                Eps,
+                "the tangent must lie on the step-top plane (perpendicular to the normal)"
+            );
+            // Orientation-aware: normal leaning LEFT (rises right) → up-RIGHT tangent (+X); leaning right → up-LEFT.
+            if (normalLeanSign > 0f)
+                Assert.Greater(
+                    t.x,
+                    0f,
+                    "a top whose normal leans left (surface rises right) must give an up-RIGHT tangent"
+                );
+            else
+                Assert.Less(
+                    t.x,
+                    0f,
+                    "a top whose normal leans right (surface rises left) must give an up-LEFT tangent"
+                );
+        }
+
+        [Test]
+        public void Math_StepTopUpSlopeTangent_FlatTop_IsZero()
+        {
+            // A flat step top (normal == grounding-up) has no slope, so the tangent is zero — the probe then samples
+            // straight down at the contact, correctly finding the flat top (0° → no extra height → step-up engages).
+            var up = new float2(0f, 1f);
+            var t = MathUtilities2D.StepTopUpSlopeTangent2D(up, up);
+            Assert.Less(length(t), Eps, "a flat step top must give a zero tangent");
+        }
+
+        [Test]
+        public void Math_StepTopUpSlopeTangent_MatchesThe3DDoubleCross(
+            [Values(10f, 25f, 50f, 80f)] float slopeDeg,
+            [Values(-1f, +1f)] float risesSign
+        )
+        {
+            // Pin the 2D reduction exactly to the 3D's -normalize(cross(cross(up, n), n)) (REF:3998), computed here
+            // with z-only intermediate cross products. The degenerate 606d056 form does NOT match this.
+            var up3 = new float3(0f, 1f, 0f);
+            float r = radians(slopeDeg);
+            var n2 = normalize(new float2(risesSign * -sin(r), cos(r)));
+            var n3 = new float3(n2.x, n2.y, 0f);
+
+            float3 threeD = -normalize(cross(cross(up3, n3), n3));
+            var t = MathUtilities2D.StepTopUpSlopeTangent2D(n2, new float2(0f, 1f));
+
+            Assert.Less(
+                abs(t.x - threeD.x),
+                Eps,
+                $"x must match the 3D double-cross ({slopeDeg}°)"
+            );
+            Assert.Less(
+                abs(t.y - threeD.y),
+                Eps,
+                $"y must match the 3D double-cross ({slopeDeg}°)"
+            );
         }
     }
 }
