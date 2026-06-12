@@ -680,6 +680,352 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             );
         }
 
+        [UnityTest]
+        public IEnumerator G_Respawn_FallBelowThreshold_TeleportsBackToLastSafePoint_VelocityZeroed()
+        {
+            yield return LoadCourse();
+
+            // Stand on a clear span of the normal floor (top Y = 0) and settle so PlatformerRespawnSystem records a
+            // safe point: it records only while grounded AND grounded the prior step (a sustained stand, not a graze).
+            PlaceCharacter(new float2(-3f, 1.1f));
+            Step(40);
+            Assert.IsTrue(
+                Body().IsGrounded,
+                "Respawn: the character must be grounded so a safe point is recorded."
+            );
+            var safe = _em.GetComponentData<LastSafePoint2D>(_character);
+            Assert.IsTrue(
+                safe.HasPoint,
+                "Respawn: a safe point must be recorded after standing grounded on the floor."
+            );
+            var safeX = safe.Position.x;
+
+            // Fall off the course: drive the body far below the fall threshold (tuned at -15). Tag off so only the
+            // placement acts (no solve re-target), then re-arm and step — the respawn system reads Y < threshold and
+            // teleports the character back to the recorded safe point.
+            _em.RemoveComponent<PlatformerCharacterTag>(_character);
+            var sinkCmds = _em.GetBuffer<PhysicsBody2DCommand>(_character);
+            PhysicsBody2DCommands.SetLinearVelocity(sinkCmds, new float2(3f, -20f)); // falling with momentum
+            PhysicsBody2DCommands.SetTransform(sinkCmds, new float2(-3f, -40f), 0f);
+            _fixedGroup.Update();
+            _em.AddComponent<PlatformerCharacterTag>(_character);
+            Assert.Less(
+                Position().y,
+                -15f,
+                $"Respawn: the character must be below the fall threshold before the respawn fires (was {Position()})."
+            );
+
+            // Step until the respawn lands the character back on the safe surface (above the threshold), then settle.
+            var respawned = false;
+            for (var i = 0; i < 60; i++)
+            {
+                Step(1);
+                if (Position().y > -1f)
+                {
+                    respawned = true;
+                    break;
+                }
+            }
+            Assert.IsTrue(
+                respawned,
+                $"Respawn: the character must teleport back above the course floor after falling (was at {Position()})."
+            );
+            Step(20); // settle onto the safe surface
+            Assert.AreEqual(
+                safeX,
+                Position().x,
+                1.0f,
+                $"Respawn: the character must land back at the last safe point's X ({safeX}); was at {Position()}."
+            );
+            Assert.IsTrue(
+                Body().IsGrounded,
+                "Respawn: after teleporting back the character should re-ground on the safe surface."
+            );
+            Assert.Less(
+                length(Body().RelativeVelocity),
+                1.0f,
+                $"Respawn: velocity must be zeroed by the teleport (was {Body().RelativeVelocity})."
+            );
+        }
+
+        // ---- jump-buffer window (Task 1) -------------------------------------------------------------------------
+        //
+        // The jump buffer is a TIME WINDOW (PlatformerCharacterTuning2D.JumpBufferTime, default 0.15s of fixed-step
+        // time), not the old unbounded latch. A press is buffered when fresh; on a grounded step the buffered jump
+        // fires only while it is still within the window of the press, otherwise it expires unfired. These gates drive
+        // the buffer's decision points directly: a press too early does NOT re-jump on landing; a press within the
+        // window DOES; and a held button (no fresh edge) never perpetually re-buffers.
+
+        // Apply ONE fresh jump-press edge (rising edge), exactly as the control system does on wasPressedThisFrame:
+        // set JumpBufferElapsedTime via the same path the solve would — by latching JumpPressed for one fixed step so
+        // the solve stamps it from the simulation clock. Returns after the single stamping step.
+        void PressJumpOnce()
+        {
+            var c = _em.GetComponentData<PlatformerCharacterControl2D>(_character);
+            c.JumpPressed = true;
+            _em.SetComponentData(_character, c);
+            _fixedGroup.Update();
+        }
+
+        [UnityTest]
+        public IEnumerator H_JumpBuffer_PressWellBeforeLanding_DoesNotRejump()
+        {
+            yield return LoadCourse();
+
+            // Settle grounded on a clear span of the normal floor (top Y = 0).
+            PlaceCharacter(new float2(-1f, 1.1f));
+            Step(40);
+            Assert.IsTrue(Body().IsGrounded, "must be grounded before the test jump");
+            var restY = Position().y;
+
+            // Jump once. The character leaves the ground.
+            PressJumpOnce();
+            Assert.IsFalse(Body().IsGrounded, "the initial jump must leave the ground");
+
+            // While airborne and well past the 0.15s buffer window (default JumpBufferTime), press jump ONCE more.
+            // Step ~12 frames first (0.2s > 0.15s) so the press is OLD by the time the character lands.
+            Step(12);
+            PressJumpOnce(); // this press is stamped, but landing is still many frames away
+            // Let the character finish its fall and land. The landing happens well after JumpBufferTime, so the
+            // buffered press has EXPIRED and must NOT trigger a second jump.
+            var landed = false;
+            var maxYAfterLand = float.MinValue;
+            for (var i = 0; i < 120; i++)
+            {
+                Step(1);
+                if (Body().IsGrounded)
+                {
+                    landed = true;
+                    // Once grounded, track the peak Y over the next steps — a re-jump would lift it well above rest.
+                    for (var j = 0; j < 30; j++)
+                    {
+                        Step(1);
+                        maxYAfterLand = max(maxYAfterLand, Position().y);
+                    }
+                    break;
+                }
+            }
+            Assert.IsTrue(landed, "the character must land back on the floor");
+            Assert.Less(
+                maxYAfterLand,
+                restY + 0.35f,
+                $"Jump buffer: a press {0.2f}s before landing has EXPIRED (> JumpBufferTime 0.15s) and must NOT "
+                    + $"re-jump on landing — peak Y after landing {maxYAfterLand:F3} should stay near rest {restY:F3}."
+            );
+            Assert.IsTrue(
+                Body().IsGrounded,
+                "after landing with no fresh in-window press the character stays grounded"
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator H_JumpBuffer_PressWithinWindowBeforeLanding_DoesRejump()
+        {
+            yield return LoadCourse();
+
+            PlaceCharacter(new float2(-1f, 1.1f));
+            Step(40);
+            Assert.IsTrue(Body().IsGrounded, "must be grounded before the test jump");
+            var restY = Position().y;
+
+            // Jump once; the character leaves the ground.
+            PressJumpOnce();
+            Assert.IsFalse(Body().IsGrounded, "the initial jump must leave the ground");
+
+            // Fall back down WITHOUT pressing, until the character is about to land (one step from grounded). The
+            // descent from a JumpSpeed-9 / gravity-20 hop takes well over 0.15s, so we wait until close to the ground,
+            // then press within the window so the buffered jump fires on the imminent grounded step.
+            var armed = false;
+            for (var i = 0; i < 120; i++)
+            {
+                // Approaching the floor (descending and low): press jump so it is fresh (within JumpBufferTime) when
+                // the next step grounds the character.
+                if (Body().RelativeVelocity.y < 0f && Position().y < restY + 0.6f)
+                {
+                    PressJumpOnce();
+                    armed = true;
+                    break;
+                }
+                Step(1);
+            }
+            Assert.IsTrue(
+                armed,
+                "the descent must reach the pre-landing band so the in-window press can be issued"
+            );
+
+            // Now let it ground and re-launch: the in-window buffered press must fire a fresh jump on landing, lifting
+            // the character above rest again.
+            var peakY = restY;
+            for (var i = 0; i < 60; i++)
+            {
+                Step(1);
+                peakY = max(peakY, Position().y);
+            }
+            Assert.Greater(
+                peakY,
+                restY + 0.4f,
+                $"Jump buffer: a press within JumpBufferTime (0.15s) of landing MUST fire the buffered jump on landing "
+                    + $"— peak Y {peakY:F3} should rise above rest {restY:F3}."
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator H_JumpBuffer_HeldButton_DoesNotPerpetuallyRejump()
+        {
+            yield return LoadCourse();
+
+            PlaceCharacter(new float2(-1f, 1.1f));
+            Step(40);
+            Assert.IsTrue(Body().IsGrounded, "must be grounded before the held-jump test");
+            var restY = Position().y;
+
+            // Simulate HOLDING the jump button: the real control system sets JumpPressed only on the rising edge
+            // (wasPressedThisFrame), so a held key produces exactly ONE fresh edge and then nothing. Reproduce that:
+            // one stamping step, then NO further presses — never re-latch JumpPressed. The character should jump once,
+            // then settle back on the floor and STAY there (no perpetual re-jump from the held button).
+            PressJumpOnce();
+            Assert.IsFalse(
+                Body().IsGrounded,
+                "the single edge from the (held) press must jump once"
+            );
+
+            // Drive many steps with NO further press edge (the held key re-stamps nothing). After the hop, the
+            // character must settle grounded and stay grounded — count the airborne→grounded transitions; a held-button
+            // auto-rejump bug would show repeated launches (many transitions / a never-settling body).
+            var launches = 0;
+            var wasGrounded = false;
+            var settledGroundedRun = 0;
+            for (var i = 0; i < 200; i++)
+            {
+                Step(1);
+                var g = Body().IsGrounded;
+                if (!g && wasGrounded)
+                    launches++; // a fresh leave-the-ground = a launch
+                wasGrounded = g;
+                settledGroundedRun = g ? settledGroundedRun + 1 : 0;
+            }
+            Assert.LessOrEqual(
+                launches,
+                0,
+                $"Jump buffer: a HELD button (one rising edge only) must NOT perpetually re-jump — after the first hop "
+                    + $"there should be no further launches, but counted {launches} additional leave-the-ground events."
+            );
+            Assert.Greater(
+                settledGroundedRun,
+                30,
+                "Jump buffer: after the single (held) jump the character must settle grounded and stay grounded, not "
+                    + "bounce repeatedly."
+            );
+            Assert.Less(
+                abs(Position().y - restY),
+                0.3f,
+                $"Jump buffer: a held button should leave the character resting on the floor (Y {Position().y:F3} ≈ "
+                    + $"rest {restY:F3}), not airborne from a perpetual re-jump."
+            );
+        }
+
+        // ---- moving platform is NOT a safe respawn point (Task 2) ------------------------------------------------
+        //
+        // PlatformerRespawnSystem records the last safe (grounded, stable) position, but a MOVING PLATFORM is not a
+        // stable anchor — its pose travels. This gate stands the character on the lateral moving platform, confirms no
+        // safe point is recorded while it rides (the GroundHit is a MovingPlatform2D body, excluded from the predicate),
+        // then drops it onto the STATIC floor, confirms a safe point IS recorded there, and finally confirms a fall
+        // respawns to that STATIC point — never to the platform.
+
+        [UnityTest]
+        public IEnumerator I_Respawn_MovingPlatformIsNotASafePoint()
+        {
+            yield return LoadCourse();
+
+            // (a) Ride the lateral moving platform. Drop onto its live position from clear air, let it ground, and ride
+            // for a sustained grounded window. While grounded on the platform, NO safe point may be recorded (the
+            // platform's GroundHit is a MovingPlatform2D body, excluded). Crucially the character has NEVER stood on a
+            // static surface yet in this run, so HasPoint must stay false the whole ride.
+            var platformX = FindPlatformX();
+            PlaceCharacterViaSky(
+                new float2(platformX, LateralPlatformHome.y + 1.0f),
+                PlatformerStance2D.AirMove
+            );
+            var groundedOnPlatformFrames = 0;
+            var recordedWhileOnPlatform = false;
+            for (var i = 0; i < 220; i++)
+            {
+                Step(1, moveX: 0f);
+                var b = Body();
+                if (b.IsGrounded && _em.HasComponent<MovingPlatform2D>(b.GroundHit.Entity))
+                {
+                    groundedOnPlatformFrames++;
+                    if (_em.GetComponentData<LastSafePoint2D>(_character).HasPoint)
+                        recordedWhileOnPlatform = true;
+                }
+                if (groundedOnPlatformFrames > 25)
+                    break;
+            }
+            Assert.Greater(
+                groundedOnPlatformFrames,
+                10,
+                "Respawn/platform: the character must ride the moving platform grounded for a sustained window."
+            );
+            Assert.IsFalse(
+                recordedWhileOnPlatform,
+                "Respawn/platform: NO safe point may be recorded while grounded on the moving platform — a travelling "
+                    + "surface is not a stable respawn anchor (the predicate excludes a MovingPlatform2D ground hit)."
+            );
+
+            // (b) Now stand on the STATIC normal floor and settle; a safe point MUST be recorded there.
+            PlaceCharacter(new float2(-3f, 1.1f));
+            Step(40);
+            Assert.IsTrue(Body().IsGrounded, "Respawn/platform: must ground on the static floor.");
+            var staticGround = _em.HasComponent<MovingPlatform2D>(Body().GroundHit.Entity);
+            Assert.IsFalse(
+                staticGround,
+                "the normal floor must NOT be a moving platform (sanity)."
+            );
+            var safe = _em.GetComponentData<LastSafePoint2D>(_character);
+            Assert.IsTrue(
+                safe.HasPoint,
+                "Respawn/platform: a safe point MUST be recorded after standing on the static floor."
+            );
+            var staticSafeX = safe.Position.x;
+
+            // (c) Fall off the course; the respawn must send the character back to the STATIC safe point, not anywhere
+            // near the moving platform's X (~58).
+            _em.RemoveComponent<PlatformerCharacterTag>(_character);
+            var sinkCmds = _em.GetBuffer<PhysicsBody2DCommand>(_character);
+            PhysicsBody2DCommands.SetLinearVelocity(sinkCmds, new float2(0f, -20f));
+            PhysicsBody2DCommands.SetTransform(sinkCmds, new float2(-3f, -40f), 0f);
+            _fixedGroup.Update();
+            _em.AddComponent<PlatformerCharacterTag>(_character);
+            Assert.Less(
+                Position().y,
+                -15f,
+                "Respawn/platform: must be below the fall threshold before respawn."
+            );
+
+            var respawned = false;
+            for (var i = 0; i < 60; i++)
+            {
+                Step(1);
+                if (Position().y > -1f)
+                {
+                    respawned = true;
+                    break;
+                }
+            }
+            Assert.IsTrue(
+                respawned,
+                $"Respawn/platform: must respawn above the floor (was at {Position()})."
+            );
+            Step(20);
+            Assert.AreEqual(
+                staticSafeX,
+                Position().x,
+                1.0f,
+                $"Respawn/platform: must respawn to the STATIC safe point X ({staticSafeX}), not the moving platform "
+                    + $"(~{platformX:F1}); was at {Position()}."
+            );
+        }
+
         // ---- step + adjacent-slope DIRECTIONAL regression (the lateral-jump fix) ----------------------------
         //
         // The real course Station-2 step+slope cluster — StepLow (26,-0.7) top 0.3 X[24,28], StepHigh (31,-0.6) top
@@ -690,17 +1036,32 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         // unit overlap and the grounded vertical-decollide flung the character up-and-back). Root cause + fix:
         // KinematicCharacterUtilities2D.ReconstructOverlap (project the recovered depth onto the true normal).
         //
-        // This gate drives the REAL course capsule across the cluster in BOTH directions and asserts it never
-        // jumps backward past its start (the lateral teleport) and is never flung vertically off the cluster.
-        // Pre-fix the −X (down-the-slope) run jumped ~2.3 u backward + ~4.5 u up in a single fixed step at the
-        // corner; this is RED on that.
+        // This gate drives the REAL course capsule across the corner in BOTH directions and asserts it never jumps
+        // backward past its start (the lateral teleport) and is never flung vertically off the cluster. Pre-fix the
+        // −X (down-the-slope) run jumped ~2.3 u backward + ~4.5 u up in a single fixed step AT THE CORNER; this is
+        // RED on that.
+        //
+        // Both runs are BOUNDED to the traversable surface, because the course geometry deliberately has a floorless
+        // gap below the slope lip (StepHigh ends at X=33 top 0.9, the lip is at X=34, and nothing solid sits in X[33,34]
+        // at floor level). The corner-traversal the lateral-jump fix governs happens entirely on the slope↔lip↔step
+        // surface; driving PAST the lip walks the capsule off into the void, where it free-falls and the unrelated
+        // PlatformerRespawnSystem teleports it back (a multi-unit SetTransform that is NOT a controller fling). The
+        // run therefore stops once the capsule reaches the corner region, so the assertions read the corner traversal
+        // the fix is about, not the off-the-edge fall+respawn that the course's intended gap produces.
 
         [UnityTest]
         public IEnumerator StepSlope_CapsuleWalksAcrossCluster_LeftToRight_NoLateralJump()
         {
             yield return LoadCourse();
-            // Place on the sticky floor (top Y=0) a few units left of StepLow's left face (X=24), drive +X.
-            yield return StepSlopeNoLateralJump(new float2(21f, 1.1f), +1f);
+            // Place on the sticky floor (top Y=0) a few units left of StepLow's left face (X=24), drive +X up onto
+            // StepLow (top 0.3, mountable). Stop at X=27.5 — once mounted on StepLow, before its right edge (X=28).
+            // Walking further +X walks off StepLow's right edge into the course's INTENDED floorless gap at X[28,29]
+            // (before the StepHigh wall) and free-falls; the RespawnSystem then teleports the capsule back (a multi-
+            // unit SetTransform, not a controller fling). The lateral-jump-free corner traversal this gate governs is
+            // the climb onto StepLow, which the bounded run reads. (Before the ReconstructOverlap depth fix the
+            // capsule was held against the wall by the fabricated depenetration depth and never fell — the bug this
+            // session fixed; the bound matches the now-correct fall behaviour.)
+            yield return StepSlopeNoLateralJump(new float2(21f, 1.1f), +1f, stopAtX: 27.5f);
         }
 
         [UnityTest]
@@ -708,15 +1069,25 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         {
             yield return LoadCourse();
             // Place up the slope-within-limit (lip 34, rising right; at X=40 the slope top Y ≈ (40−34)·tan30 ≈ 3.46)
-            // and drive −X down the slope and back across the steps — the direction that exhibited the jump.
-            yield return StepSlopeNoLateralJump(new float2(40f, 3.46f + 1.1f), -1f);
+            // and drive −X DOWN the slope to the lip corner — the direction that exhibited the jump. Stop at X=34.5
+            // (the lip), before the floorless X[33,34] gap the course has below the lip — past it the capsule walks
+            // off into the void (an intended course gap), free-falls, and the unrelated PlatformerRespawnSystem
+            // teleports it back (a multi-unit SetTransform that is NOT a controller fling). The corner traversal this
+            // gate governs is the on-surface descent to the lip, which is what the bounded run reads.
+            yield return StepSlopeNoLateralJump(new float2(40f, 3.46f + 1.1f), -1f, stopAtX: 34.5f);
         }
 
-        IEnumerator StepSlopeNoLateralJump(float2 placeAt, float moveX)
+        // Drives the capsule across the step+slope corner and asserts no lateral teleport / vertical fling. stopAtX
+        // bounds the −X (down-the-slope) run to the lip, before the course's intended floorless gap below it; pass
+        // float.NegativeInfinity (−X) / float.PositiveInfinity (+X) to run unbounded when no edge is reachable.
+        IEnumerator StepSlopeNoLateralJump(float2 placeAt, float moveX, float stopAtX)
         {
             PlaceCharacter(placeAt);
             Step(25); // settle onto the surface
-            Assert.IsTrue(Body().IsGrounded, "character must settle grounded on the step+slope cluster before walking");
+            Assert.IsTrue(
+                Body().IsGrounded,
+                "character must settle grounded on the step+slope cluster before walking"
+            );
 
             var startX = Position().x;
             // The backward bound: walking +X the character must never cross more than a small tolerance below its
@@ -733,31 +1104,541 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 Assert.IsFalse(float.IsNaN(p.x) || float.IsNaN(p.y), $"no NaN at step {i}");
                 var stepDx = p.x - prevX;
                 // No multi-unit single-step jump in EITHER axis (the teleport was a single-frame lurch).
-                Assert.Less(abs(stepDx), 1.0f,
-                    $"single-step X lurch of {stepDx} at step {i} (pos {p}) — the lateral teleport");
-                Assert.Less(p.y, maxReachableY,
-                    $"character flung vertically off the cluster at step {i} (y={p.y}) — the up-fling of the lateral jump");
+                Assert.Less(
+                    abs(stepDx),
+                    1.0f,
+                    $"single-step X lurch of {stepDx} at step {i} (pos {p}) — the lateral teleport"
+                );
+                Assert.Less(
+                    p.y,
+                    maxReachableY,
+                    $"character flung vertically off the cluster at step {i} (y={p.y}) — the up-fling of the lateral jump"
+                );
                 if (moveX > 0f)
                     extremeBack = min(extremeBack, p.x);
                 else
                     extremeBack = max(extremeBack, p.x);
                 prevX = p.x;
+                // Stop once the capsule has traversed the corner to the bound (driving past it walks off the course's
+                // intended floorless gap; the lateral-jump fix governs only the on-surface corner).
+                if ((moveX > 0f && p.x >= stopAtX) || (moveX < 0f && p.x <= stopAtX))
+                    break;
             }
 
             if (moveX > 0f)
-                Assert.GreaterOrEqual(extremeBack, startX - backTol,
-                    $"character jumped BACKWARD (−X) past its start while walking +X: start {startX}, furthest back {extremeBack}");
+                Assert.GreaterOrEqual(
+                    extremeBack,
+                    startX - backTol,
+                    $"character jumped BACKWARD (−X) past its start while walking +X: start {startX}, furthest back {extremeBack}"
+                );
             else
-                Assert.LessOrEqual(extremeBack, startX + backTol,
-                    $"character jumped BACKWARD (+X) past its start while walking −X: start {startX}, furthest back {extremeBack}");
+                Assert.LessOrEqual(
+                    extremeBack,
+                    startX + backTol,
+                    $"character jumped BACKWARD (+X) past its start while walking −X: start {startX}, furthest back {extremeBack}"
+                );
 
-            // It actually traversed the cluster (net progress in the drive direction).
+            // It actually traversed the corner (net progress in the drive direction).
             var endX = Position().x;
             if (moveX > 0f)
-                Assert.Greater(endX, startX + 1f, $"character must make forward (+X) progress across the cluster: {startX} -> {endX}");
+                Assert.Greater(
+                    endX,
+                    startX + 1f,
+                    $"character must make forward (+X) progress across the corner: {startX} -> {endX}"
+                );
             else
-                Assert.Less(endX, startX - 1f, $"character must make forward (−X) progress across the cluster: {startX} -> {endX}");
+                Assert.Less(
+                    endX,
+                    startX - 1f,
+                    $"character must make forward (−X) progress across the corner: {startX} -> {endX}"
+                );
             yield return null;
+        }
+
+        // ===== the continuous-sim per-tick step-up TRACE on the REAL course (the user's exact spot) ===============
+        //
+        // The user reports that walking the REAL Station-2 step+slope corner the capsule (a) is blocked stepping
+        // R-to-L over the StepLow lip (cannot step at all), and (b) L-to-R is "pushed away" laterally / ends at the
+        // correct step-top Y but the climb-start X (an X that does not advance through the step). The user asked for
+        // a continuous-sim trace observing EVERY event each tick. This drives the REAL course capsule with the REAL
+        // PlatformerCharacterPhysicsSystem into the StepLow corner and logs, per fixed step: the pre-tick pose, the
+        // velocity, the grounding state + ground-hit normal, the per-tick MovePosition TARGET the solve enqueues
+        // (read off the character's PhysicsBody2DCommand buffer after the solve, before the substrate drains it next
+        // tick), the actual landed pose, and the gap between the target and the landed pose (the swept-move clamp —
+        // MovePosition is SetTransformTarget, a velocity-based collision-aware kinematic move, NOT a teleport).
+        //
+        // The decision points (negative-space point 6 — built from the solve's observable behaviour, not imagined
+        // inputs): the capsule must ADVANCE through the StepLow lip (monotonic forward X progress past the step
+        // face) and SETTLE on the step top, with no snap-back to the climb-start X and no backward overshoot.
+
+        // The real Station-2 StepLow box: centre (26, -0.7), size (4,2) → top 0.3, left face X=24, right face X=28.
+        const float StepLowLeftFaceX = 24f;
+        const float StepLowRightFaceX = 28f;
+        const float StepLowTopY = 0.3f;
+
+        [UnityTest]
+        public IEnumerator StepTrace_RealCourse_WalkRightOntoStepLow_AdvancesAndStands()
+        {
+            yield return LoadCourse();
+            // Place on the sticky floor a few units left of StepLow's left face (X=24), drive +X up onto the step.
+            yield return StepTrace(new float2(StepLowLeftFaceX - 3f, 1.1f), +1f);
+        }
+
+        [UnityTest]
+        public IEnumerator StepTrace_RealCourse_WalkLeftOntoStepLow_AdvancesAndStands()
+        {
+            yield return LoadCourse();
+            // Place ON the StepLow top, right of centre, and drive −X toward + off the step's LEFT lip (X=24) down to
+            // the lower floor (the R-to-L approach the user reports is now blocked). The capsule should descend the
+            // step cleanly and keep advancing −X, not be blocked at the lip.
+            yield return StepTrace(new float2(StepLowRightFaceX - 1f, StepLowTopY + 1.05f), -1f);
+        }
+
+        // Drives the REAL course capsule into the StepLow corner, recording the full per-tick event trace, and
+        // asserts it advances through the step and never snaps backward past its start.
+        IEnumerator StepTrace(float2 placeAt, float moveX)
+        {
+            PlaceCharacter(placeAt);
+            Step(25);
+            Assert.IsTrue(
+                Body().IsGrounded,
+                "capsule must settle grounded before walking the step corner"
+            );
+
+            var startPos = Position();
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(
+                $"[REAL-STEP-TRACE moveX={moveX:+0;-0}] start=({startPos.x:F3},{startPos.y:F3}) "
+                    + $"StepLow face X∈[{StepLowLeftFaceX},{StepLowRightFaceX}] top={StepLowTopY}"
+            );
+
+            var extremeBack = startPos.x;
+            var worstAgainstDx = 0f;
+            var worstStep = -1;
+            var biggestGap = 0f;
+            var biggestGapStep = -1;
+            var prevPos = startPos;
+
+            for (var i = 0; i < 180; i++)
+            {
+                var prePos = Position();
+                Step(1, moveX: moveX);
+                var landed = Position();
+                var b = Body();
+                var target = EnqueuedMoveTarget();
+                var dx = landed.x - prePos.x;
+                var dy = landed.y - prePos.y;
+                var gap = any(isnan(target)) ? 0f : length(target - landed);
+
+                Assert.IsFalse(
+                    float.IsNaN(landed.x) || float.IsNaN(landed.y),
+                    $"no NaN at tick {i}"
+                );
+
+                if (moveX > 0f)
+                    extremeBack = min(extremeBack, landed.x);
+                else
+                    extremeBack = max(extremeBack, landed.x);
+                var against = moveX > 0f ? -dx : dx;
+                if (against > worstAgainstDx)
+                {
+                    worstAgainstDx = against;
+                    worstStep = i;
+                }
+                if (gap > biggestGap)
+                {
+                    biggestGap = gap;
+                    biggestGapStep = i;
+                }
+
+                bool nearFace = abs(prePos.x - StepLowLeftFaceX) < 3f;
+                bool anomalous = against > 0.05f || gap > 0.1f || abs(dx) > 0.4f;
+                if (nearFace || anomalous || (i % 15) == 0)
+                {
+                    sb.AppendLine(
+                        $"  t{i, 3}: pre=({prePos.x:F3},{prePos.y:F3}) land=({landed.x:F3},{landed.y:F3}) "
+                            + $"dx={dx:+0.000;-0.000} dy={dy:+0.000;-0.000} "
+                            + $"target=({(any(isnan(target)) ? float.NaN : target.x):F3},{(any(isnan(target)) ? float.NaN : target.y):F3}) "
+                            + $"gap={gap:F3} |v|={length(b.RelativeVelocity):F2} "
+                            + $"v=({b.RelativeVelocity.x:+0.0;-0.0},{b.RelativeVelocity.y:+0.0;-0.0}) "
+                            + $"grnd={b.IsGrounded} gN=({b.GroundHit.Normal.x:+0.0;-0.0},{b.GroundHit.Normal.y:+0.0;-0.0}) "
+                            + $"sup={b.SuppressGroundSnappingUntilSteppedClear}"
+                    );
+                }
+                prevPos = landed;
+
+                // Bound the run to the StepLow span [24,28]: stop once the capsule has climbed onto StepLow (its
+                // centre past X=27.5, before the right edge) for the +X climb, or descended onto the sticky floor
+                // (centre below X=22) for the −X descend. Driving further +X walks off StepLow's right edge into the
+                // course's INTENDED floorless gap at X[28,29] (before StepHigh) — a correct fall, not a defect; the
+                // RespawnSystem then teleports the capsule back (a multi-unit SetTransform that is not a controller
+                // fling). The bounded run reads the step traversal the trace is about, not that downstream fall.
+                if (moveX > 0f && landed.x >= 27.5f)
+                    break;
+                if (moveX < 0f && landed.x <= 22f)
+                    break;
+            }
+
+            var endPos = Position();
+            sb.AppendLine(
+                $"  END pos=({endPos.x:F3},{endPos.y:F3}) extremeBack={extremeBack:F3} "
+                    + $"worstAgainstDx={worstAgainstDx:F3}@{worstStep} biggestTargetVsLandGap={biggestGap:F3}@{biggestGapStep}"
+            );
+            Debug.Log(sb.ToString());
+
+            Assert.IsTrue(Body().IsGrounded, "capsule must end grounded on the step/floor");
+            if (moveX > 0f)
+            {
+                // L2R: climb onto StepLow — cross the left face X=24, end on the step top (Y ~ StepLowTopY + 1.0).
+                Assert.Greater(
+                    endPos.x,
+                    StepLowLeftFaceX + 1f,
+                    $"capsule must advance THROUGH the StepLow face X={StepLowLeftFaceX} (the 'incorrect X — snapped "
+                        + $"back to climb-start' symptom); ended at X={endPos.x:F3}"
+                );
+                Assert.Greater(
+                    endPos.y,
+                    StepLowTopY + 0.6f,
+                    $"capsule must climb onto StepLow (top {StepLowTopY}); ended Y={endPos.y:F3}"
+                );
+                Assert.GreaterOrEqual(
+                    extremeBack,
+                    startPos.x - 0.25f,
+                    $"capsule jumped BACKWARD (−X) past start while walking +X ('pushed away'); furthest back {extremeBack:F3}"
+                );
+            }
+            else
+            {
+                // R2L: descend off StepLow's left lip — cross X=24 going −X, keep advancing −X (the 'now blocked' case).
+                Assert.Less(
+                    endPos.x,
+                    StepLowLeftFaceX - 0.5f,
+                    $"capsule must step DOWN over the StepLow left lip (X={StepLowLeftFaceX}) and keep going −X (the "
+                        + $"'R-to-L step now blocked' symptom); ended at X={endPos.x:F3}"
+                );
+                Assert.LessOrEqual(
+                    extremeBack,
+                    startPos.x + 0.25f,
+                    $"capsule jumped BACKWARD (+X) past start while walking −X; furthest back {extremeBack:F3}"
+                );
+            }
+            yield return null;
+        }
+
+        // ===== the user's EXACT inspector values, on the REAL baked character, both snap modes, the snap-back probe =
+        //
+        // The headline open symptom: "correct Y, incorrect X" — after climbing the step the capsule's final X snaps
+        // BACK to the X where the climb began (Y is the step top, correct). The user reports Snap-To-Ground ON ⇒
+        // happens all the time; OFF ⇒ sometimes. These tests drive the REAL Station-2 geometries (the committed
+        // PlatformerSample) with the user's exact inspector values set on the real baked character entity, both snap
+        // modes, both directions, over BOTH the plain StepLow (X[24,28], top 0.3) and the StepHigh+ramp corner
+        // (StepHigh X[29,33] top 0.9 abutting the 30° SlopeWithinLimit lip at X=34). They trace every tick and
+        // assert monotonic forward progress through the step (no snap-back to the climb-start X). RED on the symptom;
+        // the per-tick log shows the exact tick the written X regresses.
+
+        // The user's exact inspector values, set on the real baked character. Step Handling ON, Max Step Height 0.5,
+        // Extra Step Checks 0.1, Char Width For Step Grounding 1; Evaluate Grounding ON, Ground Snapping Distance
+        // 0.5, Enhanced Ground Precision OFF; Snap To Ground per the argument.
+        void ApplyUserStepParams(bool snapToGround)
+        {
+            var props = _em.GetComponentData<KinematicCharacterProperties2D>(_character);
+            props.EvaluateGrounding = true;
+            props.SnapToGround = snapToGround;
+            props.GroundSnappingDistance = 0.5f;
+            props.EnhancedGroundPrecision = false;
+            _em.SetComponentData(_character, props);
+
+            var step = _em.GetComponentData<BasicStepAndSlopeHandlingParameters2D>(_character);
+            step.StepHandling = true;
+            step.MaxStepHeight = 0.5f;
+            step.ExtraStepChecksDistance = 0.1f;
+            step.CharacterWidthForStepGroundingCheck = 1f;
+            _em.SetComponentData(_character, step);
+        }
+
+        // The StepLow plain step (geometry 2 — a single mountable step, top 0.3): walk RIGHT onto it (climb +X) and
+        // LEFT off its left lip (descend −X). Bounded to the StepLow span [24,28] so the run reads the climb/stand,
+        // not the floorless gap the course has at X[28,29] before StepHigh (walking into that gap is an intended
+        // course fall, not a controller defect).
+        [UnityTest]
+        public IEnumerator StepUser_PlainStep_WalkRight_SnapOn()
+        {
+            yield return LoadCourse();
+            yield return StepTraceUserParams(
+                new float2(StepLowLeftFaceX - 3f, 1.1f),
+                +1f,
+                true,
+                stopAtX: 27.5f
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator StepUser_PlainStep_WalkRight_SnapOff()
+        {
+            yield return LoadCourse();
+            yield return StepTraceUserParams(
+                new float2(StepLowLeftFaceX - 3f, 1.1f),
+                +1f,
+                false,
+                stopAtX: 27.5f
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator StepUser_PlainStep_WalkLeftDescend_SnapOn()
+        {
+            yield return LoadCourse();
+            // Spawn ON StepLow's top (X=26 centre) and walk −X down off its LEFT lip (X=24) onto the sticky floor
+            // (top 0). The R-to-L step traversal; stop at X=22 (well onto the floor, before any other feature).
+            yield return StepTraceUserParams(
+                new float2(26f, StepLowTopY + 1.05f),
+                -1f,
+                true,
+                stopAtX: 22f
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator StepUser_PlainStep_WalkLeftDescend_SnapOff()
+        {
+            yield return LoadCourse();
+            yield return StepTraceUserParams(
+                new float2(26f, StepLowTopY + 1.05f),
+                -1f,
+                false,
+                stopAtX: 22f
+            );
+        }
+
+        // The StepLow→StepHigh TRANSITION (the exact reproduction): walk +X across StepLow's right edge (X=28) into
+        // the narrow gap before StepHigh's wall (X=29). This is where the snap-back fired — the capsule, grazing
+        // StepHigh's left face while still over StepLow's edge, was pushed ~0.86 u BACKWARD (−X) out of the wall it
+        // was only touching (ReconstructOverlap's fabricated depth). It must instead either stay or fall straight
+        // into the course's intended X[28,29] gap — NEVER lurch backward. The run stops when the capsule falls off
+        // (fellOffY), BEFORE the RespawnSystem fires, so the trace reads the approach-and-graze, not the respawn.
+        // RED pre-fix (a 0.86 u backward lurch at the wall); GREEN post-fix (falls straight into the gap).
+        [UnityTest]
+        public IEnumerator StepUser_PlainStep_WalkRightIntoStepHighTransition_NoBackwardSnap_SnapOn()
+        {
+            yield return LoadCourse();
+            yield return StepTraceUserParams(
+                new float2(StepLowLeftFaceX - 3f, 1.1f),
+                +1f,
+                true,
+                stopAtX: 33f
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator StepUser_PlainStep_WalkRightIntoStepHighTransition_NoBackwardSnap_SnapOff()
+        {
+            yield return LoadCourse();
+            yield return StepTraceUserParams(
+                new float2(StepLowLeftFaceX - 3f, 1.1f),
+                +1f,
+                false,
+                stopAtX: 33f
+            );
+        }
+
+        // The StepHigh+ramp corner (geometry 1): StepHigh X[29,33] top 0.9 (over the 0.5 max — a WALL) abutting the
+        // 30° ramp lip at X=34. The traversable corner behaviour: descend the ramp R-to-L to the lip and the StepHigh
+        // wall. Bounded to stop at X=33.5 (at the wall), before the floorless X[33,34] gap below the lip the course
+        // intends (walking past it is the same intended fall as the StepLow gap). Asserts the corner descent does
+        // not fling the capsule backward (+X) or vertically — the "pushed away" / teleport symptom.
+        [UnityTest]
+        public IEnumerator StepUser_SlopeCorner_WalkLeftDownToWall_SnapOn()
+        {
+            yield return LoadCourse();
+            // Spawn up the ramp (X=38, slope Y≈(38−34)·tan30≈2.31), drive −X DOWN the ramp toward the lip + wall.
+            yield return StepTraceUserParams(
+                new float2(38f, 2.31f + 1.1f),
+                -1f,
+                true,
+                stopAtX: 34.2f
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator StepUser_SlopeCorner_WalkLeftDownToWall_SnapOff()
+        {
+            yield return LoadCourse();
+            yield return StepTraceUserParams(
+                new float2(38f, 2.31f + 1.1f),
+                -1f,
+                false,
+                stopAtX: 34.2f
+            );
+        }
+
+        // Drives the REAL baked character with the user's exact params over a real Station-2 geometry, tracing every
+        // tick, and asserts no backward snap-back to the climb-start X. Bounded by stopAtX (reached in the drive
+        // direction) and by a fell-off-the-course Y floor, so the trace reads the step region, not the downstream
+        // intended course gaps + the RespawnSystem SetTransform they trigger (which is not a controller fling).
+        IEnumerator StepTraceUserParams(
+            float2 placeAt,
+            float moveX,
+            bool snapToGround,
+            float stopAtX
+        )
+        {
+            PlaceCharacter(placeAt);
+            ApplyUserStepParams(snapToGround); // set AFTER placement (placement detaches/re-attaches the tag)
+            Step(25);
+            Assert.IsTrue(Body().IsGrounded, "capsule must settle grounded before walking");
+
+            var startPos = Position();
+            const float fellOffY = -2f; // below this the capsule has left the course into an intended gap
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(
+                $"[USER-STEP-TRACE moveX={moveX:+0;-0} snap={snapToGround}] start=({startPos.x:F3},{startPos.y:F3}) "
+                    + $"stopAtX={stopAtX} params: MaxStep=0.5 ExtraChecks=0.1 Width=1 SnapDist=0.5"
+            );
+
+            var extremeBack = startPos.x; // furthest the capsule went AGAINST the drive direction
+            var maxForward = startPos.x; // furthest WITH the drive direction
+            var maxY = startPos.y;
+            var worstAgainstDx = 0f;
+            var worstStep = -1;
+            var biggestGap = 0f;
+            var biggestGapStep = -1;
+            var ticksRun = 0;
+
+            for (var i = 0; i < 220; i++)
+            {
+                var prePos = Position();
+                Step(1, moveX: moveX);
+                ticksRun++;
+                var landed = Position();
+                var b = Body();
+                var target = EnqueuedMoveTarget();
+                var dx = landed.x - prePos.x;
+                var dy = landed.y - prePos.y;
+                var gap = any(isnan(target)) ? 0f : length(target - landed);
+
+                Assert.IsFalse(
+                    float.IsNaN(landed.x) || float.IsNaN(landed.y),
+                    $"no NaN at tick {i}"
+                );
+
+                if (moveX > 0f)
+                {
+                    extremeBack = min(extremeBack, landed.x);
+                    maxForward = max(maxForward, landed.x);
+                }
+                else
+                {
+                    extremeBack = max(extremeBack, landed.x);
+                    maxForward = min(maxForward, landed.x);
+                }
+                maxY = max(maxY, landed.y);
+                var against = moveX > 0f ? -dx : dx;
+                if (against > worstAgainstDx)
+                {
+                    worstAgainstDx = against;
+                    worstStep = i;
+                }
+                if (gap > biggestGap)
+                {
+                    biggestGap = gap;
+                    biggestGapStep = i;
+                }
+
+                bool anomalous = against > 0.05f || gap > 0.1f || abs(dx) > 0.4f;
+                if (anomalous || (i % 15) == 0)
+                {
+                    sb.AppendLine(
+                        $"  t{i, 3}: pre=({prePos.x:F3},{prePos.y:F3}) land=({landed.x:F3},{landed.y:F3}) "
+                            + $"dx={dx:+0.000;-0.000} dy={dy:+0.000;-0.000} "
+                            + $"target=({(any(isnan(target)) ? float.NaN : target.x):F3},{(any(isnan(target)) ? float.NaN : target.y):F3}) "
+                            + $"gap={gap:F3} |v|={length(b.RelativeVelocity):F2} "
+                            + $"v=({b.RelativeVelocity.x:+0.0;-0.0},{b.RelativeVelocity.y:+0.0;-0.0}) "
+                            + $"grnd={b.IsGrounded} gN=({b.GroundHit.Normal.x:+0.0;-0.0},{b.GroundHit.Normal.y:+0.0;-0.0}) "
+                            + $"sup={b.SuppressGroundSnappingUntilSteppedClear}"
+                    );
+                }
+
+                // Stop once the capsule has traversed the step region to the bound, or fell off the course into an
+                // intended gap (past the step the trace is about).
+                if ((moveX > 0f && landed.x >= stopAtX) || (moveX < 0f && landed.x <= stopAtX))
+                    break;
+                if (landed.y < fellOffY)
+                {
+                    sb.AppendLine(
+                        $"  (fell off the course at tick {i}, y={landed.y:F3} — past the step region)"
+                    );
+                    break;
+                }
+            }
+
+            var endPos = Position();
+            sb.AppendLine(
+                $"  END pos=({endPos.x:F3},{endPos.y:F3}) ticks={ticksRun} start.x={startPos.x:F3} "
+                    + $"maxForward={maxForward:F3} extremeBack={extremeBack:F3} maxY={maxY:F3} "
+                    + $"worstAgainstDx={worstAgainstDx:F3}@{worstStep} biggestTargetVsLandGap={biggestGap:F3}@{biggestGapStep}"
+            );
+            Debug.Log(sb.ToString());
+
+            // The load-bearing decision points (the user's symptom), read over the bounded step region:
+            // 1. NO single-tick backward lurch against the drive (the "incorrect X" snap-back was a 0.86 u backward
+            //    push out of a wall the capsule was only grazing — the ReconstructOverlap depth fabrication).
+            Assert.LessOrEqual(
+                worstAgainstDx,
+                0.3f,
+                $"single-tick backward lurch {worstAgainstDx:F3} at tick {worstStep} against the drive (snap {snapToGround}) "
+                    + "— the 'pushed away / correct Y, incorrect X' snap-back"
+            );
+            // 2. NO backward overshoot past the start (the lateral teleport).
+            if (moveX > 0f)
+                Assert.GreaterOrEqual(
+                    extremeBack,
+                    startPos.x - 0.3f,
+                    $"jumped BACKWARD (−X) past start while walking +X; furthest back {extremeBack:F3}"
+                );
+            else
+                Assert.LessOrEqual(
+                    extremeBack,
+                    startPos.x + 0.3f,
+                    $"jumped BACKWARD (+X) past start while walking −X; furthest back {extremeBack:F3}"
+                );
+            // 3. NO vertical fling.
+            Assert.Less(
+                maxY,
+                startPos.y + 4f,
+                $"flung vertically (maxY {maxY:F3} vs start {startPos.y:F3})"
+            );
+            // 4. Net forward progress in the drive direction over the bounded region (it traversed, not stuck).
+            if (moveX > 0f)
+                Assert.Greater(
+                    maxForward,
+                    startPos.x + 0.8f,
+                    $"must make +X progress: {startPos.x:F3} -> max {maxForward:F3}"
+                );
+            else
+                Assert.Less(
+                    maxForward,
+                    startPos.x - 0.8f,
+                    $"must make −X progress: {startPos.x:F3} -> max {maxForward:F3}"
+                );
+
+            yield return null;
+        }
+
+        // The MovePosition target the solve enqueued this tick — the last MovePosition command still in the
+        // character's command buffer (the substrate drains + clears it at the start of the NEXT tick).
+        float2 EnqueuedMoveTarget()
+        {
+            if (!_em.HasBuffer<PhysicsBody2DCommand>(_character))
+                return new float2(float.NaN, float.NaN);
+            var buf = _em.GetBuffer<PhysicsBody2DCommand>(_character);
+            var target = new float2(float.NaN, float.NaN);
+            for (var i = 0; i < buf.Length; i++)
+                if (
+                    buf[i].kind == PhysicsBody2DCommandKind.MovePosition
+                    || buf[i].kind == PhysicsBody2DCommandKind.MovePositionAndRotation
+                )
+                    target = buf[i].linear;
+            return target;
         }
     }
 }

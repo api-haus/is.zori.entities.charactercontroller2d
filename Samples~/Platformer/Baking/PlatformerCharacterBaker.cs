@@ -28,10 +28,15 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
             var entity = GetEntity(TransformUsageFlags.Dynamic);
 
             // Identity + intent. The tag is the inert-on-import gate the sample systems RequireForUpdate on; the
-            // control component is the per-frame intent the control system fills and the solve consumes (default —
-            // no intent until the control system writes one), mirroring the SideScroller baking an empty control.
+            // control component is the per-frame intent the control system fills and the solve consumes (no intent
+            // until the control system writes one), mirroring the SideScroller baking an empty control. The jump
+            // buffer stamp starts at NegativeInfinity (NOT the struct-default 0) so the very first grounded step at
+            // simulation time ≈ 0 does NOT read a phantom buffered jump (0 − 0 ≤ 0.15 would be a spurious window hit).
             AddComponent<PlatformerCharacterTag>(entity);
-            AddComponent(entity, new PlatformerCharacterControl2D());
+            AddComponent(
+                entity,
+                new PlatformerCharacterControl2D { JumpBufferElapsedTime = float.NegativeInfinity }
+            );
 
             // Per-character movement + rope tuning, read per-entity in the solve (the coordinator correction — NOT a
             // scene config singleton, NOT const-on-the-system). The LayerMask authors a 1<<layer bitfield; the
@@ -48,11 +53,15 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
                     AirMoveSpeed = authoring.AirMoveSpeed,
                     AirAcceleration = authoring.AirAcceleration,
                     JumpSpeed = authoring.JumpSpeed,
+                    JumpBufferTime = authoring.JumpBufferTime,
                     RopeLength = authoring.RopeLength,
+                    RopeAnchorSearchRadius = authoring.RopeAnchorSearchRadius,
                     RopeSwingMaxSpeed = authoring.RopeSwingMaxSpeed,
                     RopeSwingAcceleration = authoring.RopeSwingAcceleration,
                     RopeSwingDrag = authoring.RopeSwingDrag,
                     RopeAnchorLayerMask = (ulong)(uint)authoring.RopeAnchorLayerMask.value,
+                    FallRespawnThresholdY = authoring.FallRespawnThresholdY,
+                    RespawnHeightOffset = authoring.RespawnHeightOffset,
                 }
             );
 
@@ -67,6 +76,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
             // RopeSwing transition writes a grabbed anchor into it. Baked once so the RopeSwing block reads/writes an
             // existing component, with no runtime structural change on first grab.
             AddComponent(entity, new RopeSwingState2D());
+
+            // The last-safe-point state, defaulted (HasPoint = false — nowhere to respawn to until the character
+            // stands somewhere safe). PlatformerRespawnSystem records the safe pose every stable grounded step and
+            // teleports the character back to it on a fall.
+            AddComponent(entity, new LastSafePoint2D());
         }
     }
 }

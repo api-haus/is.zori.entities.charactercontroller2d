@@ -431,4 +431,143 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             }
         }
     }
+
+    // =============================================================================================================
+    // Respawn — remember the last safe (grounded, stable) position; teleport back to it on a fall.
+    // =============================================================================================================
+
+    /// <summary>
+    /// Auto-respawn to the last safe point: while a <see cref="PlatformerCharacterTag"/> character is grounded AND
+    /// stable, this records its world position into <see cref="LastSafePoint2D"/>; when the character's Y falls below
+    /// <see cref="PlatformerCharacterTuning2D.FallRespawnThresholdY"/> (it fell off the course), it teleports the
+    /// character back to that last safe point with zeroed velocity and no interpolation streak — the same proper
+    /// teleport <see cref="TeleporterSystem2D"/> uses (the destination written into <c>LocalToWorld</c> so the next
+    /// solve starts there, the instantaneous unclamped <see cref="PhysicsBody2DCommands.SetTransform"/> on the body,
+    /// <see cref="PhysicsBody2DCommands.SkipInterpolation"/> to suppress the render streak, and a velocity reset).
+    ///
+    /// <para><b>The "safe" predicate.</b> A frame is safe only when the character is grounded this step AND was
+    /// grounded at the start of the step (<see cref="KinematicCharacterBody2D.WasGroundedBeforeCharacterUpdate"/>) —
+    /// i.e. it has been on the ground for at least one prior step, not just landed mid-fall — AND is not mid-step-up
+    /// (<see cref="KinematicCharacterBody2D.SuppressGroundSnappingUntilSteppedClear"/> false, so the recorded pose is a
+    /// settled stand, not a transient step-mount pose) AND not standing on a moving platform (its ground hit is not a
+    /// <see cref="MovingPlatform2D"/> body). Requiring the prior-step grounding keeps the recorded point off a one-frame
+    /// graze of a ledge edge or a passing platform the character bounced off — only a sustained stand becomes a respawn
+    /// target. The moving-platform exclusion keeps the safe point on a STATIC surface: a moving platform travels, so a
+    /// point recorded on it would respawn the character to a stale (or mid-gap) platform pose. The character can still
+    /// ride the platform and, after a fall, respawn to the last STATIC point it stood on.</para>
+    ///
+    /// <para><b>Ordering.</b> Runs <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> AND
+    /// <c>[UpdateAfter(PlatformerCharacterPhysicsSystem)]</c> in the fixed-step group, so it reads the just-solved
+    /// grounding state and the current <c>LocalToWorld</c> pose AND — load-bearing — runs after the solve has enqueued
+    /// its own swept <c>MovePosition</c> for the step. The respawn's <c>SetTransform</c> must be the LAST command on
+    /// the buffer: it and the solve's <c>MovePosition</c> both drain at the next <c>PhysicsWorld2DSystem</c> in buffer
+    /// order, and if the solve's swept move came after the instant set, its clamped target would sweep the body off
+    /// the just-set destination (landing it ~6.67 u — the <c>maximumLinearSpeed</c> per-step cap — short). Ordering
+    /// the respawn after the solve puts the instant set last, so it wins. The commands drain at the NEXT
+    /// <c>PhysicsWorld2DSystem</c>. Not Bursted — a low-frequency main-thread system doing
+    /// <c>ComponentLookup</c>/<c>BufferLookup</c> reads-writes after a <c>CompleteDependency</c>, mirroring
+    /// <see cref="TeleporterSystem2D"/>.</para>
+    /// </summary>
+    [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+    [UpdateAfter(typeof(PhysicsWorld2DSystem))]
+    [UpdateAfter(typeof(PlatformerCharacterPhysicsSystem))]
+    public partial struct PlatformerRespawnSystem : ISystem
+    {
+        ComponentLookup<MovingPlatform2D> _movingPlatformLookup;
+
+        public void OnCreate(ref SystemState state)
+        {
+            // Inert on import: only a baked Platformer character carries the tag + the respawn state.
+            state.RequireForUpdate<PlatformerCharacterTag>();
+            state.RequireForUpdate<LastSafePoint2D>();
+
+            // To exclude a moving platform from the safe-point set, check the character's ground hit entity against
+            // the MovingPlatform2D marker (a moving / kinematic body is not a stable respawn anchor).
+            _movingPlatformLookup = state.GetComponentLookup<MovingPlatform2D>(true);
+        }
+
+        public void OnUpdate(ref SystemState state)
+        {
+            // This main-thread system reads LocalToWorld and the body (both written by scheduled jobs — the
+            // transform-export job and the character solve). Finish those before touching the data, or a read throws
+            // because a scheduled writer is still live (the same reason TeleporterSystem2D completes here).
+            state.CompleteDependency();
+            _movingPlatformLookup.Update(ref state);
+
+            foreach (
+                var (body, ltw, lastSafe, tuning, commands) in SystemAPI
+                    .Query<
+                        RefRW<KinematicCharacterBody2D>,
+                        RefRW<LocalToWorld>,
+                        RefRW<LastSafePoint2D>,
+                        RefRO<PlatformerCharacterTuning2D>,
+                        DynamicBuffer<PhysicsBody2DCommand>
+                    >()
+                    .WithAll<PlatformerCharacterTag>()
+            )
+            {
+                float2 position = ltw.ValueRO.Value.c3.xy;
+
+                // A moving platform is NOT a stable respawn anchor — its pose oscillates, so a point recorded while
+                // standing on it would respawn the character to where the platform USED to be (or where it now is,
+                // mid-travel, possibly over a gap). Exclude any frame whose ground hit is a MovingPlatform2D body, so
+                // the last safe point is only ever a STATIC walkable surface. The character can still ride the platform
+                // and, after falling off, respawn to the last STATIC point it stood on. (Identified by the explicit
+                // marker rather than raw kinematic-body-ness: every moving platform in the sample carries it, and a
+                // marker check is cheaper and more precise than reading the substrate body type.)
+                Entity groundEntity = body.ValueRO.GroundHit.Entity;
+                bool groundedOnMovingPlatform =
+                    groundEntity != Entity.Null && _movingPlatformLookup.HasComponent(groundEntity);
+
+                // Record the last safe point while grounded AND stable: grounded this step, grounded the prior step
+                // (a sustained stand, not a just-landed graze), not mid-step-up (a settled pose), ABOVE the fall
+                // threshold (a pose below the fall line is by definition not safe — guarding on it stops a transient
+                // still-grounded frame during a fast fall-or-teleport from poisoning the safe point with a below-course
+                // position, which would then respawn the character onto its own fall), and NOT standing on a moving
+                // platform (an unstable, travelling surface).
+                bool safe =
+                    body.ValueRO.IsGrounded
+                    && body.ValueRO.WasGroundedBeforeCharacterUpdate
+                    && !body.ValueRO.SuppressGroundSnappingUntilSteppedClear
+                    && position.y >= tuning.ValueRO.FallRespawnThresholdY
+                    && !groundedOnMovingPlatform;
+                if (safe)
+                {
+                    lastSafe.ValueRW.Position = position;
+                    lastSafe.ValueRW.HasPoint = true;
+                }
+
+                // Fell off the course: teleport back to the last safe point (only once one has been recorded — before
+                // the first safe stand there is nowhere to send the character, so the threshold check is a no-op).
+                if (position.y >= tuning.ValueRO.FallRespawnThresholdY || !lastSafe.ValueRO.HasPoint)
+                    continue;
+
+                float2 target = lastSafe.ValueRO.Position + new float2(0f, tuning.ValueRO.RespawnHeightOffset);
+
+                // (1) Set the SOLVE position: write the destination into LocalToWorld so the next fixed-step solve's
+                // ReadPoseFromLocalToWorld starts the collide-and-slide from the safe point (the 2D solve owns
+                // LocalToWorld, not LocalTransform — miss this and the next solve walks the character back).
+                LocalToWorld m = ltw.ValueRO;
+                float4x4 mat = m.Value;
+                mat.c3.xy = target;
+                m.Value = mat;
+                ltw.ValueRW = m;
+
+                // (2) Set the BODY pose INSTANTANEOUSLY + zero its linear velocity + skip interpolation, in that order
+                // on the command buffer (all drain before the next step, SkipInterpolation reads the post-SetTransform
+                // pose). SetTransform is the hard, unclamped b2Body_SetTransform write — it reaches any distance in one
+                // step (unlike the swept MovePosition, whose implied velocity is clamped to maximumLinearSpeed and
+                // would land a far respawn ~6.67 u short). SetLinearVelocity(0) drops the falling body's leftover
+                // Box2D momentum so Simulate does not drift it off the just-set pose; it is issued AFTER SetTransform
+                // (the pose set carries no velocity, so a separate velocity reset is needed). This is the same
+                // SetTransform + SkipInterpolation pair TeleporterSystem2D uses, plus the velocity reset a fall needs.
+                PhysicsBody2DCommands.SetTransform(commands, target, 0f);
+                PhysicsBody2DCommands.SetLinearVelocity(commands, new float2(0f, 0f));
+                PhysicsBody2DCommands.SkipInterpolation(commands);
+
+                // (3) Zero the controller's relative velocity too, so the fall momentum does not carry through.
+                body.ValueRW.RelativeVelocity = new float2(0f, 0f);
+            }
+        }
+    }
 }

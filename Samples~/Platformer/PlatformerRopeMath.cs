@@ -73,15 +73,19 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         }
 
         /// <summary>
-        /// The grab-time anchor query: the nearest rope anchor within <paramref name="ropeLength"/> of the grab
+        /// The grab-time anchor query: the nearest rope anchor within <paramref name="searchRadius"/> of the grab
         /// point, on the rope-anchor collision layer. The 2D substitute for the 3D
         /// <c>physicsWorld.CalculateDistance(PointDistanceInput)</c> the reference uses
         /// (REF3D RopeSwingState.DetectRopePoints, :105-133) — the substrate's <see cref="PhysicsQueries2D.ClosestPoint"/>
         /// is the world-level closest-point query added for exactly this (09-substrate-additions.md): a circle
-        /// broad-phase of radius <paramref name="ropeLength"/> filtered to <paramref name="anchorLayerMask"/>, then
+        /// broad-phase of radius <paramref name="searchRadius"/> filtered to <paramref name="anchorLayerMask"/>, then
         /// the exact closest body by surface distance. It returns the owning entity and the closest point on the
         /// anchor's surface — for a point-like anchor that surface point is the pivot, the <c>AnchorPoint</c> the
         /// pendulum clamps to (the analogue of the 3D <c>closestHit.Position</c>).
+        ///
+        /// <para>The 3D reference used the single <c>RopeLength</c> as the <c>MaxDistance</c>; the 2D sample uses the
+        /// separate <see cref="PlatformerCharacterTuning2D.RopeAnchorSearchRadius"/> (the grab reach) so a course can
+        /// place an anchor farther than the rope length without making the grab unreachable.</para>
         ///
         /// <para>Chosen over the design's fallback (<c>OverlapCircle</c> + nearest-centre): <c>OverlapCircle</c>
         /// reports overlapping shapes with a ZERO point/normal (PhysicsQueries2D.ToHit(WorldOverlapResult)), so that
@@ -93,7 +97,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         /// </summary>
         /// <param name="world"> The stepped substrate world (read from <c>KinematicCharacterUpdateContext2D.PhysicsWorld</c>) </param>
         /// <param name="grabPoint"> The character's grab/detection point in world space (the rope-attachment point) </param>
-        /// <param name="ropeLength"> The max grab distance — an anchor beyond this is out of reach </param>
+        /// <param name="searchRadius"> The max grab distance (grab reach) — an anchor beyond this is out of reach </param>
         /// <param name="anchorLayerMask"> The rope-anchor collision-layer mask the query filters to </param>
         /// <param name="scratch"> A caller-owned scratch hit list the broad-phase reuses (the context's <c>TmpQueryHits</c>) </param>
         /// <param name="anchorEntity"> The grabbed anchor entity, or <see cref="Entity.Null"/> when none is in range </param>
@@ -102,7 +106,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         public static bool TryDetectRopeAnchor(
             PhysicsWorld world,
             float2 grabPoint,
-            float ropeLength,
+            float searchRadius,
             ulong anchorLayerMask,
             NativeList<PhysicsQueryHit2D> scratch,
             out Entity anchorEntity,
@@ -111,7 +115,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             anchorEntity = Entity.Null;
             anchorPoint = grabPoint;
 
-            if (PhysicsQueries2D.ClosestPoint(world, grabPoint, ropeLength, anchorLayerMask, scratch, out ClosestPoint2D closest))
+            if (PhysicsQueries2D.ClosestPoint(world, grabPoint, searchRadius, anchorLayerMask, scratch, out ClosestPoint2D closest))
             {
                 anchorEntity = closest.entity;
                 anchorPoint = closest.point;

@@ -120,6 +120,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 BodyTransformLookup = _localToWorldLookup,
                 FrictionModifierLookup = _frictionModifierLookup,
                 DeltaTime = SystemAPI.Time.DeltaTime,
+                // The fixed-step (simulation) clock drives the jump-buffer window: the solve stamps a fresh jump press
+                // with this elapsed time and fires the buffered jump on a grounded step only while still inside
+                // tuning.JumpBufferTime of it. Taking the stamp here (not from the render-rate control system's clock)
+                // keeps the window consistent across the input→fixed-step hand-off.
+                ElapsedTime = SystemAPI.Time.ElapsedTime,
             };
 
             state.Dependency = job.ScheduleParallel(_characterQuery, state.Dependency);
@@ -138,6 +143,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             public ComponentLookup<FrictionModifier2D> FrictionModifierLookup;
 
             public float DeltaTime;
+
+            /// <summary>The current fixed-step (simulation) elapsed time, used to stamp and expire the jump buffer.</summary>
+            public double ElapsedTime;
 
             void Execute(
                 Entity entity,
@@ -178,6 +186,23 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
                 float2 gravity = new float2(0f, -tuning.GravityMagnitude);
 
+                // --- Jump buffer: convert the fresh render-rate press edge into a fixed-time stamp ----------------
+                //
+                // The control system sets control.JumpPressed on the input RISING edge only (wasPressedThisFrame), so
+                // a fresh tap arrives here as a one-shot true and a HELD key produces no further edges. On seeing the
+                // edge, stamp the buffer with the current SIMULATION elapsed time and clear the edge. The grounded
+                // branches then fire the buffered jump only while it is still within tuning.JumpBufferTime of now —
+                // an older press has expired (the unbounded "press any time before landing" re-jump is gone). Because
+                // a held key re-stamps nothing (no new edge), it cannot perpetually re-buffer; and because the stamp
+                // is reset to NegativeInfinity when consumed, a fired jump cannot re-fire from a stale stamp.
+                if (control.JumpPressed)
+                {
+                    control.JumpBufferElapsedTime = (float)ElapsedTime;
+                    control.JumpPressed = false;
+                }
+
+                bool jumpBuffered = HasBufferedJump(in control, in tuning, ElapsedTime);
+
                 // --- Stance transitions (P4): GroundMove ↔ AirMove ↔ RopeSwing, consumed BEFORE the velocity block ---
                 //
                 // The 3D reference flips state inside each state's DetectTransitions (RopeSwingState.cs:91-103,
@@ -207,15 +232,19 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                     // rope swing). On a JUMP edge, add the jump impulse here: the 2D SolveAirMove only jumps on its
                     // grounded branch (no coyote/double jump), and the character is airborne off the rope, so the
                     // impulse must be applied at the exit. This mirrors the 3D, whose AirMoveState applies an airborne
-                    // StandardJump on JumpPressed (AirMoveState.cs:57-69); jumping off a rope launches immediately.
-                    if (control.JumpPressed)
+                    // StandardJump on JumpPressed (AirMoveState.cs:57-69); jumping off a rope launches immediately. A
+                    // jump pressed while swinging is by definition fresh (stamped this step), so the buffer check is
+                    // satisfied; consuming it here clears the stamp so it does not also trigger a grounded jump after
+                    // the launch.
+                    if (jumpBuffered)
                     {
                         CharacterControlUtilities2D.StandardJump(
                             ref characterBody,
                             groundingUp * tuning.JumpSpeed,
                             cancelVelocityBeforeJump: false,
                             groundingUp);
-                        control.JumpPressed = false;
+                        ConsumeBufferedJump(ref control);
+                        jumpBuffered = false;
                         state.Stance = PlatformerStance2D.AirMove;
                     }
                     else if (control.ReleasePressed)
@@ -227,15 +256,18 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 }
                 else if (state.Stance == PlatformerStance2D.AirMove && control.GrabPressed)
                 {
-                    // Grab: query the nearest rope anchor within RopeLength on the anchor layer. The character's own
-                    // position is both the grab/detection point and the rope-attachment point (a point-mass pendulum;
-                    // LocalRopeAnchorPoint = 0, the simplest faithful 2D reduction of the 3D local-offset attach). The
-                    // captured RopeLength is the tuned length (the 3D RopeLength used for both detection and the
-                    // constraint), so the rope is slack until the character swings out to full extension.
+                    // Grab: query the nearest rope anchor within the GRAB REACH (RopeAnchorSearchRadius) on the anchor
+                    // layer. The character's own position is both the grab/detection point and the rope-attachment
+                    // point (a point-mass pendulum; LocalRopeAnchorPoint = 0, the simplest faithful 2D reduction of the
+                    // 3D local-offset attach). The search radius is SEPARATE from RopeLength: the search radius is how
+                    // close the character must be to grab (originally conflated with RopeLength, which left the
+                    // course's high anchor out of reach), while the captured RopeLength is the pendulum-constraint
+                    // radius the swing clamps to — so the rope is slack from the grab point until the character swings
+                    // out to RopeLength.
                     if (PlatformerRopeMath.TryDetectRopeAnchor(
                             BaseContext.PhysicsWorld,
                             characterContext.CurrentPosition,
-                            tuning.RopeLength,
+                            tuning.RopeAnchorSearchRadius,
                             tuning.RopeAnchorLayerMask,
                             BaseContext.TmpQueryHits,
                             out Entity anchorEntity,
@@ -258,7 +290,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 switch (state.Stance)
                 {
                     case PlatformerStance2D.GroundMove:
-                        SolveGroundMove(ref characterBody, ref control, in tuning, groundingUp, gravity, DeltaTime, in FrictionModifierLookup);
+                        SolveGroundMove(ref characterBody, ref control, in tuning, groundingUp, gravity, DeltaTime, jumpBuffered, in FrictionModifierLookup);
                         break;
 
                     case PlatformerStance2D.RopeSwing:
@@ -273,7 +305,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
                     case PlatformerStance2D.AirMove:
                     default:
-                        SolveAirMove(ref characterBody, ref control, in tuning, groundingUp, gravity, DeltaTime, in FrictionModifierLookup);
+                        SolveAirMove(ref characterBody, ref control, in tuning, groundingUp, gravity, DeltaTime, jumpBuffered, in FrictionModifierLookup);
                         break;
                 }
 
@@ -331,12 +363,13 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 float2 groundingUp,
                 float2 gravity,
                 float deltaTime,
+                bool jumpBuffered,
                 in ComponentLookup<FrictionModifier2D> frictionModifierLookup)
             {
                 if (!characterBody.IsGrounded)
                 {
                     // Walked off the ground line: behave as AirMove until the grounding step or a transition re-grounds.
-                    SolveAirMove(ref characterBody, ref control, in tuning, groundingUp, gravity, deltaTime, in frictionModifierLookup);
+                    SolveAirMove(ref characterBody, ref control, in tuning, groundingUp, gravity, deltaTime, jumpBuffered, in frictionModifierLookup);
                     return;
                 }
 
@@ -362,16 +395,19 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                     groundingUp,
                     characterBody.GroundHit.Normal);
 
-                // Consume a latched jump: unground, cancel downward velocity, add the jump impulse. StandardJump sets
-                // IsGrounded = false on the live body (so the post-block WasGrounded snapshot reads false).
-                if (control.JumpPressed)
+                // Fire a BUFFERED jump: unground, cancel downward velocity, add the jump impulse. The jump fires only
+                // if a fresh press is still inside the JumpBufferTime window (jumpBuffered) — a press older than the
+                // window has expired and does NOT jump. StandardJump sets IsGrounded = false on the live body (so the
+                // post-block WasGrounded snapshot reads false); consuming the buffer resets the stamp so it cannot
+                // re-fire on a later grounded step.
+                if (jumpBuffered)
                 {
                     CharacterControlUtilities2D.StandardJump(
                         ref characterBody,
                         groundingUp * tuning.JumpSpeed,
                         cancelVelocityBeforeJump: true,
                         groundingUp);
-                    control.JumpPressed = false;
+                    ConsumeBufferedJump(ref control);
                 }
             }
 
@@ -388,6 +424,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 float2 groundingUp,
                 float2 gravity,
                 float deltaTime,
+                bool jumpBuffered,
                 in ComponentLookup<FrictionModifier2D> frictionModifierLookup)
             {
                 float2 targetMove = new float2(control.MoveX, 0f);
@@ -406,21 +443,24 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                         groundingUp,
                         characterBody.GroundHit.Normal);
 
-                    if (control.JumpPressed)
+                    // Fire the BUFFERED jump on landing (the jump-buffer feature): a press within JumpBufferTime of
+                    // this grounded step still fires here; an older press has expired and does not.
+                    if (jumpBuffered)
                     {
                         CharacterControlUtilities2D.StandardJump(
                             ref characterBody,
                             groundingUp * tuning.JumpSpeed,
                             cancelVelocityBeforeJump: true,
                             groundingUp);
-                        control.JumpPressed = false;
+                        ConsumeBufferedJump(ref control);
                     }
                 }
                 else
                 {
                     // Airborne: apply gravity, then a touch of horizontal control on the horizontal plane
-                    // (movementPlaneUp = +Y). The jump latch is left set so a jump tapped just before landing fires on
-                    // the next grounded step.
+                    // (movementPlaneUp = +Y). The buffer stamp is left untouched: a jump tapped just before landing
+                    // stays buffered until the grounding step fires it, and expires on its own if the landing comes
+                    // later than JumpBufferTime (so a press long before landing no longer auto-rejumps).
                     characterBody.RelativeVelocity += gravity * deltaTime;
 
                     CharacterControlUtilities2D.StandardAirMove(
@@ -510,6 +550,29 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 }
 
                 return 1f;
+            }
+
+            /// <summary>
+            /// Whether a fresh jump press is still inside the jump-buffer window — true only while
+            /// <c>(elapsed − <see cref="PlatformerCharacterControl2D.JumpBufferElapsedTime"/>) ≤
+            /// <see cref="PlatformerCharacterTuning2D.JumpBufferTime"/></c>. The stamp starts (and is reset on consume)
+            /// at <see cref="float.NegativeInfinity"/>, so an unstamped / already-consumed buffer yields a difference of
+            /// <c>+∞</c> and never satisfies the window. This is the load-bearing expiry: a press older than the window
+            /// returns false, so it does NOT fire on landing — replacing the earlier unbounded latch.
+            /// </summary>
+            static bool HasBufferedJump(in PlatformerCharacterControl2D control, in PlatformerCharacterTuning2D tuning, double elapsedTime)
+            {
+                return elapsedTime - control.JumpBufferElapsedTime <= tuning.JumpBufferTime;
+            }
+
+            /// <summary>
+            /// Consumes the buffered jump by resetting its stamp to <see cref="float.NegativeInfinity"/>, so the same
+            /// press cannot fire a second jump on a later grounded step. A new jump requires a fresh press edge to
+            /// re-stamp the buffer.
+            /// </summary>
+            static void ConsumeBufferedJump(ref PlatformerCharacterControl2D control)
+            {
+                control.JumpBufferElapsedTime = float.NegativeInfinity;
             }
         }
     }

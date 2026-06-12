@@ -22,9 +22,22 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         /// <summary>Desired horizontal move in [-1, 1] (left/right), in world space. Zero means stand still.</summary>
         public float MoveX;
 
-        /// <summary>Latched jump edge — true when a jump was requested and not yet consumed. Drives a grounded jump in
-        /// GroundMove, and the RopeSwing → AirMove release-by-jump transition.</summary>
+        /// <summary>Fresh jump-press edge — true on the input frame a jump was pressed, until the fixed-step solve
+        /// consumes the edge. It is the FRESHNESS signal, not the buffer itself: the solve, on seeing this true,
+        /// stamps <see cref="JumpBufferElapsedTime"/> with the current fixed-step elapsed time and clears this edge.
+        /// Because the control system sets it only on the input rising edge (<c>wasPressedThisFrame</c>), HOLDING the
+        /// jump key produces no new edge and therefore never re-stamps the buffer — a held button cannot perpetually
+        /// re-buffer a jump. Also drives the RopeSwing → AirMove release-by-jump transition.</summary>
         public bool JumpPressed;
+
+        /// <summary>The fixed-step <c>SystemAPI.Time.ElapsedTime</c> at which the most recent fresh jump press was
+        /// stamped by the solve. The buffered jump fires on a grounded step only while
+        /// <c>(elapsed − JumpBufferElapsedTime) ≤ <see cref="PlatformerCharacterTuning2D.JumpBufferTime"/></c>; an
+        /// older press has expired and does not fire. Initialised to <see cref="float.NegativeInfinity"/> (no buffered
+        /// jump), and reset to it when a buffered jump is consumed, so a fired jump cannot re-fire and a stale stamp
+        /// can never satisfy the freshness window. The stamp is taken from the SIMULATION (fixed-step) clock, not the
+        /// render-rate control-system clock, so the window is consistent across the input→fixed-step hand-off.</summary>
+        public float JumpBufferElapsedTime;
 
         /// <summary>Latched rope-grab edge — true when a grab was requested and not yet consumed. In AirMove, triggers
         /// the anchor-detection query and the AirMove → RopeSwing transition when an anchor is in range.</summary>
@@ -78,13 +91,33 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         /// <summary>Initial upward speed imparted by a grounded jump (units/s).</summary>
         public float JumpSpeed;
 
+        /// <summary>The jump-buffer window (seconds): a jump press fires on landing only if it occurred within this
+        /// many seconds (of SIMULATION / fixed-step time) before the character became grounded; an older press
+        /// expires unfired. This is the 3D Platformer sample's jump-buffer grace, ported — it makes a jump pressed a
+        /// touch early still register on landing, without the unbounded "press any time before landing always
+        /// re-jumps" latch the earlier solve had. Default 0.15, matching the 3D sample. Zero disables buffering (only
+        /// a press while already grounded jumps).</summary>
+        public float JumpBufferTime;
+
         // ---- rope tuning ----
 
-        /// <summary>The rope's length (units): both the max distance the grab query reaches for an anchor and the
-        /// radius of the circle the swing constrains the character onto. Matches the 3D reference's single
-        /// <c>RopeLength</c> used for both detection and the constraint (REF3D RopeSwingState). The rope is slack —
-        /// no clamp — until the character swings out to this full extension.</summary>
+        /// <summary>The rope's length (units): the radius of the circle the swing constrains the character onto.
+        /// This is the pendulum-constraint radius — <see cref="ConstrainToRope2D"/> holds the character on a circle of
+        /// this radius around the anchor. It is NOT the grab reach: the distance within which a grab finds an anchor is
+        /// the separate <see cref="RopeAnchorSearchRadius"/>. The two were conflated in P4 (one <c>RopeLength</c> for
+        /// both, matching the 3D reference's single field), but the scene's anchor sits well above the launch-ledge
+        /// jump apex, so a grab reach equal to the rope length never reached it — separating the two lets the grab
+        /// reach be large while the swing radius stays whatever the level designer wants. The rope is slack — no clamp
+        /// — until the character swings out to this full extension.</summary>
         public float RopeLength;
+
+        /// <summary>The grab reach (units): the max distance from the character's grab point within which the grab
+        /// query finds a rope anchor. Distinct from <see cref="RopeLength"/> (the pendulum-constraint radius): this is
+        /// "how close must I be to grab", that is "how long is the rope once grabbed". The default is generous so a
+        /// nearby anchor is grabbed even from a jump apex below it; tune it up for a longer-reach grab, down for a
+        /// must-be-right-next-to-it grab. The 3D reference used one field for both; the 2D sample separates them
+        /// because the authored course places the anchor above the reachable jump arc.</summary>
+        public float RopeAnchorSearchRadius;
 
         /// <summary>Target tangential speed of air control while swinging in RopeSwing (units/s).</summary>
         public float RopeSwingMaxSpeed;
@@ -98,6 +131,17 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         /// <summary>Collision-layer mask the RopeSwing grab query (<c>OverlapCircle</c>) filters rope anchors by — only
         /// shapes on these layers are candidate anchors.</summary>
         public ulong RopeAnchorLayerMask;
+
+        // ---- respawn tuning ----
+
+        /// <summary>World Y below which the character is considered to have fallen off the course and is teleported
+        /// back to its last safe point. Set it below the lowest walkable surface (with margin), so only a genuine fall
+        /// off a platform / out of the level — never a normal dip — triggers a respawn.</summary>
+        public float FallRespawnThresholdY;
+
+        /// <summary>Small upward offset added to the recorded last-safe-point Y when respawning, so the character drops
+        /// the last sliver onto its safe surface and re-grounds cleanly rather than spawning flush-overlapped with it.</summary>
+        public float RespawnHeightOffset;
     }
 
     // ---- stance state ---------------------------------------------------------------------------------------
@@ -149,6 +193,24 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
         /// <summary>The rope length: the radius of the circle the character is constrained onto while swinging.</summary>
         public float RopeLength;
+    }
+
+    /// <summary>
+    /// The last world position at which the character was grounded AND stable, carried on the character so the respawn
+    /// system can teleport it back there after a fall. <see cref="PlatformerRespawnSystem"/> records
+    /// <see cref="Position"/> every step the character is safely standing (grounded for at least one prior step, on
+    /// solid ground, not mid-step-up), and reads it back when the character's Y drops below
+    /// <see cref="PlatformerCharacterTuning2D.FallRespawnThresholdY"/>. <see cref="HasPoint"/> is false until the first
+    /// safe step records a point — before any safe ground is touched there is nowhere to respawn to, so a fall before
+    /// the first grounding does not teleport (the character must have stood somewhere safe first).
+    /// </summary>
+    public struct LastSafePoint2D : IComponentData
+    {
+        /// <summary>The last recorded safe world position (a grounded, stable standing pose).</summary>
+        public float2 Position;
+
+        /// <summary>False until the first safe step records a <see cref="Position"/>; a respawn is a no-op until then.</summary>
+        public bool HasPoint;
     }
 
     // ---- feature prop markers -------------------------------------------------------------------------------

@@ -12,7 +12,8 @@
     "Unity.Entities.Hybrid",
     "Unity.Collections",
     "Unity.Mathematics",
-    "Unity.Scenes"
+    "Unity.Scenes",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [
     "Editor"

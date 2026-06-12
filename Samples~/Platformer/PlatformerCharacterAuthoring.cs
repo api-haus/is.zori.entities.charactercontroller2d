@@ -65,6 +65,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         [Tooltip("Initial upward speed imparted by a grounded jump (units/s).")]
         float m_JumpSpeed = 9f;
 
+        [SerializeField]
+        [Tooltip(
+            "Jump-buffer window (seconds): a jump pressed up to this long before landing still fires on landing; an "
+                + "older press expires unfired. Matches the 3D Platformer sample's 0.15s grace — a jump tapped a touch "
+                + "early registers, but a held key cannot perpetually re-jump. Zero disables buffering."
+        )]
+        float m_JumpBufferTime = 0.15f;
+
         [Header("Rope swing tuning (per-character)")]
         [SerializeField]
         [Tooltip(
@@ -73,6 +81,15 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 + "out to this full extension."
         )]
         float m_RopeLength = 5f;
+
+        [SerializeField]
+        [Tooltip(
+            "The grab reach (units): how close to a rope anchor the character must be for E to grab it. SEPARATE from "
+                + "Rope Length (the swing-constraint radius) — the search radius is the detection distance, the rope "
+                + "length is how long the rope is once grabbed. Default is generous so a nearby anchor is grabbed even "
+                + "from a jump apex below it."
+        )]
+        float m_RopeAnchorSearchRadius = 12f;
 
         [SerializeField]
         [Tooltip("Target tangential speed of air control while swinging in RopeSwing (units/s).")]
@@ -92,6 +109,22 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 + "candidate anchors. Baked to the substrate's 64-bit category mask (1 << layer per layer)."
         )]
         LayerMask m_RopeAnchorLayerMask = ~0;
+
+        [Header("Respawn (last safe point)")]
+        [SerializeField]
+        [Tooltip(
+            "World Y below which the character is treated as having fallen off the course and is teleported back to "
+                + "its last safe (grounded, stable) position. Set it below the lowest walkable surface, so only a "
+                + "genuine fall triggers a respawn."
+        )]
+        float m_FallRespawnThresholdY = -15f;
+
+        [SerializeField]
+        [Tooltip(
+            "Small upward offset added to the recorded last-safe-point Y on respawn, so the character drops the last "
+                + "sliver onto its safe surface and re-grounds cleanly instead of spawning flush-overlapped with it."
+        )]
+        float m_RespawnHeightOffset = 0.1f;
 
         /// <summary>Downward gravity acceleration magnitude (units/s^2).</summary>
         public float GravityMagnitude
@@ -135,11 +168,27 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             set => m_JumpSpeed = Mathf.Max(0f, value);
         }
 
-        /// <summary>The rope's length (units): the grab reach and the swing-constraint radius.</summary>
+        /// <summary>Jump-buffer window (seconds): a jump pressed within this many seconds before landing still fires on
+        /// landing; an older press expires. Default 0.15, matching the 3D Platformer sample.</summary>
+        public float JumpBufferTime
+        {
+            get => m_JumpBufferTime;
+            set => m_JumpBufferTime = Mathf.Max(0f, value);
+        }
+
+        /// <summary>The rope's length (units): the swing-constraint radius the character is clamped onto.</summary>
         public float RopeLength
         {
             get => m_RopeLength;
             set => m_RopeLength = Mathf.Max(0f, value);
+        }
+
+        /// <summary>The grab reach (units): how close to a rope anchor the character must be for a grab to find it.
+        /// Distinct from <see cref="RopeLength"/> (the swing-constraint radius).</summary>
+        public float RopeAnchorSearchRadius
+        {
+            get => m_RopeAnchorSearchRadius;
+            set => m_RopeAnchorSearchRadius = Mathf.Max(0f, value);
         }
 
         /// <summary>Target tangential speed of air control while swinging in RopeSwing (units/s).</summary>
@@ -175,6 +224,20 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             set => m_RopeAnchorLayerMask = value;
         }
 
+        /// <summary>World Y below which a fallen character is respawned at its last safe point.</summary>
+        public float FallRespawnThresholdY
+        {
+            get => m_FallRespawnThresholdY;
+            set => m_FallRespawnThresholdY = value;
+        }
+
+        /// <summary>Upward offset added to the last-safe-point Y on respawn so the character re-grounds cleanly.</summary>
+        public float RespawnHeightOffset
+        {
+            get => m_RespawnHeightOffset;
+            set => m_RespawnHeightOffset = Mathf.Max(0f, value);
+        }
+
         void OnValidate()
         {
             m_GravityMagnitude = Mathf.Max(0f, m_GravityMagnitude);
@@ -183,10 +246,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             m_AirMoveSpeed = Mathf.Max(0f, m_AirMoveSpeed);
             m_AirAcceleration = Mathf.Max(0f, m_AirAcceleration);
             m_JumpSpeed = Mathf.Max(0f, m_JumpSpeed);
+            m_JumpBufferTime = Mathf.Max(0f, m_JumpBufferTime);
             m_RopeLength = Mathf.Max(0f, m_RopeLength);
+            m_RopeAnchorSearchRadius = Mathf.Max(0f, m_RopeAnchorSearchRadius);
             m_RopeSwingMaxSpeed = Mathf.Max(0f, m_RopeSwingMaxSpeed);
             m_RopeSwingAcceleration = Mathf.Max(0f, m_RopeSwingAcceleration);
             m_RopeSwingDrag = Mathf.Max(0f, m_RopeSwingDrag);
+            // FallRespawnThresholdY is a world Y and may be negative — no clamp.
+            m_RespawnHeightOffset = Mathf.Max(0f, m_RespawnHeightOffset);
         }
     }
 }

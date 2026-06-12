@@ -1,4 +1,5 @@
 using System.IO;
+using TMPro;
 using Unity.Mathematics;
 using Unity.Scenes;
 using UnityEditor;
@@ -15,8 +16,9 @@ using PhysicsShape2DKind = Zori.Entities.Physics2D.PhysicsShape2DKind;
 namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
 {
     /// <summary>
-    /// Click-free, reproducible authoring of the Platformer sample course — programmatic
-    /// <c>AddComponent&lt;T&gt;()</c> authoring + an <c>EditorSceneManager</c> SubScene save, rather than hand-authored
+    /// Click-free, reproducible authoring of the Platformer sample course — the same proven pattern the SideScroller's
+    /// <see cref="Zori.Entities.CharacterController2D.Samples.Editor.SideScrollerSceneBuilder"/> uses (programmatic
+    /// <c>AddComponent&lt;T&gt;()</c> authoring + an <c>EditorSceneManager</c> SubScene save), rather than hand-authored
     /// fragile <c>.unity</c> YAML. It builds a parent scene (the one you open, carrying the SubScene reference, the 2D
     /// orthographic follow camera, and <see cref="DebugPhysicsWorld2D"/>) and a SubScene child (the baked ECS course: a
     /// capsule character, the static world, the three friction floor segments + a bouncy crate, two moving platforms, a
@@ -164,8 +166,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             // After the high ledge, a wide gap (the launch ledge ends at X = 78, the far ledge begins at X = 92 — a
             // 14-unit gap, far past a single jump). A rope anchor floats above the gap on the dedicated rope-anchor
             // category; the character jumps off the launch ledge, grabs (E), swings, and releases (Q / jump) to land on
-            // the far ledge. The anchor sits within RopeLength (5) of the jump apex on the launch side and the swing
-            // arc carries the character across.
+            // the far ledge. The anchor sits ABOVE the jump apex, so the GRAB REACH (RopeAnchorSearchRadius, 12) — not
+            // the rope length — is what must reach it; the 6-unit rope is the swing-arc radius that clears the gap.
             AddRopeAnchor(new Vector2(85f, 16f), radius: 0.3f, "RopeAnchor");
             AddStaticBox(new Vector2(95f, 9f - 0.5f), new Vector2(8f, 1f), "Ledge_FarRope"); // top at Y = 9
 
@@ -216,6 +218,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             var debugGo = new GameObject("DebugPhysicsWorld2D");
             var debug = debugGo.AddComponent<DebugPhysicsWorld2D>();
             debug.DrawWorld = true;
+
+            // World-space TextMeshPro feature labels, one beside each course feature so the otherwise-unlabelled
+            // course explains itself in the Game view (especially the rope's grab/release keys). These are plain
+            // rendering GameObjects living in the PARENT scene — NOT authoring markers in the SubScene — because they
+            // carry no ECS component and bake to nothing; they are MeshRenderer-backed 3D text the camera sees while
+            // playing. Their world positions match the SubScene feature positions (the SubScene loads at origin in
+            // PlayMode, so a parent-scene label at the feature's world coordinate sits beside it).
+            BuildLabels();
 
             EditorSceneManager.MarkSceneDirty(parent);
             EditorSceneManager.SaveScene(parent, ParentScene);
@@ -295,7 +305,16 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             // The rope-grab query filters strictly to the rope-anchor category; the character's mask must select the
             // anchor's dedicated category bit (and ONLY it — bit 0 would also catch floors/walls).
             platformer.RopeAnchorLayerMask = (int)RopeAnchorCategoryMask;
-            platformer.RopeLength = 6f; // reaches the anchor from the launch-ledge jump apex; swing arc clears the gap.
+            // The rope LENGTH is the swing-constraint radius; the SEARCH RADIUS is the grab reach (separate dials).
+            // The anchor at (85, 16) sits ~7 units above the launch ledge top (Y = 9), well past the ~2-unit jump apex
+            // rise, so a grab reach equal to RopeLength (6) never reached it — the original conflation was the grab bug.
+            // A generous search radius (12) lets the character grab the anchor from anywhere on/above the launch ledge;
+            // the 6-unit rope keeps the swing arc clearing the gap floor.
+            platformer.RopeLength = 6f;
+            platformer.RopeAnchorSearchRadius = 12f;
+            // Below the lowest walkable surface (the spawn floor top is Y = 0); a fall past this respawns at the last
+            // safe point. The course never legitimately reaches Y = -15, so only a genuine fall triggers it.
+            platformer.FallRespawnThresholdY = -15f;
         }
 
         // A bouncy DYNAMIC crate: a high-bounciness shape (the substrate's real PhysicsShape2D material the SOLVER
@@ -417,6 +436,66 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             var go = new GameObject(name);
             go.transform.position = position;
             return go;
+        }
+
+        // ---- world-space TextMeshPro feature labels ------------------------------------------------------------
+
+        // World-space label font size, in TMP world units (the camera is orthographic at size 8, so the visible
+        // frame is ~16 units tall; a size-4 label is legible without dwarfing the 1 x 2 character).
+        const float LabelFontSize = 4f;
+
+        // The default light-cyan label colour, legible against the dark (0.12, 0.13, 0.18) camera clear colour.
+        static readonly Color LabelColor = new Color(0.85f, 0.95f, 1f, 1f);
+
+        // Places one world-space TextMeshPro label beside each course feature. The world coordinates mirror the
+        // SubScene feature positions in BuildChild (the SubScene loads at origin in PlayMode), with each label lifted
+        // above its feature so it reads against the background rather than over the geometry.
+        static void BuildLabels()
+        {
+            var labelsRoot = new GameObject("Labels");
+
+            // Near spawn (the character stands at X = 0, floor top Y = 0) — the controls legend.
+            SpawnLabel("Move: A/D or ←/→    Jump: Space/W", new Vector3(0f, 4.5f, 0f), labelsRoot.transform);
+
+            // The three friction floor segments (top Y = 0): Ice center X = 9, Sticky center X = 19.
+            SpawnLabel("Ice (slippery)", new Vector3(9f, 1.6f, 0f), labelsRoot.transform);
+            SpawnLabel("Sticky", new Vector3(19f, 1.6f, 0f), labelsRoot.transform);
+
+            // The step + slope course: low/high steps near X = 26-31, ramps with lips at X = 34 and X = 44.
+            SpawnLabel("Step", new Vector3(28.5f, 2.2f, 0f), labelsRoot.transform);
+            SpawnLabel("Slope", new Vector3(39f, 3.5f, 0f), labelsRoot.transform);
+
+            // The two moving platforms over the gap (lateral at X = 58, vertical at X = 66).
+            SpawnLabel("Moving Platform", new Vector3(62f, 8f, 0f), labelsRoot.transform);
+
+            // The wind/force zone — a sensor with a constant updraft force (WindZone_Updraft, center (73, 11)).
+            SpawnLabel("Wind Zone", new Vector3(73f, 14f, 0f), labelsRoot.transform);
+
+            // The rope anchor floating above the wide gap (X = 85, Y = 16) — the explicit grab/release keys.
+            SpawnLabel("Rope — press E to grab  (Q/Shift to release)", new Vector3(85f, 17.5f, 0f),
+                labelsRoot.transform);
+
+            // The teleporter sensor pad on the far rope ledge (center (97, 9.5)).
+            SpawnLabel("Teleporter", new Vector3(97f, 11.5f, 0f), labelsRoot.transform);
+        }
+
+        // Creates one world-space TextMeshPro (3D text, NOT TextMeshProUGUI) GameObject at worldPos, parented under
+        // the Labels root. World-space TMP renders through a MeshRenderer, so the orthographic camera sees it in the
+        // Game view. The text faces +Z (identity rotation) to read straight-on in the 2D side view, and is centred so
+        // worldPos is the label's midpoint above its feature.
+        static void SpawnLabel(string text, Vector3 worldPos, Transform parent)
+        {
+            var go = new GameObject("Label_" + text);
+            go.transform.SetParent(parent, worldPositionStays: true);
+            go.transform.position = worldPos;
+            go.transform.rotation = Quaternion.identity; // face +Z; a flat side-on 2D view reads the XY plane.
+
+            var tmp = go.AddComponent<TextMeshPro>();
+            tmp.text = text;
+            tmp.fontSize = LabelFontSize;
+            tmp.color = LabelColor;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.textWrappingMode = TextWrappingModes.NoWrap; // one-line labels; the rope label is widest, must not wrap.
         }
     }
 }
