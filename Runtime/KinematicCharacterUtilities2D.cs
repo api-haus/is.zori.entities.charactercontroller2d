@@ -2789,7 +2789,9 @@ namespace Zori.Entities.CharacterController2D
             {
                 float forwardCheckHeight = maxStepHeight - backHitDistance;
 
-                // Forward obstruction (a short horizontal ray at step height).
+                // F1 — forward obstruction (a short horizontal ray at step height, into the step face). Verbatim
+                // 2D mirror of REF/KinematicCharacterUtilities.cs:3742-3757, including the `forwardHitDistance > 0`
+                // guard the reference applies to every forward cast.
                 bool forwardStepHitFound = RaycastClosestNonCharacter(
                     ref baseContext,
                     characterEntity,
@@ -2798,7 +2800,9 @@ namespace Zori.Entities.CharacterController2D
                     Constants.StepGroundingDetectionHorizontalOffset,
                     out PhysicsQueryHit2D forwardStepHit
                 );
-                if (forwardStepHitFound)
+                float forwardHitDistance =
+                    forwardStepHit.fraction * Constants.StepGroundingDetectionHorizontalOffset;
+                if (forwardStepHitFound && forwardHitDistance > 0f)
                 {
                     isGroundedOnForwardStep = IsGroundedOnSlopeNormal(
                         characterProperties.MaxGroundedSlopeDotProduct,
@@ -2809,28 +2813,85 @@ namespace Zori.Entities.CharacterController2D
 
                 if (!forwardStepHitFound)
                 {
-                    // Close forward step hit (down ray in front of the step).
-                    if (
-                        RaycastClosestNonCharacter(
-                            ref baseContext,
-                            characterEntity,
-                            hit.Position
-                                + (characterBody.GroundingUp * forwardCheckHeight)
-                                + (
-                                    -backCheckDirection
-                                    * Constants.StepGroundingDetectionHorizontalOffset
-                                ),
-                            -characterBody.GroundingUp,
-                            maxStepHeight,
-                            out forwardStepHit
-                        )
-                    )
+                    // F2 — close forward step hit (down ray just in front of the step). REF :3759-3777.
+                    forwardStepHitFound = RaycastClosestNonCharacter(
+                        ref baseContext,
+                        characterEntity,
+                        hit.Position
+                            + (characterBody.GroundingUp * forwardCheckHeight)
+                            + (
+                                -backCheckDirection
+                                * Constants.StepGroundingDetectionHorizontalOffset
+                            ),
+                        -characterBody.GroundingUp,
+                        maxStepHeight,
+                        out forwardStepHit
+                    );
+                    forwardHitDistance = forwardStepHit.fraction * maxStepHeight;
+                    if (forwardStepHitFound && forwardHitDistance > 0f)
                     {
                         isGroundedOnForwardStep = IsGroundedOnSlopeNormal(
                             characterProperties.MaxGroundedSlopeDotProduct,
                             forwardStepHit.normal,
                             characterBody.GroundingUp
                         );
+                    }
+
+                    // The extra-reach forward checks: a step slightly angled or slightly farther than the close
+                    // offset (a step+slope corner) needs a longer forward reach to find the step rise. REF
+                    // :3779-3819 — the `extraStepChecksDistance > StepGroundingDetectionHorizontalOffset` block,
+                    // active under the stock params (ExtraStepChecksDistance 0.1 > offset 0.01). Omitting it made
+                    // IsGroundedOnSteps direction-asymmetric: a corner that grounds on one approach's close
+                    // geometry but needs the extra reach on the mirrored approach was judged not-grounded on that
+                    // one side only.
+                    if (
+                        !isGroundedOnForwardStep
+                        && extraStepChecksDistance
+                            > Constants.StepGroundingDetectionHorizontalOffset
+                    )
+                    {
+                        // F3 — extra forward obstruction (horizontal, the wider reach). REF :3782-3797.
+                        forwardStepHitFound = RaycastClosestNonCharacter(
+                            ref baseContext,
+                            characterEntity,
+                            hit.Position + (characterBody.GroundingUp * forwardCheckHeight),
+                            -backCheckDirection,
+                            extraStepChecksDistance,
+                            out forwardStepHit
+                        );
+                        forwardHitDistance = forwardStepHit.fraction * extraStepChecksDistance;
+                        if (forwardStepHitFound && forwardHitDistance > 0f)
+                        {
+                            isGroundedOnForwardStep = IsGroundedOnSlopeNormal(
+                                characterProperties.MaxGroundedSlopeDotProduct,
+                                forwardStepHit.normal,
+                                characterBody.GroundingUp
+                            );
+                        }
+
+                        if (!forwardStepHitFound)
+                        {
+                            // F4 — extra forward step hit (down ray at the wider reach). REF :3799-3818.
+                            forwardStepHitFound = RaycastClosestNonCharacter(
+                                ref baseContext,
+                                characterEntity,
+                                hit.Position
+                                    + (characterBody.GroundingUp * forwardCheckHeight)
+                                    + (-backCheckDirection * extraStepChecksDistance),
+                                -characterBody.GroundingUp,
+                                maxStepHeight,
+                                out forwardStepHit
+                            );
+                            forwardHitDistance = forwardStepHit.fraction * maxStepHeight;
+                            if (forwardStepHitFound && forwardHitDistance > 0f)
+                            {
+                                isGroundedOnForwardStep = IsGroundedOnSlopeNormal(
+                                    characterProperties.MaxGroundedSlopeDotProduct,
+                                    forwardStepHit.normal,
+                                    characterBody.GroundingUp
+                                );
+                            }
+                        }
                     }
                 }
             }
