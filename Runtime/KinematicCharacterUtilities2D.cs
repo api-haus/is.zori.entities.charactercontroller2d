@@ -1544,28 +1544,49 @@ namespace Zori.Entities.CharacterController2D
 
                 overlapNormal = normalizesafe(hit.normal, dirToCharacter);
 
-                // Distance from the cast origin to the contact along the cast.
+                // Distance from the cast origin to the contact along the cast. CastProxy sweeps the REAL proxy
+                // shape (circle / box / capsule), so the returned fraction is where the proxy's swept SURFACE first
+                // touches the body — i.e. the distance the proxy CENTER travels from the origin until the proxy is
+                // just touching. The proxy is therefore just-touching when the center has travelled exactly
+                // distanceToContact; the character's actual center sits `clearance` from the origin along the same
+                // axis, so the penetration depth is simply how far the center is PAST the just-touching pose:
+                //
+                //   overlapDepth = clearance - distanceToContact
+                //
+                // The earlier form subtracted `boundingRadius` (overlapDepth = clearance - (distanceToContact -
+                // boundingRadius)), which DOUBLE-COUNTS the proxy extent the swept cast already accounts for: for a
+                // grazing wall contact the swept capsule cast returns distanceToContact ≈ clearance (barely
+                // touching), so the correct depth is ≈0, but the -boundingRadius term fabricates ≈boundingRadius
+                // (~1.0 for a 2-tall capsule) of phantom penetration. That phantom depth, decollided along the wall
+                // normal, shoved the grounded capsule ~0.86 u BACKWARD out of a wall it was only grazing — the
+                // user-reported "pushed away" / "correct Y, incorrect X" snap-back (it walked off a low step into the
+                // narrow gap before a high step, grazed the high face, and the fabricated depth pushed it back). The
+                // bug was masked for a CIRCLE proxy (boundingRadius == the true radius, so the cast already reaches
+                // the body at distanceToContact and the surplus is small) but is gross for a CAPSULE/BOX, whose
+                // bounding radius far exceeds the contacting extent against a flat face offset from the center line.
                 float distanceToContact = hit.fraction * castLength;
-                // The proxy surface reaches the body when its CENTER is `boundingRadius` short of the contact, so
-                // the center travels (distanceToContact - boundingRadius) to first touch. The character's current
-                // center is `clearance` from the origin along the same axis; the penetration depth is how far the
-                // character center is PAST first contact:
-                float centerTravelToTouch = distanceToContact - boundingRadius;
-                overlapDepth = max(0f, clearance - centerTravelToTouch);
+                float penetration = max(0f, clearance - distanceToContact);
 
-                // Project the along-axis overlap onto the TRUE contact normal. The cast-back assumes
-                // dirToCharacter is the separating axis — valid for a circle/box/capsule proxy against a convex
-                // body whose centre lies along that axis (the recovered depth then equals the MTV). Against a LARGE
-                // flat-faced body whose origin sits far from the contact — a tall step block beside a character
-                // resting on an adjacent slope — the body→character axis is badly skewed from the contact normal,
-                // and the swept cast-back along it reports a grazing/resting contact as a multi-unit penetration.
-                // Scaling by |dot(dirToCharacter, normal)| reduces the axis-aligned overlap to its component along
-                // the real normal: an aligned contact (the normal grounding / resting / wall case, dot≈1) is left
-                // unchanged, while a badly-skewed one collapses toward zero. Without this the inflated depth fed the
-                // grounded vertical-decollide's reverse-projection (decollisionDistance / dot(up, normal)) and flung
-                // the character several units up-and-back — but only from the approach direction that wedged it at
-                // the step/slope corner with a skewed centre offset, which is why the lateral jump was directional.
-                overlapDepth *= abs(dot(dirToCharacter, overlapNormal));
+                // Project the along-cast-axis penetration onto the TRUE contact normal. The penetration above is
+                // measured along dirToCharacter (the cast axis); the minimum-translation distance to separate is its
+                // component along the contact normal, so scale by |dot(dirToCharacter, normal)|. For an aligned
+                // contact (a normal wall / floor where the body→character axis points along the normal, dot≈1) this
+                // is a no-op; for a skewed axis it correctly reduces the push to the normal component. (This is the
+                // c719d90 projection, kept — but it is now a correctness refinement on a CORRECT penetration, no
+                // longer a band-aid scaling down a fabricated one; the -boundingRadius double-count was the inflation.)
+                penetration *= abs(dot(dirToCharacter, overlapNormal));
+
+                // Separate to JUST-clear plus the standard CollisionOffset margin (the same small clearance
+                // Update_Grounding's snap keeps above any surface). A flush contact (penetration ≈ 0 — a character
+                // resting exactly on a floor, or grazing a wall) recovers a depth of ≈CollisionOffset, so the
+                // decollision leaves the proxy a hair off the surface rather than dead flush. Without this margin a
+                // flush-resting character sits exactly on the surface and the next tick's short down-probe re-grounds
+                // only intermittently (it flickers grounded/ungrounded tick-to-tick), which on a moving platform
+                // clears the auto-parent every other tick and the rider is never carried. The margin is negligible
+                // for the graze case (≈0.01 push, no fling) and exactly restores the resting clearance grounding
+                // expects. The OLD -boundingRadius form accidentally supplied a (gross, ~radius-sized) clearance,
+                // which masked this; the correct penetration needs the explicit, small, principled margin instead.
+                overlapDepth = penetration + Constants.CollisionOffset;
                 return true;
             }
 
