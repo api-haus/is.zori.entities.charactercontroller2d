@@ -178,12 +178,28 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
                 float2 gravity = new float2(0f, -tuning.GravityMagnitude);
 
-                // --- Stance transitions (P4): AirMove ↔ RopeSwing edges, consumed BEFORE the velocity-control block --
+                // --- Stance transitions (P4): GroundMove ↔ AirMove ↔ RopeSwing, consumed BEFORE the velocity block ---
                 //
                 // The 3D reference flips state inside each state's DetectTransitions (RopeSwingState.cs:91-103,
                 // AirMoveState.cs grab edge); in 2D the {GroundMove, AirMove, RopeSwing} enum makes it a small block
                 // here. AirMove → RopeSwing on a grab edge near an anchor; RopeSwing → AirMove on a jump/release edge.
                 // GroundMove never grabs (grab is reachable only airborne, the 3D rule). Each consumed latch is cleared.
+                //
+                // GroundMove ↔ AirMove on the grounded edge — the faithful port of the 3D GroundMoveState
+                // (DetectTransitions → AirMove when !IsGrounded, GroundMoveState.cs:133-137) and AirMoveState
+                // (→ GroundMove when IsGrounded). Without this, the persistent stance was baked GroundMove and never
+                // became AirMove except as a rope-EXIT destination, so a character that had never been on a rope could
+                // never satisfy the grab gate's `Stance == AirMove` guard — the rope grab was unreachable in normal
+                // play (a jump arc stayed labelled GroundMove the whole time). The sync runs only for the two
+                // non-rope stances; RopeSwing owns its own exit (grounding is suppressed during the swing). It runs
+                // BEFORE the grab gate so the SAME step that goes airborne with a grab latched can grab.
+                if (state.Stance != PlatformerStance2D.RopeSwing)
+                {
+                    state.Stance = characterBody.IsGrounded
+                        ? PlatformerStance2D.GroundMove
+                        : PlatformerStance2D.AirMove;
+                }
+
                 if (state.Stance == PlatformerStance2D.RopeSwing)
                 {
                     // Exit the rope on jump or release; either edge returns the character to AirMove carrying its
