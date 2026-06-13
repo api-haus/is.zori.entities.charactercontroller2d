@@ -46,11 +46,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
             foreach (
                 var (platform, commands, ltw) in SystemAPI
-                    .Query<
-                        RefRW<MovingPlatform2D>,
-                        DynamicBuffer<PhysicsBody2DCommand>,
-                        RefRO<LocalToWorld>
-                    >()
+                    .Query<RefRW<MovingPlatform2D>, DynamicBuffer<PhysicsBody2DCommand>, RefRO<LocalToWorld>>()
                     .WithAll<Simulate>()
             )
             {
@@ -261,24 +257,15 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 {
                     float2 force = _windZoneLookup[ev.triggerEntity].Force;
                     if (_inZoneLookup.HasComponent(visitor))
-                        ecb.SetComponent(
-                            visitor,
-                            new InWindZone2D { Zone = ev.triggerEntity, Force = force }
-                        );
+                        ecb.SetComponent(visitor, new InWindZone2D { Zone = ev.triggerEntity, Force = force });
                     else
-                        ecb.AddComponent(
-                            visitor,
-                            new InWindZone2D { Zone = ev.triggerEntity, Force = force }
-                        );
+                        ecb.AddComponent(visitor, new InWindZone2D { Zone = ev.triggerEntity, Force = force });
                 }
                 else // End
                 {
                     // Only clear if the character is leaving the SAME zone it last entered (a character could overlap
                     // two zones; the latest Begin wins, and an End from the other zone must not strip the active one).
-                    if (
-                        _inZoneLookup.HasComponent(visitor)
-                        && _inZoneLookup[visitor].Zone == ev.triggerEntity
-                    )
+                    if (_inZoneLookup.HasComponent(visitor) && _inZoneLookup[visitor].Zone == ev.triggerEntity)
                         ecb.RemoveComponent<InWindZone2D>(visitor);
                 }
             }

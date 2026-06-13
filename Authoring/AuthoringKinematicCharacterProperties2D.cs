@@ -48,7 +48,9 @@ namespace Zori.Entities.CharacterController2D.Authoring
         /// Computes a more precise distance to ground hits when the original query returned a distance of 0f due
         /// to imprecisions. Helps reduce jitter when moving against angled walls, at an extra query cost.
         /// </summary>
-        [Tooltip("Computes a more precise distance to ground hits when the original query returned a distance of 0f due to imprecisions. Helps reduce jitter when moving against angled walls, at an extra query cost.")]
+        [Tooltip(
+            "Computes a more precise distance to ground hits when the original query returned a distance of 0f due to imprecisions. Helps reduce jitter when moving against angled walls, at an extra query cost."
+        )]
         public bool EnhancedGroundPrecision;
 
         /// <summary>
@@ -64,7 +66,9 @@ namespace Zori.Entities.CharacterController2D.Authoring
         /// Enables detecting and solving movement collisions with a collider cast, based on the character's velocity
         /// </summary>
         [Header("Collisions")]
-        [Tooltip("Enables detecting and solving movement collisions with a collider cast, based on the character's velocity")]
+        [Tooltip(
+            "Enables detecting and solving movement collisions with a collider cast, based on the character's velocity"
+        )]
         public bool DetectMovementCollisions;
 
         /// <summary>
@@ -77,39 +81,51 @@ namespace Zori.Entities.CharacterController2D.Authoring
         /// Enables an extra physics check to project velocity on initial overlaps before the character moves, at a
         /// performance cost. Helps with tunneling when a rotation changes the detected collisions.
         /// </summary>
-        [Tooltip("Enables an extra physics check to project velocity on initial overlaps before the character moves, at a performance cost. Helps with tunneling when a rotation changes the detected collisions.")]
+        [Tooltip(
+            "Enables an extra physics check to project velocity on initial overlaps before the character moves, at a performance cost. Helps with tunneling when a rotation changes the detected collisions."
+        )]
         public bool ProjectVelocityOnInitialOverlaps;
 
         /// <summary>
         /// The maximum amount of times per frame the character should try to cast its collider for detecting hits
         /// </summary>
-        [Tooltip("The maximum amount of times per frame that the character should try to cast its collider for detecting hits")]
+        [Tooltip(
+            "The maximum amount of times per frame that the character should try to cast its collider for detecting hits"
+        )]
         public byte MaxContinuousCollisionsIterations;
 
         /// <summary>
         /// The maximum amount of times per frame the character should try to decollide itself from overlaps
         /// </summary>
-        [Tooltip("The maximum amount of times per frame that the character should try to decollide itself from overlaps")]
+        [Tooltip(
+            "The maximum amount of times per frame that the character should try to decollide itself from overlaps"
+        )]
         public byte MaxOverlapDecollisionIterations;
 
         /// <summary>
         /// Whether the remaining move distance should be reset to zero when the character exceeds the maximum
         /// collision iterations
         /// </summary>
-        [Tooltip("Whether the remaining move distance should be reset to zero when the character exceeds the maximum collision iterations")]
+        [Tooltip(
+            "Whether the remaining move distance should be reset to zero when the character exceeds the maximum collision iterations"
+        )]
         public bool DiscardMovementWhenExceedMaxIterations;
 
         /// <summary>
         /// Whether the velocity should be reset to zero when the character exceeds the maximum collision iterations
         /// </summary>
-        [Tooltip("Whether the velocity should be reset to zero when the character exceeds the maximum collision iterations")]
+        [Tooltip(
+            "Whether the velocity should be reset to zero when the character exceeds the maximum collision iterations"
+        )]
         public bool KillVelocityWhenExceedMaxIterations;
 
         /// <summary>
         /// Enables a collider cast to detect obstructions when being moved by a parent body, instead of carrying
         /// the character transform along
         /// </summary>
-        [Tooltip("Enables a collider cast to detect obstructions when being moved by a parent body, instead of carrying the character transform along")]
+        [Tooltip(
+            "Enables a collider cast to detect obstructions when being moved by a parent body, instead of carrying the character transform along"
+        )]
         public bool DetectObstructionsForParentBodyMovement;
 
         /// <summary>

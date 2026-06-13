@@ -98,10 +98,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             );
 
             _fixedGroup = _world.GetExistingSystemManaged<FixedStepSimulationSystemGroup>();
-            Assert.IsNotNull(
-                _fixedGroup,
-                "No FixedStepSimulationSystemGroup in the default world."
-            );
+            Assert.IsNotNull(_fixedGroup, "No FixedStepSimulationSystemGroup in the default world.");
             _savedRateManager = _fixedGroup.RateManager;
             _fixedGroup.RateManager = new Unity.Entities.RateUtils.FixedRateSimpleManager(FixedDt);
 
@@ -165,13 +162,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             var pw = GetPhysicsWorld();
             var character = TheCharacter();
             using var hits = new NativeList<PhysicsQueryHit2D>(8, Allocator.Temp);
-            PhysicsQueries2D.OverlapCircle(
-                pw,
-                position,
-                CharacterRadius - (3f * Offset),
-                0ul,
-                hits
-            );
+            PhysicsQueries2D.OverlapCircle(pw, position, CharacterRadius - (3f * Offset), 0ul, hits);
             for (var i = 0; i < hits.Length; i++)
             {
                 if (hits[i].entity != character && hits[i].entity != Entity.Null)
@@ -196,10 +187,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             var pos = Position();
             var body = Body();
 
-            Assert.IsTrue(
-                body.IsGrounded,
-                "character must report grounded after landing on flat floor"
-            );
+            Assert.IsTrue(body.IsGrounded, "character must report grounded after landing on flat floor");
             // Rest height: the snap lands the proxy surface on the floor top then lifts by CollisionOffset, so the
             // centre sits radius + offset above the floor top (Y=0).
             float expectedY = CharacterFixtureBuilderConstants.FloorTopY + CharacterRadius + Offset;
@@ -230,11 +218,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             var pos = Position();
             // The proxy radius is 0.5, so the centre cannot pass X = 3 - radius = 2.5 (plus it stops a CollisionOffset
             // short). Allow a small tolerance above 2.5 only for the offset margin, and assert it got close.
-            Assert.LessOrEqual(
-                pos.x,
-                2.5f + 1e-2f,
-                $"centre-X must clamp at wall - radius (2.5); got {pos.x}"
-            );
+            Assert.LessOrEqual(pos.x, 2.5f + 1e-2f, $"centre-X must clamp at wall - radius (2.5); got {pos.x}");
             Assert.Greater(
                 pos.x,
                 2.0f,
@@ -249,10 +233,7 @@ namespace Zori.Entities.CharacterController2D.Tests
                 3.0f + 1e-2f,
                 "the proxy's right edge must not cross the wall face"
             );
-            Assert.IsFalse(
-                float.IsNaN(pos.x) || float.IsNaN(pos.y),
-                "no NaN after the wall collide-and-slide"
-            );
+            Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "no NaN after the wall collide-and-slide");
         }
 
         // ---- Slope climb within limit ----------------------------------------------------------------------
@@ -279,14 +260,8 @@ namespace Zori.Entities.CharacterController2D.Tests
                 groundedY + 0.3f,
                 $"walking up a 30-degree slope must raise Y; start {groundedY}, end {pos.y}"
             );
-            Assert.IsTrue(
-                Body().IsGrounded,
-                "character must stay grounded while climbing a within-limit slope"
-            );
-            Assert.IsFalse(
-                float.IsNaN(pos.x) || float.IsNaN(pos.y),
-                "no NaN while climbing the slope"
-            );
+            Assert.IsTrue(Body().IsGrounded, "character must stay grounded while climbing a within-limit slope");
+            Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "no NaN while climbing the slope");
         }
 
         // ---- Wall while grounded ---------------------------------------------------------------------------
@@ -305,21 +280,14 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             var pos = Position();
             // Stays grounded and at floor height — sliding along the wall, not climbing it or popping up.
-            Assert.IsTrue(
-                Body().IsGrounded,
-                "character must stay grounded while pressing into the wall"
-            );
+            Assert.IsTrue(Body().IsGrounded, "character must stay grounded while pressing into the wall");
             Assert.AreEqual(
                 floorY,
                 pos.y,
                 0.06f,
                 $"pressing a wall while grounded must not change floor height; {floorY} -> {pos.y}"
             );
-            Assert.LessOrEqual(
-                pos.x + CharacterRadius,
-                3.0f + 1e-2f,
-                "must not penetrate the wall"
-            );
+            Assert.LessOrEqual(pos.x + CharacterRadius, 3.0f + 1e-2f, "must not penetrate the wall");
             Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "no NaN");
         }
 
@@ -331,10 +299,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             yield return LoadAndPrepare("CC2D_OverlapShallow");
 
             var startPos = Position();
-            Assert.IsTrue(
-                PenetratesWorld(startPos),
-                "sanity: character starts penetrating the wall"
-            );
+            Assert.IsTrue(PenetratesWorld(startPos), "sanity: character starts penetrating the wall");
 
             // Grounding is off in this fixture (pure horizontal-overlap probe). Drive zero velocity each step so the
             // default solve's airborne gravity does not accumulate into a free-fall confound — only the D2 cast-back
@@ -347,10 +312,7 @@ namespace Zori.Entities.CharacterController2D.Tests
                 PenetratesWorld(pos),
                 $"character still penetrating the wall after depenetration; pos {pos}"
             );
-            Assert.IsFalse(
-                float.IsNaN(pos.x) || float.IsNaN(pos.y),
-                "no NaN from the depenetration"
-            );
+            Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "no NaN from the depenetration");
         }
 
         [UnityTest]
@@ -359,10 +321,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             yield return LoadAndPrepare("CC2D_OverlapDeep");
 
             var startPos = Position();
-            Assert.IsTrue(
-                PenetratesWorld(startPos),
-                "sanity: character starts DEEP inside the wall"
-            );
+            Assert.IsTrue(PenetratesWorld(startPos), "sanity: character starts DEEP inside the wall");
 
             // The adversarial probe: centre 0.45 inside the wall (deeper than CollisionOffset, ~the full radius). The
             // cast-back must recover a push-out direction and the iterative loop converge with no NaN / teleport.
@@ -371,10 +330,7 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             var pos = Position();
 
-            Assert.IsFalse(
-                float.IsNaN(pos.x) || float.IsNaN(pos.y),
-                "deep overlap must not produce NaN"
-            );
+            Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "deep overlap must not produce NaN");
             // No teleport: the resolution moves a bounded distance out of a ~0.95-deep overlap, never flinging the
             // character across the world (a small downward gravity drift over the steps is allowed).
             Assert.Less(
@@ -394,20 +350,14 @@ namespace Zori.Entities.CharacterController2D.Tests
             yield return LoadAndPrepare("CC2D_OverlapGround");
 
             var startX = Position().x;
-            Assert.IsTrue(
-                PenetratesWorld(Position()),
-                "sanity: character starts sunk into the floor"
-            );
+            Assert.IsTrue(PenetratesWorld(Position()), "sanity: character starts sunk into the floor");
 
             // Grounding is ON here; let gravity + grounding + the grounded vertical-decollide settle the character.
             Step(150);
 
             var pos = Position();
 
-            Assert.IsFalse(
-                PenetratesWorld(pos),
-                $"character still penetrating the floor; pos {pos}"
-            );
+            Assert.IsFalse(PenetratesWorld(pos), $"character still penetrating the floor; pos {pos}");
             // Popped UP out of the floor (grounded vertical-decollide), settling ~radius above the floor top, not
             // pushed sideways.
             Assert.GreaterOrEqual(

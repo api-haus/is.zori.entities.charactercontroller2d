@@ -102,10 +102,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             );
 
             _fixedGroup = _world.GetExistingSystemManaged<FixedStepSimulationSystemGroup>();
-            Assert.IsNotNull(
-                _fixedGroup,
-                "No FixedStepSimulationSystemGroup in the default world."
-            );
+            Assert.IsNotNull(_fixedGroup, "No FixedStepSimulationSystemGroup in the default world.");
             _savedRateManager = _fixedGroup.RateManager;
             _fixedGroup.RateManager = new Unity.Entities.RateUtils.FixedRateSimpleManager(FixedDt);
 
@@ -120,11 +117,9 @@ namespace Zori.Entities.CharacterController2D.Tests
             return ents[0];
         }
 
-        float2 PositionOf(Entity e) =>
-            _world.EntityManager.GetComponentData<LocalToWorld>(e).Position.xy;
+        float2 PositionOf(Entity e) => _world.EntityManager.GetComponentData<LocalToWorld>(e).Position.xy;
 
-        KinematicCharacterBody2D BodyOf(Entity e) =>
-            _world.EntityManager.GetComponentData<KinematicCharacterBody2D>(e);
+        KinematicCharacterBody2D BodyOf(Entity e) => _world.EntityManager.GetComponentData<KinematicCharacterBody2D>(e);
 
         // The MovePosition target the solve enqueued THIS tick — the last MovePosition command still sitting in the
         // character's command buffer (the substrate drains + clears it at the start of the NEXT tick). float2.NaN if
@@ -194,12 +189,7 @@ namespace Zori.Entities.CharacterController2D.Tests
         // user's geometry 2), logging the full per-tick event record, then asserts the character ADVANCED through
         // the step (monotonic forward X progress past the step face, no snap-back to the climb-start X) and SETTLED
         // at the step-top stand height — in the given snap mode.
-        IEnumerator TraceTallStep(
-            string sceneName,
-            float moveX,
-            bool snapToGround,
-            int driveSteps = 200
-        )
+        IEnumerator TraceTallStep(string sceneName, float moveX, bool snapToGround, int driveSteps = 200)
         {
             yield return LoadAndPrepare(sceneName);
 
@@ -210,10 +200,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             // Settle on the starting surface.
             for (var s = 0; s < 30; s++)
                 Drive(e, 0f, up);
-            Assert.IsTrue(
-                BodyOf(e).IsGrounded,
-                $"{sceneName}: must settle grounded before walking"
-            );
+            Assert.IsTrue(BodyOf(e).IsGrounded, $"{sceneName}: must settle grounded before walking");
 
             var startPos = PositionOf(e);
             var stepFaceX = 4f; // TallStepLeftFaceX in the fixture
@@ -284,10 +271,7 @@ namespace Zori.Entities.CharacterController2D.Tests
                     biggestGapStep = i;
                 }
 
-                Assert.IsFalse(
-                    float.IsNaN(landed.x) || float.IsNaN(landed.y),
-                    $"{sceneName}: NaN at tick {i}"
-                );
+                Assert.IsFalse(float.IsNaN(landed.x) || float.IsNaN(landed.y), $"{sceneName}: NaN at tick {i}");
 
                 // Log the step-crossing region densely (near the step face, ±2 u), plus any tick with a big
                 // against-direction move or a big target-vs-land gap, plus a periodic heartbeat.
@@ -320,10 +304,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             // monotonic forward progress crossing the step face — and SETTLE at the step-top stand height, with no
             // snap-back to the climb-start X.
             var b = BodyOf(e);
-            Assert.IsTrue(
-                b.IsGrounded,
-                $"{sceneName}: capsule must end grounded (on the step / floor)"
-            );
+            Assert.IsTrue(b.IsGrounded, $"{sceneName}: capsule must end grounded (on the step / floor)");
 
             if (moveX > 0f)
             {
@@ -378,12 +359,7 @@ namespace Zori.Entities.CharacterController2D.Tests
         // Drives the capsule across the cluster (the user's geometry 1 — a step abutting a downward slope), tracing
         // every tick, and asserts net forward progress with no backward overshoot past start and no vertical fling,
         // in the given snap mode. The R2L direction is the one the user reports is "blocked" (the regression).
-        IEnumerator TraceCluster(
-            string sceneName,
-            float moveX,
-            bool snapToGround,
-            int driveSteps = 260
-        )
+        IEnumerator TraceCluster(string sceneName, float moveX, bool snapToGround, int driveSteps = 260)
         {
             yield return LoadAndPrepare(sceneName);
 
@@ -393,10 +369,7 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             for (var s = 0; s < 30; s++)
                 Drive(e, 0f, up);
-            Assert.IsTrue(
-                BodyOf(e).IsGrounded,
-                $"{sceneName}: must settle grounded before walking"
-            );
+            Assert.IsTrue(BodyOf(e).IsGrounded, $"{sceneName}: must settle grounded before walking");
 
             var startPos = PositionOf(e);
             var sb = new StringBuilder();
@@ -420,10 +393,7 @@ namespace Zori.Entities.CharacterController2D.Tests
                 var dx = landed.x - prePos.x;
                 var dy = landed.y - prePos.y;
 
-                Assert.IsFalse(
-                    float.IsNaN(landed.x) || float.IsNaN(landed.y),
-                    $"{sceneName}: NaN at tick {i}"
-                );
+                Assert.IsFalse(float.IsNaN(landed.x) || float.IsNaN(landed.y), $"{sceneName}: NaN at tick {i}");
 
                 if (abs(dx) > abs(worstDx))
                 {
@@ -534,12 +504,7 @@ namespace Zori.Entities.CharacterController2D.Tests
 
         // Drives the capsule across the step+downslope corner, traces every tick, and asserts it climbs/crosses the
         // corner (net progress past the step face, settles at the step-top stand when climbing) with no snap-back.
-        IEnumerator TraceCorner(
-            string sceneName,
-            float moveX,
-            bool snapToGround,
-            int driveSteps = 200
-        )
+        IEnumerator TraceCorner(string sceneName, float moveX, bool snapToGround, int driveSteps = 200)
         {
             yield return LoadAndPrepare(sceneName);
 
@@ -549,10 +514,7 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             for (var s = 0; s < 30; s++)
                 Drive(e, 0f, up);
-            Assert.IsTrue(
-                BodyOf(e).IsGrounded,
-                $"{sceneName}: must settle grounded before walking"
-            );
+            Assert.IsTrue(BodyOf(e).IsGrounded, $"{sceneName}: must settle grounded before walking");
 
             var startPos = PositionOf(e);
             var faceX = CharacterFixtureBuilderConstants.StepCornerFaceX;
@@ -583,10 +545,7 @@ namespace Zori.Entities.CharacterController2D.Tests
                 var dy = landed.y - prePos.y;
                 var gap = any(isnan(target)) ? 0f : length(target - landed);
 
-                Assert.IsFalse(
-                    float.IsNaN(landed.x) || float.IsNaN(landed.y),
-                    $"{sceneName}: NaN at tick {i}"
-                );
+                Assert.IsFalse(float.IsNaN(landed.x) || float.IsNaN(landed.y), $"{sceneName}: NaN at tick {i}");
                 if (b.SuppressGroundSnappingUntilSteppedClear)
                     sawSteppedUp = true;
 

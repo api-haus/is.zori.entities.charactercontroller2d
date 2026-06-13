@@ -133,7 +133,8 @@ namespace Zori.Entities.CharacterController2D
                 DynamicBuffer<StatefulKinematicCharacterHit2D> statefulHitsBuffer,
                 DynamicBuffer<KinematicCharacterDeferredImpulse2D> deferredImpulsesBuffer,
                 DynamicBuffer<KinematicVelocityProjectionHit2D> velocityProjectionHits,
-                DynamicBuffer<PhysicsBody2DCommand> commandBuffer)
+                DynamicBuffer<PhysicsBody2DCommand> commandBuffer
+            )
             {
                 // The base context's scratch list is created lazily inside the job (per-thread Temp).
                 BaseContext.EnsureCreationOfTmpCollections();
@@ -202,7 +203,8 @@ namespace Zori.Entities.CharacterController2D
                     in BodyTransformLookup,
                     in stepAndSlopeHandling,
                     gravity,
-                    DeltaTime);
+                    DeltaTime
+                );
             }
         }
     }

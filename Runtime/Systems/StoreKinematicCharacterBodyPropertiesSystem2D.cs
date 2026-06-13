@@ -61,7 +61,8 @@ namespace Zori.Entities.CharacterController2D
             void Execute(
                 ref StoredKinematicCharacterData2D storedData,
                 in KinematicCharacterProperties2D characterProperties,
-                in KinematicCharacterBody2D characterBody)
+                in KinematicCharacterBody2D characterBody
+            )
             {
                 storedData.SetFrom(in characterProperties, in characterBody);
             }

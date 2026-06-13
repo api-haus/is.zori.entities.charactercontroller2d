@@ -388,10 +388,7 @@ namespace Zori.Entities.CharacterController2D
                 // Probe length: a short fixed probe normally; the snapping distance when SnapToGround and we were
                 // grounded last step (so a character keeps stuck to a downward slope edge it is walking over).
                 float groundDetectionLength = Constants.CollisionOffset * 3f;
-                if (
-                    characterProperties.SnapToGround
-                    && characterBody.WasGroundedBeforeCharacterUpdate
-                )
+                if (characterProperties.SnapToGround && characterBody.WasGroundedBeforeCharacterUpdate)
                 {
                     groundDetectionLength = characterProperties.GroundSnappingDistance;
                 }
@@ -423,12 +420,8 @@ namespace Zori.Entities.CharacterController2D
                     // centre clears the edge and the step top is itself the accepted ground hit at a near distance,
                     // then clear the flag and resume normal snapping. A "near" hit means the character is genuinely
                     // resting on its accepted ground (the normal grounded state), so the suppression is over.
-                    bool acceptedGroundIsNear =
-                        distanceToGround <= Constants.GroundedHitDistanceTolerance;
-                    if (
-                        characterBody.SuppressGroundSnappingUntilSteppedClear
-                        && !acceptedGroundIsNear
-                    )
+                    bool acceptedGroundIsNear = distanceToGround <= Constants.GroundedHitDistanceTolerance;
+                    if (characterBody.SuppressGroundSnappingUntilSteppedClear && !acceptedGroundIsNear)
                     {
                         // Hold position: do not pull down onto the far floor. The character stays on the step it
                         // climbed; subsequent steps advance its centre over the step edge.
@@ -449,9 +442,7 @@ namespace Zori.Entities.CharacterController2D
                         characterBody.RelativeVelocity,
                         newIsGrounded
                     );
-                    velocityProjectionHitsBuffer.Add(
-                        new KinematicVelocityProjectionHit2D(groundCharacterHit)
-                    );
+                    velocityProjectionHitsBuffer.Add(new KinematicVelocityProjectionHit2D(groundCharacterHit));
 
                     bool tmpIsGrounded = characterBody.WasGroundedBeforeCharacterUpdate;
                     processor.ProjectVelocityOnHits(
@@ -475,11 +466,7 @@ namespace Zori.Entities.CharacterController2D
             // Clear the stepped-up snap suppression if grounding did not run (EvaluateGrounding off), if snapping is
             // off (the suppression only guards the snap), or if the character is no longer grounded (it left the step
             // — e.g. jumped or walked off) so a stale flag never lingers into an unrelated future step-up.
-            if (
-                !characterProperties.EvaluateGrounding
-                || !characterProperties.SnapToGround
-                || !newIsGrounded
-            )
+            if (!characterProperties.EvaluateGrounding || !characterProperties.SnapToGround || !newIsGrounded)
             {
                 characterBody.SuppressGroundSnappingUntilSteppedClear = false;
             }
@@ -578,8 +565,7 @@ namespace Zori.Entities.CharacterController2D
                             float tmpHitDistance = tmpHit.fraction * groundProbingLength;
 
                             if (
-                                distancesq(tmpHitDistance, distanceToGround)
-                                <= Constants.GroundedHitDistanceToleranceSq
+                                distancesq(tmpHitDistance, distanceToGround) <= Constants.GroundedHitDistanceToleranceSq
                             )
                             {
                                 BasicHit2D tmpClosestGroundedHit = new BasicHit2D(tmpHit);
@@ -642,11 +628,7 @@ namespace Zori.Entities.CharacterController2D
             {
                 PhysicsQueryHit2D hit = baseContext.TmpQueryHits[i];
 
-                if (
-                    hit.entity == characterEntity
-                    || hit.entity == Entity.Null
-                    || IsSensorHit(in hit)
-                )
+                if (hit.entity == characterEntity || hit.entity == Entity.Null || IsSensorHit(in hit))
                     continue;
 
                 // Ignore hits we are moving away from (normal not opposing the cast).
@@ -709,9 +691,7 @@ namespace Zori.Entities.CharacterController2D
             where T : unmanaged, IKinematicCharacterProcessor2D<C>
             where C : unmanaged
         {
-            float2 originalVelocityDirectionBeforeMove = normalizesafe(
-                characterBody.RelativeVelocity
-            );
+            float2 originalVelocityDirectionBeforeMove = normalizesafe(characterBody.RelativeVelocity);
 
             MoveWithCollisions(
                 in processor,
@@ -824,8 +804,7 @@ namespace Zori.Entities.CharacterController2D
                 );
             }
 
-            float remainingMovementLength =
-                length(characterBody.RelativeVelocity) * baseContext.Time.DeltaTime;
+            float remainingMovementLength = length(characterBody.RelativeVelocity) * baseContext.Time.DeltaTime;
             float2 remainingMovementDirection = normalizesafe(characterBody.RelativeVelocity);
 
             // Initial-overlap velocity pre-pass — ProjectVelocityOnInitialOverlaps (REF/KinematicCharacterUtilities.cs:2192). The 3D
@@ -849,8 +828,7 @@ namespace Zori.Entities.CharacterController2D
                     velocityProjectionHitsBuffer
                 );
 
-                remainingMovementLength =
-                    length(characterBody.RelativeVelocity) * baseContext.Time.DeltaTime;
+                remainingMovementLength = length(characterBody.RelativeVelocity) * baseContext.Time.DeltaTime;
                 remainingMovementDirection = normalizesafe(characterBody.RelativeVelocity);
             }
 
@@ -858,8 +836,7 @@ namespace Zori.Entities.CharacterController2D
             {
                 int movementCastIterationsMade = 0;
                 while (
-                    movementCastIterationsMade
-                        < characterProperties.MaxContinuousCollisionsIterations
+                    movementCastIterationsMade < characterProperties.MaxContinuousCollisionsIterations
                     && remainingMovementLength > 0f
                 )
                 {
@@ -899,10 +876,7 @@ namespace Zori.Entities.CharacterController2D
                     {
                         BasicHit2D movementHit = new BasicHit2D(closestHit);
                         float movementHitDistance = castLength * closestHit.fraction;
-                        movementHitDistance = max(
-                            0f,
-                            movementHitDistance - Constants.CollisionOffset
-                        );
+                        movementHitDistance = max(0f, movementHitDistance - Constants.CollisionOffset);
 
                         bool isGroundedOnMovementHit = false;
                         if (characterProperties.EvaluateGrounding)
@@ -941,8 +915,7 @@ namespace Zori.Entities.CharacterController2D
                             movementHitDistance
                         );
 
-                        currentCharacterHit.CharacterVelocityAfterHit =
-                            characterBody.RelativeVelocity;
+                        currentCharacterHit.CharacterVelocityAfterHit = characterBody.RelativeVelocity;
                         characterHitsBuffer.Add(currentCharacterHit);
                     }
                     else
@@ -1141,9 +1114,7 @@ namespace Zori.Entities.CharacterController2D
                 // Rescale the remaining movement by how much the projection shortened the velocity.
                 float beforeLength = length(velocityBeforeProjection);
                 float projectedVelocityLengthFactor =
-                    beforeLength > 0f
-                        ? (length(characterBody.RelativeVelocity) / beforeLength)
-                        : 0f;
+                    beforeLength > 0f ? (length(characterBody.RelativeVelocity) / beforeLength) : 0f;
                 remainingMovementLength *= projectedVelocityLengthFactor;
                 remainingMovementDirection = normalizesafe(characterBody.RelativeVelocity);
             }
@@ -1155,22 +1126,14 @@ namespace Zori.Entities.CharacterController2D
         /// (REF/KinematicCharacterUtilities.cs:2354) — the body is dimension-agnostic and reduces directly with the
         /// 2D <see cref="MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D"/>.
         /// </summary>
-        public static void ProjectVelocityOnGrounding(
-            ref float2 velocity,
-            float2 groundNormal,
-            float2 groundingUp
-        )
+        public static void ProjectVelocityOnGrounding(ref float2 velocity, float2 groundNormal, float2 groundingUp)
         {
             if (lengthsq(velocity) > 0f)
             {
                 float velocityLength = length(velocity);
                 float2 originalDirection = normalizesafe(velocity);
                 float2 reorientedDirection = normalizesafe(
-                    MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
-                        velocity,
-                        groundNormal,
-                        groundingUp
-                    )
+                    MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(velocity, groundNormal, groundingUp)
                 );
                 float dotOriginalWithUp = dot(originalDirection, groundingUp);
                 float dotReorientedWithUp = dot(reorientedDirection, groundingUp);
@@ -1187,9 +1150,7 @@ namespace Zori.Entities.CharacterController2D
                         distance(dotOriginalWithUp, 1f) / distance(dotReorientedWithUp, 1f);
                 }
 
-                velocity =
-                    reorientedDirection
-                    * lerp(0f, velocityLength, ratioFromVerticalToSlopeDirection);
+                velocity = reorientedDirection * lerp(0f, velocityLength, ratioFromVerticalToSlopeDirection);
             }
         }
 
@@ -1313,19 +1274,9 @@ namespace Zori.Entities.CharacterController2D
                         )
                     )
                     {
-                        BasicHit2D basicOverlapHit = new BasicHit2D(
-                            overlapEntity,
-                            characterPosition,
-                            overlapNormal
-                        );
+                        BasicHit2D basicOverlapHit = new BasicHit2D(overlapEntity, characterPosition, overlapNormal);
 
-                        if (
-                            !processor.CanCollideWithHit(
-                                ref context,
-                                ref baseContext,
-                                in basicOverlapHit
-                            )
-                        )
+                        if (!processor.CanCollideWithHit(ref context, ref baseContext, in basicOverlapHit))
                             continue;
 
                         bool hitIsDynamic =
@@ -1404,8 +1355,7 @@ namespace Zori.Entities.CharacterController2D
                     // push) and emit its displacement impulse (recorded by the deferred system — C3 note).
                     bool isLastIteration =
                         !foundNonDynamicHit
-                        || decollisionIterationsMade
-                            >= characterProperties.MaxOverlapDecollisionIterations;
+                        || decollisionIterationsMade >= characterProperties.MaxOverlapDecollisionIterations;
 
                     if (isLastIteration)
                     {
@@ -1526,14 +1476,7 @@ namespace Zori.Entities.CharacterController2D
             float2 castDirection = -dirToCharacter;
             float castLength = clearance + boundingRadius;
 
-            CastProxy(
-                ref baseContext,
-                in colliderProxy,
-                castOrigin,
-                characterRotation,
-                castDirection,
-                castLength
-            );
+            CastProxy(ref baseContext, in colliderProxy, castOrigin, characterRotation, castDirection, castLength);
 
             // Find the first (nearest) hit on the target body.
             for (int i = 0; i < baseContext.TmpQueryHits.Length; i++)
@@ -1656,10 +1599,7 @@ namespace Zori.Entities.CharacterController2D
             // slope normal which would slide us sideways).
             if (isGroundedOnHit)
             {
-                if (
-                    dot(characterBody.GroundingUp, hit.Normal)
-                    > Constants.MinDotRatioForVerticalDecollision
-                )
+                if (dot(characterBody.GroundingUp, hit.Normal) > Constants.MinDotRatioForVerticalDecollision)
                 {
                     decollisionDirection = characterBody.GroundingUp;
                     RecalculateDecollisionVector(
@@ -1676,10 +1616,7 @@ namespace Zori.Entities.CharacterController2D
             else if (characterBody.IsGrounded && !hitIsDynamic)
             {
                 decollisionDirection = normalizesafe(
-                    MathUtilities2D.ProjectOnPlane(
-                        decollisionDirection,
-                        characterBody.GroundHit.Normal
-                    )
+                    MathUtilities2D.ProjectOnPlane(decollisionDirection, characterBody.GroundHit.Normal)
                 );
                 RecalculateDecollisionVector(
                     ref decollisionVector,
@@ -1716,8 +1653,7 @@ namespace Zori.Entities.CharacterController2D
                         new KinematicCharacterDeferredImpulse2D
                         {
                             OnEntity = hit.Entity,
-                            Displacement =
-                                -hit.Normal * (decollisionDistance - obstructionDistance),
+                            Displacement = -hit.Normal * (decollisionDistance - obstructionDistance),
                         }
                     );
                     decollidedAgainstObstruction = true;
@@ -1731,9 +1667,7 @@ namespace Zori.Entities.CharacterController2D
 
             // Velocity projection on the obstructing overlap.
             float2 characterRelativeVelocityBeforeProjection = characterBody.RelativeVelocity;
-            velocityProjectionHitsBuffer.Add(
-                new KinematicVelocityProjectionHit2D(hit, isGroundedOnHit)
-            );
+            velocityProjectionHitsBuffer.Add(new KinematicVelocityProjectionHit2D(hit, isGroundedOnHit));
 
             if (dot(characterBody.RelativeVelocity, hit.Normal) < 0f)
             {
@@ -1845,9 +1779,7 @@ namespace Zori.Entities.CharacterController2D
                     && baseContext.DynamicBodyDataLookup[hit.Entity].IsDynamic
                 )
                 {
-                    StoredDynamicBodyData2D groundData = baseContext.DynamicBodyDataLookup[
-                        hit.Entity
-                    ];
+                    StoredDynamicBodyData2D groundData = baseContext.DynamicBodyDataLookup[hit.Entity];
                     float2 groundVelocityAtPoint = PhysicsUtilities2D.GetPointVelocity(
                         groundData.LinearVelocity,
                         groundData.AngularVelocity,
@@ -1928,10 +1860,7 @@ namespace Zori.Entities.CharacterController2D
                 KinematicVelocityProjectionHit2D originalVelocityHit = default;
                 originalVelocityHit.Normal = characterIsGrounded
                     ? normalizesafe(
-                        MathUtilities2D.ProjectOnPlane(
-                            originalVelocityDirection,
-                            characterBody.GroundingUp
-                        )
+                        MathUtilities2D.ProjectOnPlane(originalVelocityDirection, characterBody.GroundingUp)
                     )
                     : originalVelocityDirection;
 
@@ -1954,10 +1883,7 @@ namespace Zori.Entities.CharacterController2D
                         continue;
 
                     // Would the projected velocity drive into this second line?
-                    if (
-                        dot(velocityDirection, secondHit.Normal)
-                        > -Constants.DotProductSimilarityEpsilon
-                    )
+                    if (dot(velocityDirection, secondHit.Normal) > -Constants.DotProductSimilarityEpsilon)
                         continue;
 
                     // The velocity re-enters a non-parallel line after projecting on the first → wedged corner.
@@ -1999,11 +1925,7 @@ namespace Zori.Entities.CharacterController2D
             {
                 if (hit.IsGroundedOnHit)
                 {
-                    velocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
-                        velocity,
-                        hit.Normal,
-                        groundingUp
-                    );
+                    velocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(velocity, hit.Normal, groundingUp);
                 }
                 else
                 {
@@ -2014,10 +1936,7 @@ namespace Zori.Entities.CharacterController2D
                         // along it is zero — but the corner-kill in the caller handles the wedge. Here, the
                         // ground-constrained slide is: project onto the ground line first (stay on the ground), then
                         // onto the obstruction line (stop entering the wall).
-                        velocity = MathUtilities2D.ProjectOnPlane(
-                            velocity,
-                            characterGroundHit.Normal
-                        );
+                        velocity = MathUtilities2D.ProjectOnPlane(velocity, characterGroundHit.Normal);
                         velocity = MathUtilities2D.ProjectOnPlane(velocity, hit.Normal);
                     }
                     else
@@ -2032,11 +1951,7 @@ namespace Zori.Entities.CharacterController2D
                 {
                     // Grounded landing: kill vertical velocity, then reorient onto the ground line.
                     velocity = MathUtilities2D.ProjectOnPlane(velocity, groundingUp);
-                    velocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
-                        velocity,
-                        hit.Normal,
-                        groundingUp
-                    );
+                    velocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(velocity, hit.Normal, groundingUp);
                 }
                 else
                 {
@@ -2096,11 +2011,7 @@ namespace Zori.Entities.CharacterController2D
             for (int i = 0; i < hits.Length; i++)
             {
                 PhysicsQueryHit2D hit = hits[i];
-                if (
-                    hit.entity == characterEntity
-                    || hit.entity == Entity.Null
-                    || IsSensorHit(in hit)
-                )
+                if (hit.entity == characterEntity || hit.entity == Entity.Null || IsSensorHit(in hit))
                     continue;
 
                 // The list is nearest-first sorted, so the first non-character hit is the closest one.
@@ -2136,24 +2047,12 @@ namespace Zori.Entities.CharacterController2D
             // INNER query: cast into the inner scratch list (step-up forward/down casts and the obstruction check in
             // DecollideFromHit run while an outer move/overlap loop is mid-iteration over TmpQueryHits).
             var hits = baseContext.TmpInnerQueryHits;
-            CastProxyInto(
-                ref baseContext,
-                in colliderProxy,
-                origin,
-                rotationRadians,
-                direction,
-                distance,
-                hits
-            );
+            CastProxyInto(ref baseContext, in colliderProxy, origin, rotationRadians, direction, distance, hits);
 
             for (int i = 0; i < hits.Length; i++)
             {
                 PhysicsQueryHit2D hit = hits[i];
-                if (
-                    hit.entity == characterEntity
-                    || hit.entity == Entity.Null
-                    || IsSensorHit(in hit)
-                )
+                if (hit.entity == characterEntity || hit.entity == Entity.Null || IsSensorHit(in hit))
                     continue;
 
                 // Nearest-first sorted, so the first non-character hit is the closest.
@@ -2209,23 +2108,19 @@ namespace Zori.Entities.CharacterController2D
 
             if (characterBody.ParentEntity != Entity.Null)
             {
-                TrackedTransform2D parentTracked = baseContext.TrackedTransformLookup[
-                    characterBody.ParentEntity
-                ];
+                TrackedTransform2D parentTracked = baseContext.TrackedTransformLookup[characterBody.ParentEntity];
 
                 // Position: re-express the character's position under the previous parent pose, then under the
                 // current parent pose. RotationFromParent is the parent's z-rotation delta over the step.
-                float2 previousLocalPosition =
-                    parentTracked.PreviousFixedRateTransform.InverseTransformPoint(
-                        characterPosition
-                    );
+                float2 previousLocalPosition = parentTracked.PreviousFixedRateTransform.InverseTransformPoint(
+                    characterPosition
+                );
                 float2 targetWorldPosition = parentTracked.CurrentFixedRateTransform.TransformPoint(
                     previousLocalPosition
                 );
 
                 float2 displacementFromParentMovement = targetWorldPosition - characterPosition;
-                characterBody.ParentVelocity =
-                    displacementFromParentMovement / baseContext.Time.DeltaTime;
+                characterBody.ParentVelocity = displacementFromParentMovement / baseContext.Time.DeltaTime;
                 characterBody.RotationFromParent =
                     parentTracked.CurrentFixedRateTransform.Rotation
                     - parentTracked.PreviousFixedRateTransform.Rotation;
@@ -2289,10 +2184,7 @@ namespace Zori.Entities.CharacterController2D
             float2 anchorPointLocalParentSpace
         )
         {
-            if (
-                parentEntity != Entity.Null
-                && baseContext.TrackedTransformLookup.HasComponent(parentEntity)
-            )
+            if (parentEntity != Entity.Null && baseContext.TrackedTransformLookup.HasComponent(parentEntity))
             {
                 characterBody.ParentEntity = parentEntity;
                 characterBody.ParentLocalAnchorPoint = anchorPointLocalParentSpace;
@@ -2321,27 +2213,15 @@ namespace Zori.Entities.CharacterController2D
                 && baseContext.TrackedTransformLookup.HasComponent(characterBody.GroundHit.Entity)
             )
             {
-                TrackedTransform2D groundTracked = baseContext.TrackedTransformLookup[
-                    characterBody.GroundHit.Entity
-                ];
+                TrackedTransform2D groundTracked = baseContext.TrackedTransformLookup[characterBody.GroundHit.Entity];
                 float2 anchorLocal = groundTracked.CurrentFixedRateTransform.InverseTransformPoint(
                     characterBody.GroundHit.Position
                 );
-                SetOrUpdateParentBody(
-                    ref baseContext,
-                    ref characterBody,
-                    characterBody.GroundHit.Entity,
-                    anchorLocal
-                );
+                SetOrUpdateParentBody(ref baseContext, ref characterBody, characterBody.GroundHit.Entity, anchorLocal);
             }
             else
             {
-                SetOrUpdateParentBody(
-                    ref baseContext,
-                    ref characterBody,
-                    Entity.Null,
-                    new float2(0f, 0f)
-                );
+                SetOrUpdateParentBody(ref baseContext, ref characterBody, Entity.Null, new float2(0f, 0f));
             }
         }
 
@@ -2377,9 +2257,7 @@ namespace Zori.Entities.CharacterController2D
                 // Compensate for the new parent body.
                 if (characterBody.ParentEntity != Entity.Null)
                 {
-                    TrackedTransform2D parentTracked = baseContext.TrackedTransformLookup[
-                        characterBody.ParentEntity
-                    ];
+                    TrackedTransform2D parentTracked = baseContext.TrackedTransformLookup[characterBody.ParentEntity];
                     characterBody.ParentVelocity = parentTracked.CalculatePointVelocity(
                         characterPosition,
                         baseContext.Time.DeltaTime
@@ -2448,15 +2326,11 @@ namespace Zori.Entities.CharacterController2D
                 );
 
                 if (
-                    (
-                        stepAndSlopeHandling.PreventGroundingWhenMovingTowardsNoGrounding
-                        && isMovingTowardsNoGrounding
-                    )
+                    (stepAndSlopeHandling.PreventGroundingWhenMovingTowardsNoGrounding && isMovingTowardsNoGrounding)
                     || (
                         stepAndSlopeHandling.HasMaxDownwardSlopeChangeAngle
                         && foundSlopeHit
-                        && degrees(futureSlopeChangeAnglesRadians)
-                            < -stepAndSlopeHandling.MaxDownwardSlopeChangeAngle
+                        && degrees(futureSlopeChangeAnglesRadians) < -stepAndSlopeHandling.MaxDownwardSlopeChangeAngle
                     )
                 )
                 {
@@ -2512,8 +2386,7 @@ namespace Zori.Entities.CharacterController2D
             }
 
             float2 velocityDirection = normalizesafe(characterBody.RelativeVelocity);
-            float2 rayStartPoint =
-                characterBody.GroundHit.Position + (characterBody.GroundingUp * verticalOffset);
+            float2 rayStartPoint = characterBody.GroundHit.Position + (characterBody.GroundingUp * verticalOffset);
             float2 rayDirection = velocityDirection;
             float rayLength = length(characterBody.RelativeVelocity * deltaTimeIntoFuture);
 
@@ -2630,8 +2503,7 @@ namespace Zori.Entities.CharacterController2D
                 rayStartPoint += rayDirection * rayLength;
                 rayDirection = -velocityDirection;
                 rayLength =
-                    length(characterBody.RelativeVelocity * deltaTimeIntoFuture)
-                    + secondaryNoGroundingCheckDistance;
+                    length(characterBody.RelativeVelocity * deltaTimeIntoFuture) + secondaryNoGroundingCheckDistance;
 
                 // Back
                 if (
@@ -2684,10 +2556,7 @@ namespace Zori.Entities.CharacterController2D
         {
             // In 2D the "measure about velocityRight" reduces to measuring directly in the movement plane (which is
             // the whole 2D plane), so the projected normals are the normals themselves.
-            float slopeChangeAnglesRadians = MathUtilities2D.AngleRadians(
-                currentGroundUp,
-                hitNormal
-            );
+            float slopeChangeAnglesRadians = MathUtilities2D.AngleRadians(currentGroundUp, hitNormal);
 
             // Invert the sign if it's a downward slope change (the hit normal leans more along the movement
             // direction than the current ground normal does).
@@ -2738,8 +2607,7 @@ namespace Zori.Entities.CharacterController2D
                 RaycastClosestNonCharacter(
                     ref baseContext,
                     characterEntity,
-                    hit.Position
-                        + (backCheckDirection * Constants.StepGroundingDetectionHorizontalOffset),
+                    hit.Position + (backCheckDirection * Constants.StepGroundingDetectionHorizontalOffset),
                     -characterBody.GroundingUp,
                     maxStepHeight,
                     out PhysicsQueryHit2D backStepHit
@@ -2757,10 +2625,7 @@ namespace Zori.Entities.CharacterController2D
                 }
             }
 
-            if (
-                !isGroundedOnBackStep
-                && extraStepChecksDistance > Constants.StepGroundingDetectionHorizontalOffset
-            )
+            if (!isGroundedOnBackStep && extraStepChecksDistance > Constants.StepGroundingDetectionHorizontalOffset)
             {
                 if (
                     RaycastClosestNonCharacter(
@@ -2800,8 +2665,7 @@ namespace Zori.Entities.CharacterController2D
                     Constants.StepGroundingDetectionHorizontalOffset,
                     out PhysicsQueryHit2D forwardStepHit
                 );
-                float forwardHitDistance =
-                    forwardStepHit.fraction * Constants.StepGroundingDetectionHorizontalOffset;
+                float forwardHitDistance = forwardStepHit.fraction * Constants.StepGroundingDetectionHorizontalOffset;
                 if (forwardStepHitFound && forwardHitDistance > 0f)
                 {
                     isGroundedOnForwardStep = IsGroundedOnSlopeNormal(
@@ -2819,10 +2683,7 @@ namespace Zori.Entities.CharacterController2D
                         characterEntity,
                         hit.Position
                             + (characterBody.GroundingUp * forwardCheckHeight)
-                            + (
-                                -backCheckDirection
-                                * Constants.StepGroundingDetectionHorizontalOffset
-                            ),
+                            + (-backCheckDirection * Constants.StepGroundingDetectionHorizontalOffset),
                         -characterBody.GroundingUp,
                         maxStepHeight,
                         out forwardStepHit
@@ -2846,8 +2707,7 @@ namespace Zori.Entities.CharacterController2D
                     // one side only.
                     if (
                         !isGroundedOnForwardStep
-                        && extraStepChecksDistance
-                            > Constants.StepGroundingDetectionHorizontalOffset
+                        && extraStepChecksDistance > Constants.StepGroundingDetectionHorizontalOffset
                     )
                     {
                         // F3 — extra forward obstruction (horizontal, the wider reach). REF :3782-3797.
@@ -2931,12 +2791,7 @@ namespace Zori.Entities.CharacterController2D
         {
             hasSteppedUp = false;
 
-            if (
-                !characterProperties.EvaluateGrounding
-                || !stepHandling
-                || hit.IsGroundedOnHit
-                || maxStepHeight <= 0f
-            )
+            if (!characterProperties.EvaluateGrounding || !stepHandling || hit.IsGroundedOnHit || maxStepHeight <= 0f)
             {
                 return;
             }
@@ -2972,8 +2827,7 @@ namespace Zori.Entities.CharacterController2D
                 return;
             }
 
-            float2 startPositionOfForwardCheck =
-                characterPosition + (upCheckDirection * upStepHitDistance);
+            float2 startPositionOfForwardCheck = characterPosition + (upCheckDirection * upStepHitDistance);
             float distanceOverStep = length(
                 MathUtilities2D.ProjectOnPlane(
                     remainingMovementDirection * (remainingMovementLength - hitDistance),
@@ -2982,15 +2836,11 @@ namespace Zori.Entities.CharacterController2D
             );
             float2 endPositionOfForwardCheck =
                 startPositionOfForwardCheck
-                + (
-                    remainingMovementDirection
-                    * (remainingMovementLength + Constants.CollisionOffset)
-                );
+                + (remainingMovementDirection * (remainingMovementLength + Constants.CollisionOffset));
             float minimumDistanceOverStep = Constants.CollisionOffset * 3f;
             if (distanceOverStep < minimumDistanceOverStep)
             {
-                endPositionOfForwardCheck +=
-                    -hit.Normal * (minimumDistanceOverStep - distanceOverStep);
+                endPositionOfForwardCheck += -hit.Normal * (minimumDistanceOverStep - distanceOverStep);
             }
 
             float2 forwardDelta = endPositionOfForwardCheck - startPositionOfForwardCheck;
@@ -3110,8 +2960,7 @@ namespace Zori.Entities.CharacterController2D
                         characterBody.GroundingUp,
                         forwardSlopeCheckHit.normal
                     );
-                    float extraHeight =
-                        tan(slopeRadians) * characterWidthForStepGroundingCheck * 0.5f;
+                    float extraHeight = tan(slopeRadians) * characterWidthForStepGroundingCheck * 0.5f;
                     steppedHeight += extraHeight;
                 }
             }
@@ -3126,8 +2975,7 @@ namespace Zori.Entities.CharacterController2D
                 // opposing normal — so without the clearance the next frame's down-probe can never re-ground on the
                 // step and grounding would fall through to the lower floor. The clearance lets normal grounding take
                 // over on the step top cleanly once the centre clears the edge.
-                characterPosition +=
-                    characterBody.GroundingUp * (hitHeight + Constants.CollisionOffset);
+                characterPosition += characterBody.GroundingUp * (hitHeight + Constants.CollisionOffset);
                 characterPosition += forwardCheckDirection * forwardStepHitDistance;
 
                 characterBody.IsGrounded = true;
@@ -3190,12 +3038,7 @@ namespace Zori.Entities.CharacterController2D
             where T : unmanaged, IKinematicCharacterProcessor2D<C>
             where C : unmanaged
         {
-            int overlapCount = OverlapProxy(
-                ref baseContext,
-                in colliderProxy,
-                characterPosition,
-                characterRotation
-            );
+            int overlapCount = OverlapProxy(ref baseContext, in colliderProxy, characterPosition, characterRotation);
             if (overlapCount <= 0)
             {
                 return;
@@ -3233,18 +3076,8 @@ namespace Zori.Entities.CharacterController2D
                     )
                 )
                 {
-                    BasicHit2D basicOverlapHit = new BasicHit2D(
-                        overlapEntity,
-                        characterPosition,
-                        overlapNormal
-                    );
-                    if (
-                        !processor.CanCollideWithHit(
-                            ref context,
-                            ref baseContext,
-                            in basicOverlapHit
-                        )
-                    )
+                    BasicHit2D basicOverlapHit = new BasicHit2D(overlapEntity, characterPosition, overlapNormal);
+                    if (!processor.CanCollideWithHit(ref context, ref baseContext, in basicOverlapHit))
                         continue;
 
                     bool isGroundedOnHit = false;
@@ -3326,8 +3159,7 @@ namespace Zori.Entities.CharacterController2D
                 }
 
                 // Self motion/mass.
-                float2 selfLinearVelocity =
-                    characterBody.RelativeVelocity + characterBody.ParentVelocity;
+                float2 selfLinearVelocity = characterBody.RelativeVelocity + characterBody.ParentVelocity;
                 KinematicCharacterMass2D selfMass = PhysicsUtilities2D.GetKinematicCharacterMass(
                     in characterProperties
                 );
@@ -3345,8 +3177,9 @@ namespace Zori.Entities.CharacterController2D
 
                 if (baseContext.StoredCharacterBodyPropertiesLookup.HasComponent(hitBodyEntity))
                 {
-                    StoredKinematicCharacterData2D data =
-                        baseContext.StoredCharacterBodyPropertiesLookup[hitBodyEntity];
+                    StoredKinematicCharacterData2D data = baseContext.StoredCharacterBodyPropertiesLookup[
+                        hitBodyEntity
+                    ];
                     otherIsCharacter = true;
                     otherIsDynamic = data.SimulateDynamicBody;
                     otherLinearVelocity = data.RelativeVelocity + data.ParentVelocity;
@@ -3363,9 +3196,7 @@ namespace Zori.Entities.CharacterController2D
                         CenterOfMass = new float2(0f, 0f),
                         InverseMass = otherIsDynamic ? (1f / data.Mass) : 0f,
                         InverseInertia =
-                            (otherIsDynamic && data.RotationalInertia > 0f)
-                                ? (1f / data.RotationalInertia)
-                                : 0f,
+                            (otherIsDynamic && data.RotationalInertia > 0f) ? (1f / data.RotationalInertia) : 0f,
                     };
                 }
                 else
@@ -3379,10 +3210,7 @@ namespace Zori.Entities.CharacterController2D
                 if (characterHit.WasCharacterGroundedOnHitEnter && !characterHit.IsGroundedOnHit)
                 {
                     effectiveHitNormalFromOtherToSelf = normalizesafe(
-                        MathUtilities2D.ProjectOnPlane(
-                            characterHit.Normal,
-                            characterBody.GroundingUp
-                        )
+                        MathUtilities2D.ProjectOnPlane(characterHit.Normal, characterBody.GroundingUp)
                     );
                 }
                 else if (characterHit.IsGroundedOnHit)
@@ -3406,11 +3234,7 @@ namespace Zori.Entities.CharacterController2D
                             ref baseContext,
                             ref selfMass,
                             ref otherMass,
-                            new BasicHit2D(
-                                characterHit.Entity,
-                                characterHit.Position,
-                                characterHit.Normal
-                            )
+                            new BasicHit2D(characterHit.Entity, characterHit.Position, characterHit.Normal)
                         );
                     }
                 }
@@ -3421,10 +3245,7 @@ namespace Zori.Entities.CharacterController2D
                 {
                     selfMass.InverseMass = 1f;
 
-                    if (
-                        otherIsCharacter
-                        && dot(otherLinearVelocity, effectiveHitNormalFromOtherToSelf) > 0f
-                    )
+                    if (otherIsCharacter && dot(otherLinearVelocity, effectiveHitNormalFromOtherToSelf) > 0f)
                     {
                         otherLinearVelocity = MathUtilities2D.ProjectOnPlane(
                             otherLinearVelocity,
@@ -3435,8 +3256,7 @@ namespace Zori.Entities.CharacterController2D
 
                 // Restore the velocity lost during the original hit projection (so dynamics re-solves it).
                 float2 velocityLostInOriginalProjection = projectsafe(
-                    characterHit.CharacterVelocityBeforeHit
-                        - characterHit.CharacterVelocityAfterHit,
+                    characterHit.CharacterVelocityBeforeHit - characterHit.CharacterVelocityAfterHit,
                     effectiveHitNormalFromOtherToSelf
                 );
                 selfLinearVelocity += velocityLostInOriginalProjection;
@@ -3459,11 +3279,7 @@ namespace Zori.Entities.CharacterController2D
 
                 // Apply the self-impulse to the character's own velocity.
                 float2 previousSelfLinearVel = selfLinearVelocity;
-                PhysicsUtilities2D.ApplyLinearImpulse(
-                    ref selfLinearVelocity,
-                    in selfMass,
-                    impulseOnSelf
-                );
+                PhysicsUtilities2D.ApplyLinearImpulse(ref selfLinearVelocity, in selfMass, impulseOnSelf);
                 float2 characterLinearVelocityChange =
                     velocityLostInOriginalProjection + (selfLinearVelocity - previousSelfLinearVel);
                 characterBody.RelativeVelocity += characterLinearVelocityChange;
@@ -3471,20 +3287,18 @@ namespace Zori.Entities.CharacterController2D
                 // Trim velocity going toward the ground (avoids the reoriented-velocity issue on a grounded hit).
                 if (
                     characterHit.IsGroundedOnHit
-                    && dot(characterBody.RelativeVelocity, characterHit.Normal)
-                        < -Constants.DotProductSimilarityEpsilon
+                    && dot(characterBody.RelativeVelocity, characterHit.Normal) < -Constants.DotProductSimilarityEpsilon
                 )
                 {
                     characterBody.RelativeVelocity = MathUtilities2D.ProjectOnPlane(
                         characterBody.RelativeVelocity,
                         characterBody.GroundingUp
                     );
-                    characterBody.RelativeVelocity =
-                        MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
-                            characterBody.RelativeVelocity,
-                            characterHit.Normal,
-                            characterBody.GroundingUp
-                        );
+                    characterBody.RelativeVelocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
+                        characterBody.RelativeVelocity,
+                        characterHit.Normal,
+                        characterBody.GroundingUp
+                    );
                 }
 
                 // If the other is a character moving toward us, it solves the pair in its own update — don't double-apply.
@@ -3494,11 +3308,7 @@ namespace Zori.Entities.CharacterController2D
                         > Constants.DotProductSimilarityEpsilon;
 
                 // Emit the deferred impulse on the other body (only a dynamic, non-character-moving-toward-us body).
-                if (
-                    !otherIsCharacterMovingTowardsUs
-                    && otherIsDynamic
-                    && lengthsq(impulseOnOther) > 0f
-                )
+                if (!otherIsCharacterMovingTowardsUs && otherIsDynamic && lengthsq(impulseOnOther) > 0f)
                 {
                     deferredImpulsesBuffer.Add(
                         new KinematicCharacterDeferredImpulse2D
@@ -3552,10 +3362,7 @@ namespace Zori.Entities.CharacterController2D
             }
 
             Entity groundEntity = characterBody.GroundHit.Entity;
-            if (
-                groundEntity == Entity.Null
-                || !baseContext.DynamicBodyDataLookup.HasComponent(groundEntity)
-            )
+            if (groundEntity == Entity.Null || !baseContext.DynamicBodyDataLookup.HasComponent(groundEntity))
             {
                 return;
             }
@@ -3566,16 +3373,13 @@ namespace Zori.Entities.CharacterController2D
                 return;
             }
 
-            KinematicCharacterMass2D selfMass = PhysicsUtilities2D.GetKinematicCharacterMass(
-                in characterProperties
-            );
+            KinematicCharacterMass2D selfMass = PhysicsUtilities2D.GetKinematicCharacterMass(in characterProperties);
             selfMass.InverseMass = 1f / characterProperties.Mass;
             KinematicCharacterMass2D groundMass = new KinematicCharacterMass2D
             {
                 CenterOfMass = new float2(0f, 0f),
                 InverseMass = 1f / groundData.Mass,
-                InverseInertia =
-                    groundData.RotationalInertia > 0f ? (1f / groundData.RotationalInertia) : 0f,
+                InverseInertia = groundData.RotationalInertia > 0f ? (1f / groundData.RotationalInertia) : 0f,
             };
 
             processor.OverrideDynamicHitMasses(
@@ -3659,8 +3463,7 @@ namespace Zori.Entities.CharacterController2D
                     )
                 )
                 {
-                    StatefulKinematicCharacterHit2D newStatefulHit =
-                        new StatefulKinematicCharacterHit2D(characterHit);
+                    StatefulKinematicCharacterHit2D newStatefulHit = new StatefulKinematicCharacterHit2D(characterHit);
                     bool wasInBefore = OldStatefulHitsContainEntity(
                         in statefulHitsBuffer,
                         characterHit.Entity,
@@ -3806,15 +3609,10 @@ namespace Zori.Entities.CharacterController2D
             );
 
             bool isGroundedOnSteps = false;
-            if (
-                !isGroundedOnSlope
-                && stepAndSlopeHandling.StepHandling
-                && stepAndSlopeHandling.MaxStepHeight > 0f
-            )
+            if (!isGroundedOnSlope && stepAndSlopeHandling.StepHandling && stepAndSlopeHandling.MaxStepHeight > 0f)
             {
                 bool hitIsOnCharacterBottom =
-                    dot(characterBody.GroundingUp, hit.Normal)
-                    > Constants.DotProductSimilarityEpsilon;
+                    dot(characterBody.GroundingUp, hit.Normal) > Constants.DotProductSimilarityEpsilon;
                 if (
                     hitIsOnCharacterBottom
                     && (

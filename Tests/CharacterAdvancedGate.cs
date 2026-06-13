@@ -69,7 +69,8 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             var bakedQuery = em.CreateEntityQuery(
                 ComponentType.ReadOnly<KinematicCharacterBody2D>(),
-                ComponentType.ReadOnly<LocalToWorld>());
+                ComponentType.ReadOnly<LocalToWorld>()
+            );
             var frames = 0;
             while (bakedQuery.CalculateEntityCount() < expectedCharacters && frames < LoadTimeoutFrames)
             {
@@ -80,7 +81,8 @@ namespace Zori.Entities.CharacterController2D.Tests
                 expectedCharacters,
                 bakedQuery.CalculateEntityCount(),
                 $"Expected {expectedCharacters} baked character(s) after {frames} frames — build the fixtures via "
-                    + "CharacterFixtureBuilder.BuildAll first.");
+                    + "CharacterFixtureBuilder.BuildAll first."
+            );
 
             using (var ents = bakedQuery.ToEntityArray(Allocator.Temp))
             {
@@ -93,7 +95,8 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             _characterQuery = em.CreateEntityQuery(
                 ComponentType.ReadWrite<KinematicCharacterBody2D>(),
-                ComponentType.ReadOnly<LocalToWorld>());
+                ComponentType.ReadOnly<LocalToWorld>()
+            );
 
             _fixedGroup = _world.GetExistingSystemManaged<FixedStepSimulationSystemGroup>();
             Assert.IsNotNull(_fixedGroup, "No FixedStepSimulationSystemGroup in the default world.");
@@ -150,8 +153,8 @@ namespace Zori.Entities.CharacterController2D.Tests
 
         PhysicsWorld GetPhysicsWorld()
         {
-            return _world.EntityManager
-                .CreateEntityQuery(ComponentType.ReadOnly<PhysicsWorldSingleton2D>())
+            return _world
+                .EntityManager.CreateEntityQuery(ComponentType.ReadOnly<PhysicsWorldSingleton2D>())
                 .GetSingleton<PhysicsWorldSingleton2D>()
                 .world;
         }
@@ -181,7 +184,8 @@ namespace Zori.Entities.CharacterController2D.Tests
             var em = _world.EntityManager;
             var q = em.CreateEntityQuery(
                 ComponentType.ReadOnly<PhysicsBody2DDefinition>(),
-                ComponentType.ReadOnly<LocalToWorld>());
+                ComponentType.ReadOnly<LocalToWorld>()
+            );
             using var ents = q.ToEntityArray(Allocator.Temp);
             Entity box = Entity.Null;
             var count = 0;
@@ -210,7 +214,8 @@ namespace Zori.Entities.CharacterController2D.Tests
                 {
                     All = new[] { ComponentType.ReadOnly<PhysicsBody2D>(), ComponentType.ReadOnly<LocalToWorld>() },
                     None = new[] { ComponentType.ReadOnly<KinematicCharacterBody2D>() },
-                });
+                }
+            );
             using var ents = q.ToEntityArray(Allocator.Temp);
             Assert.AreEqual(1, ents.Length, "this fixture carries exactly one non-character body (the platform)");
             return ents[0];
@@ -253,8 +258,11 @@ namespace Zori.Entities.CharacterController2D.Tests
                     break; // start the sustained-stand assertion right after mounting, while most of the step is ahead
                 }
             }
-            Assert.GreaterOrEqual(mountedAtStep, 0,
-                $"step ≤ MaxStepHeight must lift the character onto the step top (~Y {expectedStandY}); never reached it");
+            Assert.GreaterOrEqual(
+                mountedAtStep,
+                0,
+                $"step ≤ MaxStepHeight must lift the character onto the step top (~Y {expectedStandY}); never reached it"
+            );
 
             // The STRICT assertion: after mounting, the character holds a stable stand on the step for many fixed
             // steps while still walking +X ACROSS the step surface — no slide-back to the floor, no per-frame reset.
@@ -272,9 +280,15 @@ namespace Zori.Entities.CharacterController2D.Tests
                 _fixedGroup.Update();
                 // Only assert the stable stand while the proxy is fully over the step top (a margin inside both
                 // edges so the lip-transition frames at either end are not counted).
-                if (Position().x > 2f + CharacterRadius + 0.1f && Position().x < stepRightEdgeX - CharacterRadius - 0.1f)
+                if (
+                    Position().x > 2f + CharacterRadius + 0.1f
+                    && Position().x < stepRightEdgeX - CharacterRadius - 0.1f
+                )
                 {
-                    Assert.IsTrue(Body().IsGrounded, $"character must stay grounded standing on the step (step {i}, x={Position().x})");
+                    Assert.IsTrue(
+                        Body().IsGrounded,
+                        $"character must stay grounded standing on the step (step {i}, x={Position().x})"
+                    );
                     var y = Position().y;
                     minYOnStep = min(minYOnStep, y);
                     maxYOnStep = max(maxYOnStep, y);
@@ -284,15 +298,27 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             // It genuinely stood on the step for a sustained run (not a one-frame graze), and over that run its Y
             // never dipped back toward the floor (the snap-back bug) nor climbed above the step top — a stable stand.
-            Assert.Greater(framesAssertedOnStep, 30,
-                $"character must spend a sustained run standing ON the step top, not graze it; on-step frames {framesAssertedOnStep}");
-            Assert.GreaterOrEqual(minYOnStep, expectedStandY - 0.08f,
+            Assert.Greater(
+                framesAssertedOnStep,
+                30,
+                $"character must spend a sustained run standing ON the step top, not graze it; on-step frames {framesAssertedOnStep}"
+            );
+            Assert.GreaterOrEqual(
+                minYOnStep,
+                expectedStandY - 0.08f,
                 $"character must HOLD the step stand without snapping back to the floor; floor {floorY}, "
-                    + $"expected stand ~{expectedStandY}, min Y on step {minYOnStep}");
-            Assert.LessOrEqual(maxYOnStep, expectedStandY + 0.12f,
-                $"the held stand must sit at the step top, not climb higher; max Y on step {maxYOnStep}");
-            Assert.Greater(Position().x, startXAfterMount + 0.5f,
-                $"character must keep walking across the step (not stick at the edge); {startXAfterMount} -> {Position().x}");
+                    + $"expected stand ~{expectedStandY}, min Y on step {minYOnStep}"
+            );
+            Assert.LessOrEqual(
+                maxYOnStep,
+                expectedStandY + 0.12f,
+                $"the held stand must sit at the step top, not climb higher; max Y on step {maxYOnStep}"
+            );
+            Assert.Greater(
+                Position().x,
+                startXAfterMount + 0.5f,
+                $"character must keep walking across the step (not stick at the edge); {startXAfterMount} -> {Position().x}"
+            );
             Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN during the step stand");
         }
 
@@ -318,8 +344,16 @@ namespace Zori.Entities.CharacterController2D.Tests
             var pos = Position();
             // Blocked: the character never climbs a step over MaxStepHeight (peak Y stays at floor height), and its
             // right edge does not cross the step's left face (X = 2) — it slides into the step like an ordinary wall.
-            Assert.Less(peakY, floorY + 0.08f, $"a step over MaxStepHeight must never be climbed; floor {floorY}, peak {peakY}");
-            Assert.LessOrEqual(pos.x + CharacterRadius, 2.0f + 1e-2f, $"must not penetrate the too-high step face (X=2); centre {pos.x}");
+            Assert.Less(
+                peakY,
+                floorY + 0.08f,
+                $"a step over MaxStepHeight must never be climbed; floor {floorY}, peak {peakY}"
+            );
+            Assert.LessOrEqual(
+                pos.x + CharacterRadius,
+                2.0f + 1e-2f,
+                $"must not penetrate the too-high step face (X=2); centre {pos.x}"
+            );
             Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "no NaN");
         }
 
@@ -387,7 +421,13 @@ namespace Zori.Entities.CharacterController2D.Tests
                 {
                     var v = b.RelativeVelocity;
                     CharacterControlUtilities2D.StandardGroundMove_Interpolated(
-                        ref v, new float2(moveX * groundMoveSpeed, 0f), groundedSharpness, FixedDt, up, b.GroundHit.Normal);
+                        ref v,
+                        new float2(moveX * groundMoveSpeed, 0f),
+                        groundedSharpness,
+                        FixedDt,
+                        up,
+                        b.GroundHit.Normal
+                    );
                     b.RelativeVelocity = v;
                 }
                 else
@@ -408,17 +448,26 @@ namespace Zori.Entities.CharacterController2D.Tests
                 else
                     extremeBack = max(extremeBack, p.x);
                 maxY = max(maxY, p.y);
-                Assert.Less(p.y, maxReachableY,
-                    $"character flung vertically off the cluster at step {i} (y={p.y}) — the up-fling component of the lateral-jump bug");
+                Assert.Less(
+                    p.y,
+                    maxReachableY,
+                    $"character flung vertically off the cluster at step {i} (y={p.y}) — the up-fling component of the lateral-jump bug"
+                );
             }
 
             // No backward overshoot past the start (the lateral teleport).
             if (moveX > 0f)
-                Assert.GreaterOrEqual(extremeBack, startX - backTol,
-                    $"character jumped BACKWARD (−X) past its start while walking +X: start {startX}, furthest back {extremeBack}");
+                Assert.GreaterOrEqual(
+                    extremeBack,
+                    startX - backTol,
+                    $"character jumped BACKWARD (−X) past its start while walking +X: start {startX}, furthest back {extremeBack}"
+                );
             else
-                Assert.LessOrEqual(extremeBack, startX + backTol,
-                    $"character jumped BACKWARD (+X) past its start while walking −X: start {startX}, furthest back {extremeBack}");
+                Assert.LessOrEqual(
+                    extremeBack,
+                    startX + backTol,
+                    $"character jumped BACKWARD (+X) past its start while walking −X: start {startX}, furthest back {extremeBack}"
+                );
 
             // Net forward progress in the drive direction (it actually traversed the cluster, not stuck).
             var endX = Position().x;
@@ -449,7 +498,8 @@ namespace Zori.Entities.CharacterController2D.Tests
                     ref body,
                     new float2(0f, 8f),
                     cancelVelocityBeforeJump: true,
-                    velocityCancelingUpDirection: body.GroundingUp);
+                    velocityCancelingUpDirection: body.GroundingUp
+                );
                 _world.EntityManager.SetComponentData(e, body);
             }
 
@@ -461,18 +511,29 @@ namespace Zori.Entities.CharacterController2D.Tests
             {
                 _fixedGroup.Update();
                 var y = Position().y;
-                if (y > peakY) peakY = y;
-                if (!Body().IsGrounded) sawUngrounded = true;
+                if (y > peakY)
+                    peakY = y;
+                if (!Body().IsGrounded)
+                    sawUngrounded = true;
             }
 
             Assert.IsTrue(sawUngrounded, "the jump must unground the character");
-            Assert.Greater(peakY, groundedY + 0.5f, $"the jump must raise Y measurably; grounded {groundedY}, peak {peakY}");
+            Assert.Greater(
+                peakY,
+                groundedY + 0.5f,
+                $"the jump must raise Y measurably; grounded {groundedY}, peak {peakY}"
+            );
 
             // Let it fall back and re-ground.
             Step(180);
             var pos = Position();
             Assert.IsTrue(Body().IsGrounded, "character must re-ground after falling back from the jump");
-            Assert.AreEqual(groundedY, pos.y, 0.08f, $"must settle back at the floor rest height; {groundedY} -> {pos.y}");
+            Assert.AreEqual(
+                groundedY,
+                pos.y,
+                0.08f,
+                $"must settle back at the floor rest height; {groundedY} -> {pos.y}"
+            );
             Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "no NaN through the jump arc");
         }
 
@@ -501,8 +562,16 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             // They separated: the gap grew, the left one moved left, the right one moved right, and neither is NaN.
             Assert.Greater(endGap, startGap + 0.1f, $"the two characters must separate; gap {startGap} -> {endGap}");
-            Assert.Less(leftEnd, leftStart + 1e-2f, $"the left character must be pushed left; {leftStart} -> {leftEnd}");
-            Assert.Greater(rightEnd, rightStart - 1e-2f, $"the right character must be pushed right; {rightStart} -> {rightEnd}");
+            Assert.Less(
+                leftEnd,
+                leftStart + 1e-2f,
+                $"the left character must be pushed left; {leftStart} -> {leftEnd}"
+            );
+            Assert.Greater(
+                rightEnd,
+                rightStart - 1e-2f,
+                $"the right character must be pushed right; {rightStart} -> {rightEnd}"
+            );
             Assert.IsFalse(float.IsNaN(leftEnd) || float.IsNaN(rightEnd), "no NaN after char-char separation");
         }
 
@@ -555,17 +624,25 @@ namespace Zori.Entities.CharacterController2D.Tests
             float boxMovedX = 0f;
             float2 charPos = default;
             var charPenetrated = false;
-            yield return PushDynamicBox("CC2D_DynamicPush", 200, (dx, cp, pen) =>
-            {
-                boxMovedX = dx;
-                charPos = cp;
-                charPenetrated = pen;
-            });
+            yield return PushDynamicBox(
+                "CC2D_DynamicPush",
+                200,
+                (dx, cp, pen) =>
+                {
+                    boxMovedX = dx;
+                    charPos = cp;
+                    charPenetrated = pen;
+                }
+            );
 
             // The box moved in the push direction (+X), by a plausible amount (not a teleport), and the character
             // never penetrated it. The DIRECTION is the load-bearing assertion (C4b flagged the magnitude as
             // mass-sensitive); the sign of the impulse exchange must push the box AWAY from the character.
-            Assert.Greater(boxMovedX, 0.05f, $"the dynamic box must be pushed +X (away from the character); moved {boxMovedX}");
+            Assert.Greater(
+                boxMovedX,
+                0.05f,
+                $"the dynamic box must be pushed +X (away from the character); moved {boxMovedX}"
+            );
             Assert.Less(boxMovedX, 20f, $"the box push must be a plausible amount, not a teleport; moved {boxMovedX}");
             Assert.IsFalse(charPenetrated, "the character must not penetrate the dynamic box while pushing it");
             Assert.IsFalse(float.IsNaN(charPos.x) || float.IsNaN(charPos.y), "no NaN");
@@ -589,7 +666,8 @@ namespace Zori.Entities.CharacterController2D.Tests
                 heavyMovedX,
                 lightMovedX,
                 $"a heavier authored mass (50x) must be pushed LESS by the same character push; "
-                    + $"light {lightMovedX}, heavy {heavyMovedX}");
+                    + $"light {lightMovedX}, heavy {heavyMovedX}"
+            );
         }
 
         // ---- Moving platform -------------------------------------------------------------------------------
@@ -643,10 +721,23 @@ namespace Zori.Entities.CharacterController2D.Tests
             // The character was carried with it: its X travel tracks the platform's, within a tolerance for the
             // one-step pipeline latency (the character carries the PREVIOUS step's platform delta) and grounding
             // snap. It must move substantially +X, not stay put.
-            Assert.Greater(charTravel, platformTravel - 0.3f, $"character must be carried along with the platform; platform {platformTravel}, char {charTravel}");
-            Assert.Less(charTravel, platformTravel + 0.3f, $"character must not overshoot the platform; platform {platformTravel}, char {charTravel}");
+            Assert.Greater(
+                charTravel,
+                platformTravel - 0.3f,
+                $"character must be carried along with the platform; platform {platformTravel}, char {charTravel}"
+            );
+            Assert.Less(
+                charTravel,
+                platformTravel + 0.3f,
+                $"character must not overshoot the platform; platform {platformTravel}, char {charTravel}"
+            );
             Assert.IsTrue(Body().IsGrounded, "character must stay grounded riding the platform");
-            Assert.AreEqual(charStartY, Position().y, 0.08f, $"riding a flat platform must not change the character's Y; {charStartY} -> {Position().y}");
+            Assert.AreEqual(
+                charStartY,
+                Position().y,
+                0.08f,
+                $"riding a flat platform must not change the character's Y; {charStartY} -> {Position().y}"
+            );
         }
 
         // ---- Future-slope / downward-ledge (gate 4, symptom 2 — the angle-sign behavioural arbiter) ---------
@@ -670,7 +761,12 @@ namespace Zori.Entities.CharacterController2D.Tests
         public IEnumerator FutureSlope_RunOffDownwardLedge_Ungrounds()
         {
             yield return LoadAndPrepare("CC2D_DownLedge", 1);
-            ConfigureSlopeHandling(TheCharacter(), preventOnNoGrounding: true, hasMaxDownward: false, maxDownwardDeg: 90f);
+            ConfigureSlopeHandling(
+                TheCharacter(),
+                preventOnNoGrounding: true,
+                hasMaxDownward: false,
+                maxDownwardDeg: 90f
+            );
 
             Step(60);
             Assert.IsTrue(Body().IsGrounded, "character starts grounded on the platform");
@@ -685,11 +781,16 @@ namespace Zori.Entities.CharacterController2D.Tests
                     sawUngrounded = true;
             }
 
-            Assert.IsTrue(sawUngrounded,
+            Assert.IsTrue(
+                sawUngrounded,
                 "running off a downward ledge (PreventGroundingWhenMovingTowardsNoGrounding) must unground the "
-                    + "character so it launches off cleanly rather than snapping back onto the lip");
-            Assert.Greater(Position().x, CharacterFixtureBuilderConstants.LedgeEdgeX,
-                "the character must travel past the ledge edge");
+                    + "character so it launches off cleanly rather than snapping back onto the lip"
+            );
+            Assert.Greater(
+                Position().x,
+                CharacterFixtureBuilderConstants.LedgeEdgeX,
+                "the character must travel past the ledge edge"
+            );
             Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN off the ledge");
         }
 
@@ -704,7 +805,8 @@ namespace Zori.Entities.CharacterController2D.Tests
                 TheCharacter(),
                 preventOnNoGrounding: false, // isolate the max-downward-angle path (the SIGN arbiter)
                 hasMaxDownward: true,
-                maxDownwardDeg: CharacterFixtureBuilderConstants.MaxDownwardSlopeChangeForGate);
+                maxDownwardDeg: CharacterFixtureBuilderConstants.MaxDownwardSlopeChangeForGate
+            );
 
             Step(60);
             Assert.IsTrue(Body().IsGrounded, "character starts grounded on the flat top");
@@ -715,14 +817,23 @@ namespace Zori.Entities.CharacterController2D.Tests
             {
                 SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
                 _fixedGroup.Update();
-                if (Body().IsGrounded) groundedFrames++;
+                if (Body().IsGrounded)
+                    groundedFrames++;
             }
 
             // It descended the gentle slope (Y dropped below the flat-top rest) while staying grounded almost
             // throughout (a transient ungrounded frame at the very lip is acceptable; a gentle slope must not
             // launch the character).
-            Assert.Less(Position().y, CharacterRadius + 0.05f, "character must have descended onto the gentle downhill");
-            Assert.Greater(groundedFrames, 110, $"a gentle downslope (under the max) must keep the character grounded; grounded {groundedFrames}/120 frames");
+            Assert.Less(
+                Position().y,
+                CharacterRadius + 0.05f,
+                "character must have descended onto the gentle downhill"
+            );
+            Assert.Greater(
+                groundedFrames,
+                110,
+                $"a gentle downslope (under the max) must keep the character grounded; grounded {groundedFrames}/120 frames"
+            );
             Assert.IsTrue(Body().IsGrounded, "character must end grounded on the gentle downhill");
             Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN on the gentle slope");
         }
@@ -740,7 +851,8 @@ namespace Zori.Entities.CharacterController2D.Tests
                 TheCharacter(),
                 preventOnNoGrounding: false, // isolate the max-downward-angle path (the SIGN arbiter)
                 hasMaxDownward: true,
-                maxDownwardDeg: CharacterFixtureBuilderConstants.MaxDownwardSlopeChangeForGate);
+                maxDownwardDeg: CharacterFixtureBuilderConstants.MaxDownwardSlopeChangeForGate
+            );
 
             Step(60);
             Assert.IsTrue(Body().IsGrounded, "character starts grounded on the flat top");
@@ -752,13 +864,16 @@ namespace Zori.Entities.CharacterController2D.Tests
             {
                 SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
                 _fixedGroup.Update();
-                if (!Body().IsGrounded) sawUngrounded = true;
+                if (!Body().IsGrounded)
+                    sawUngrounded = true;
             }
 
-            Assert.IsTrue(sawUngrounded,
+            Assert.IsTrue(
+                sawUngrounded,
                 "a steep downward slope change OVER MaxDownwardSlopeChangeAngle must unground the character "
                     + "(the signed future-slope angle is negative and exceeds the max); if the angle SIGN were "
-                    + "inverted this would never fire and the character would stay glued to the slope");
+                    + "inverted this would never fire and the character would stay glued to the slope"
+            );
             Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN at the steep lip");
         }
 
@@ -783,7 +898,8 @@ namespace Zori.Entities.CharacterController2D.Tests
                 centre + new float2(0f, half),
                 CapsuleCapRadius - (3f * Offset),
                 0ul,
-                hits);
+                hits
+            );
             for (var i = 0; i < hits.Length; i++)
             {
                 if (hits[i].entity != character && hits[i].entity != Entity.Null)
@@ -809,9 +925,13 @@ namespace Zori.Entities.CharacterController2D.Tests
             Assert.Less(
                 abs(settleY - expected),
                 0.08f,
-                $"the capsule must settle ~CapsuleBottomReach above the floor; expected ~{expected}, got {settleY}");
+                $"the capsule must settle ~CapsuleBottomReach above the floor; expected ~{expected}, got {settleY}"
+            );
             Assert.Less(abs(Position().x - startX), 0.05f, "the capsule must not drift in X on a flat floor");
-            Assert.IsFalse(CapsulePenetratesWorld(TheCharacter(), Position()), "the settled capsule must not penetrate the floor");
+            Assert.IsFalse(
+                CapsulePenetratesWorld(TheCharacter(), Position()),
+                "the settled capsule must not penetrate the floor"
+            );
         }
 
         // Capsule collide-and-slide: a grounded capsule driven +X into a wall (left face X=3) must clamp at the
@@ -831,14 +951,26 @@ namespace Zori.Entities.CharacterController2D.Tests
                 _fixedGroup.Update();
                 Assert.IsFalse(
                     CapsulePenetratesWorld(TheCharacter(), Position()),
-                    $"the capsule penetrated the wall at step {i} (centre {Position()})");
+                    $"the capsule penetrated the wall at step {i} (centre {Position()})"
+                );
             }
 
             // The right cap edge (centre + cap radius) must clamp at or before the wall face X=3.
             var rightEdge = Position().x + CapsuleCapRadius;
-            Assert.LessOrEqual(rightEdge, 3f + 1e-2f, $"the capsule's right cap crossed the wall face X=3; right edge {rightEdge}");
-            Assert.Greater(Position().x, 2f, $"the capsule must travel up to the wall (centre near it); centre {Position().x}");
-            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN during the capsule wall slide");
+            Assert.LessOrEqual(
+                rightEdge,
+                3f + 1e-2f,
+                $"the capsule's right cap crossed the wall face X=3; right edge {rightEdge}"
+            );
+            Assert.Greater(
+                Position().x,
+                2f,
+                $"the capsule must travel up to the wall (centre near it); centre {Position().x}"
+            );
+            Assert.IsFalse(
+                float.IsNaN(Position().x) || float.IsNaN(Position().y),
+                "no NaN during the capsule wall slide"
+            );
         }
 
         // Capsule step-up (the UNVERIFIED case the box-only gate-4 fix left open): a grounded capsule walks +X
@@ -868,8 +1000,11 @@ namespace Zori.Entities.CharacterController2D.Tests
                     break;
                 }
             }
-            Assert.GreaterOrEqual(mountedAtStep, 0,
-                $"a step ≤ MaxStepHeight must lift the capsule onto the step top (~Y {expectedStandY}); never reached it");
+            Assert.GreaterOrEqual(
+                mountedAtStep,
+                0,
+                $"a step ≤ MaxStepHeight must lift the capsule onto the step top (~Y {expectedStandY}); never reached it"
+            );
 
             const float stepRightEdgeX = 7f;
             var minYOnStep = float.MaxValue;
@@ -880,9 +1015,15 @@ namespace Zori.Entities.CharacterController2D.Tests
             {
                 SetRelativeVelocity(TheCharacter(), new float2(3f, 0f));
                 _fixedGroup.Update();
-                if (Position().x > 2f + CapsuleCapRadius + 0.1f && Position().x < stepRightEdgeX - CapsuleCapRadius - 0.1f)
+                if (
+                    Position().x > 2f + CapsuleCapRadius + 0.1f
+                    && Position().x < stepRightEdgeX - CapsuleCapRadius - 0.1f
+                )
                 {
-                    Assert.IsTrue(Body().IsGrounded, $"the capsule must stay grounded standing on the step (step {i}, x={Position().x})");
+                    Assert.IsTrue(
+                        Body().IsGrounded,
+                        $"the capsule must stay grounded standing on the step (step {i}, x={Position().x})"
+                    );
                     var y = Position().y;
                     minYOnStep = min(minYOnStep, y);
                     maxYOnStep = max(maxYOnStep, y);
@@ -890,16 +1031,31 @@ namespace Zori.Entities.CharacterController2D.Tests
                 }
             }
 
-            Assert.Greater(framesAssertedOnStep, 30,
-                $"the capsule must spend a sustained run standing ON the step top, not graze it; on-step frames {framesAssertedOnStep}");
-            Assert.GreaterOrEqual(minYOnStep, expectedStandY - 0.08f,
+            Assert.Greater(
+                framesAssertedOnStep,
+                30,
+                $"the capsule must spend a sustained run standing ON the step top, not graze it; on-step frames {framesAssertedOnStep}"
+            );
+            Assert.GreaterOrEqual(
+                minYOnStep,
+                expectedStandY - 0.08f,
                 $"the capsule must HOLD the step stand without snapping back to the floor; floor {floorY}, "
-                    + $"expected stand ~{expectedStandY}, min Y on step {minYOnStep}");
-            Assert.LessOrEqual(maxYOnStep, expectedStandY + 0.12f,
-                $"the held stand must sit at the step top, not climb higher; max Y on step {maxYOnStep}");
-            Assert.Greater(Position().x, startXAfterMount + 0.5f,
-                $"the capsule must keep walking across the step (not stick at the edge); {startXAfterMount} -> {Position().x}");
-            Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN during the capsule step stand");
+                    + $"expected stand ~{expectedStandY}, min Y on step {minYOnStep}"
+            );
+            Assert.LessOrEqual(
+                maxYOnStep,
+                expectedStandY + 0.12f,
+                $"the held stand must sit at the step top, not climb higher; max Y on step {maxYOnStep}"
+            );
+            Assert.Greater(
+                Position().x,
+                startXAfterMount + 0.5f,
+                $"the capsule must keep walking across the step (not stick at the edge); {startXAfterMount} -> {Position().x}"
+            );
+            Assert.IsFalse(
+                float.IsNaN(Position().x) || float.IsNaN(Position().y),
+                "no NaN during the capsule step stand"
+            );
         }
 
         // ---- step+slope cluster: per-step horizontal-delta + no-propulsion gate (the user-reported bug) ------
@@ -929,10 +1085,12 @@ namespace Zori.Entities.CharacterController2D.Tests
         const float ClusterGroundSharpness = 90f;
         const float ClusterGravity = 20f;
         const float ClusterAirSharpness = 30f;
+
         // A correct per-step horizontal advance is at most one fixed-step ground move (7 * 1/60 ≈ 0.117). Allow a
         // small multiple to absorb the swept-MovePosition catch-up and the one-step D3 latency; a lateral teleport
         // (the bug overshot ~2.3 u in a single step) is far past this.
         const float MaxPerStepDx = 3f * ClusterGroundSpeed * FixedDt; // ≈ 0.35
+
         // No-propulsion: the solve must never raise speed above the driven ground speed by more than a margin
         // (gravity can add a little vertical while airborne; the margin covers one step of gravity + projection).
         const float MaxAnomalousSpeed = ClusterGroundSpeed + ClusterGravity * FixedDt + 1.5f;
@@ -942,8 +1100,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             ClusterTrace("CC2D_ClusterL2R", +1f);
 
         [UnityTest]
-        public IEnumerator Cluster_CapsuleWalksLeft_BoundedDelta_NoPropulsion() =>
-            ClusterTrace("CC2D_ClusterR2L", -1f);
+        public IEnumerator Cluster_CapsuleWalksLeft_BoundedDelta_NoPropulsion() => ClusterTrace("CC2D_ClusterR2L", -1f);
 
         // Plain-step control: walks +X up a single low step on a long floor (the step feature the user says "works").
         // 120 steps ≈ 14 u of travel, well inside the floor span, so it does NOT run off the edge (a free-fall
@@ -992,8 +1149,8 @@ namespace Zori.Entities.CharacterController2D.Tests
             sb.AppendLine("[SKEW-BLOCK] depenetration trace (capsule sunk in a wide block top, off-centre):");
 
             // Drive zero input; depenetration alone must lift the sunk capsule to the clean rest height.
-            float expectedRestY = CharacterFixtureBuilderConstants.LowStepTopY
-                + CharacterFixtureBuilderConstants.CapsuleBottomReach; // 0.3 + 1.0 = 1.3
+            float expectedRestY =
+                CharacterFixtureBuilderConstants.LowStepTopY + CharacterFixtureBuilderConstants.CapsuleBottomReach; // 0.3 + 1.0 = 1.3
             var settled = false;
             for (var i = 0; i < 90; i++)
             {
@@ -1001,7 +1158,9 @@ namespace Zori.Entities.CharacterController2D.Tests
                 var p = Position();
                 var pen = CapsulePenetratesWorld(e, p);
                 if (i < 12 || (i % 15) == 0)
-                    sb.AppendLine($"  step {i,2}: y={p.y:F3} (expect ≥ {expectedRestY - 0.1f:F3}) penetrates={pen} grounded={Body().IsGrounded}");
+                    sb.AppendLine(
+                        $"  step {i, 2}: y={p.y:F3} (expect ≥ {expectedRestY - 0.1f:F3}) penetrates={pen} grounded={Body().IsGrounded}"
+                    );
                 if (!pen && p.y >= expectedRestY - 0.1f)
                 {
                     settled = true;
@@ -1011,16 +1170,24 @@ namespace Zori.Entities.CharacterController2D.Tests
             }
             UnityEngine.Debug.Log(sb.ToString());
 
-            Assert.IsTrue(settled,
+            Assert.IsTrue(
+                settled,
                 $"the sunk capsule must depenetrate up to the clean rest height ~{expectedRestY:F2} and stop "
                     + $"penetrating, but it stayed sunk/penetrating (final y={Position().y:F3}) — the c719d90 "
-                    + "|dot(dirToCharacter, normal)| factor collapses the recovered depth on this skewed-axis contact.");
+                    + "|dot(dirToCharacter, normal)| factor collapses the recovered depth on this skewed-axis contact."
+            );
         }
 
         // Drives the character with the Platformer GroundMove/AirMove dynamics across the cluster, asserting the
         // per-step horizontal delta + no-propulsion + no-overshoot decision-point bounds at EVERY fixed step. Logs
         // a compact trajectory so the OBSERVED failure (the lateral delta + any speed spike) is visible in the log.
-        IEnumerator ClusterTrace(string sceneName, float moveX, int driveSteps = 260, bool requireProgress = true, float maxPerStepDx = MaxPerStepDx)
+        IEnumerator ClusterTrace(
+            string sceneName,
+            float moveX,
+            int driveSteps = 260,
+            bool requireProgress = true,
+            float maxPerStepDx = MaxPerStepDx
+        )
         {
             yield return LoadAndPrepare(sceneName, 1);
 
@@ -1056,19 +1223,26 @@ namespace Zori.Entities.CharacterController2D.Tests
 
                 Assert.IsFalse(float.IsNaN(p.x) || float.IsNaN(p.y), $"{sceneName}: NaN at step {i}");
 
-                if (abs(dx) > abs(worstDx)) { worstDx = dx; worstStep = i; }
+                if (abs(dx) > abs(worstDx))
+                {
+                    worstDx = dx;
+                    worstStep = i;
+                }
                 worstSpeed = max(worstSpeed, speed);
-                if (moveX > 0f) extremeBack = min(extremeBack, p.x);
-                else extremeBack = max(extremeBack, p.x);
+                if (moveX > 0f)
+                    extremeBack = min(extremeBack, p.x);
+                else
+                    extremeBack = max(extremeBack, p.x);
                 maxY = max(maxY, p.y);
 
                 // Log the corner region densely (where the bug lives) and any anomalous step.
                 if (abs(dx) > maxPerStepDx || speed > MaxAnomalousSpeed || (i % 20) == 0)
                 {
                     sb.AppendLine(
-                        $"  step {i,3}: pos=({p.x:F3},{p.y:F3}) dx={dx:+0.000;-0.000} dy={dy:+0.000;-0.000} "
+                        $"  step {i, 3}: pos=({p.x:F3},{p.y:F3}) dx={dx:+0.000;-0.000} dy={dy:+0.000;-0.000} "
                             + $"|v|={speed:F3} v=({b.RelativeVelocity.x:+0.00;-0.00},{b.RelativeVelocity.y:+0.00;-0.00}) "
-                            + $"grounded={b.IsGrounded} gN=({b.GroundHit.Normal.x:+0.00;-0.00},{b.GroundHit.Normal.y:+0.00;-0.00})");
+                            + $"grounded={b.IsGrounded} gN=({b.GroundHit.Normal.x:+0.00;-0.00},{b.GroundHit.Normal.y:+0.00;-0.00})"
+                    );
                 }
                 prev = p;
             }
@@ -1076,32 +1250,52 @@ namespace Zori.Entities.CharacterController2D.Tests
             sb.AppendLine(
                 $"  END pos=({Position().x:F3},{Position().y:F3}) extremeBack={extremeBack:F3} maxY={maxY:F3} "
                     + $"worstDx={worstDx:F3}@{worstStep} worstSpeed={worstSpeed:F3} "
-                    + $"(maxPerStepDx={maxPerStepDx:F3}, MaxAnomalousSpeed={MaxAnomalousSpeed:F3})");
+                    + $"(maxPerStepDx={maxPerStepDx:F3}, MaxAnomalousSpeed={MaxAnomalousSpeed:F3})"
+            );
             UnityEngine.Debug.Log(sb.ToString());
 
             // Decision-point assertions.
-            Assert.LessOrEqual(abs(worstDx), maxPerStepDx,
+            Assert.LessOrEqual(
+                abs(worstDx),
+                maxPerStepDx,
                 $"{sceneName}: per-step horizontal delta {worstDx:F3} at step {worstStep} exceeds the bound "
-                    + $"{maxPerStepDx:F3} — a lateral fling/teleport. A correct step-up advances ≤ one fixed-step move.");
-            Assert.LessOrEqual(worstSpeed, MaxAnomalousSpeed,
+                    + $"{maxPerStepDx:F3} — a lateral fling/teleport. A correct step-up advances ≤ one fixed-step move."
+            );
+            Assert.LessOrEqual(
+                worstSpeed,
+                MaxAnomalousSpeed,
                 $"{sceneName}: peak speed {worstSpeed:F3} exceeds {MaxAnomalousSpeed:F3} — the solve PROPELLED the "
-                    + "character (it must never add energy; projection only shortens velocity).");
-            Assert.Less(maxY, startY + 6f,
-                $"{sceneName}: flung vertically (maxY {maxY:F3} vs start {startY:F3}).");
+                    + "character (it must never add energy; projection only shortens velocity)."
+            );
+            Assert.Less(maxY, startY + 6f, $"{sceneName}: flung vertically (maxY {maxY:F3} vs start {startY:F3}).");
             if (moveX > 0f)
-                Assert.GreaterOrEqual(extremeBack, startX - 0.25f,
-                    $"{sceneName}: jumped BACKWARD (−X) past start while walking +X: start {startX:F3}, furthest back {extremeBack:F3}");
+                Assert.GreaterOrEqual(
+                    extremeBack,
+                    startX - 0.25f,
+                    $"{sceneName}: jumped BACKWARD (−X) past start while walking +X: start {startX:F3}, furthest back {extremeBack:F3}"
+                );
             else
-                Assert.LessOrEqual(extremeBack, startX + 0.25f,
-                    $"{sceneName}: jumped BACKWARD (+X) past start while walking −X: start {startX:F3}, furthest back {extremeBack:F3}");
+                Assert.LessOrEqual(
+                    extremeBack,
+                    startX + 0.25f,
+                    $"{sceneName}: jumped BACKWARD (+X) past start while walking −X: start {startX:F3}, furthest back {extremeBack:F3}"
+                );
 
             var endX = Position().x;
             if (requireProgress)
             {
                 if (moveX > 0f)
-                    Assert.Greater(endX, startX + 1f, $"{sceneName}: must make forward (+X) progress: {startX:F3} -> {endX:F3}");
+                    Assert.Greater(
+                        endX,
+                        startX + 1f,
+                        $"{sceneName}: must make forward (+X) progress: {startX:F3} -> {endX:F3}"
+                    );
                 else
-                    Assert.Less(endX, startX - 1f, $"{sceneName}: must make forward (−X) progress: {startX:F3} -> {endX:F3}");
+                    Assert.Less(
+                        endX,
+                        startX - 1f,
+                        $"{sceneName}: must make forward (−X) progress: {startX:F3} -> {endX:F3}"
+                    );
             }
         }
 
@@ -1115,8 +1309,13 @@ namespace Zori.Entities.CharacterController2D.Tests
             {
                 var v = b.RelativeVelocity;
                 CharacterControlUtilities2D.StandardGroundMove_Interpolated(
-                    ref v, new float2(moveX * ClusterGroundSpeed, 0f), ClusterGroundSharpness, FixedDt, up,
-                    b.GroundHit.Normal);
+                    ref v,
+                    new float2(moveX * ClusterGroundSpeed, 0f),
+                    ClusterGroundSharpness,
+                    FixedDt,
+                    up,
+                    b.GroundHit.Normal
+                );
                 b.RelativeVelocity = v;
             }
             else

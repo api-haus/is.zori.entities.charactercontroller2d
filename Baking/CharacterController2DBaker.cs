@@ -6,7 +6,6 @@ using Zori.Entities.CharacterController2D.Authoring;
 using Zori.Entities.Physics2D;
 using Zori.Entities.Physics2D.Baking;
 using static Unity.Mathematics.math;
-
 // The baker lives in the Zori.Entities.CharacterController2D.Baking namespace, so the substrate's
 // PhysicsShape2D is not in an enclosing namespace (unlike the substrate's own bakers) and the unqualified
 // name collides with UnityEngine.PhysicsShape2D pulled in by `using UnityEngine;`. Alias to the substrate type.
@@ -159,10 +158,7 @@ namespace Zori.Entities.CharacterController2D.Baking
         /// same per-kind way the substrate scales a circle (larger absolute axis) or box (per-axis) shape, so the
         /// proxy and the emitted <see cref="PhysicsShape2D"/> stay the same geometry at the body's unit scale.
         /// </summary>
-        static KinematicCharacterColliderProxy2D BuildProxy(
-            CharacterController2DAuthoring authoring,
-            float2 scale
-        )
+        static KinematicCharacterColliderProxy2D BuildProxy(CharacterController2DAuthoring authoring, float2 scale)
         {
             switch (authoring.ProxyShape)
             {

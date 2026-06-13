@@ -53,7 +53,9 @@ namespace Zori.Entities.CharacterController2D.Authoring
     public sealed class CharacterController2DAuthoring : MonoBehaviour
     {
         [SerializeField]
-        [Tooltip("General character properties (grounding, collision, dynamics). Slope angle is authored in degrees and converted at bake.")]
+        [Tooltip(
+            "General character properties (grounding, collision, dynamics). Slope angle is authored in degrees and converted at bake."
+        )]
         AuthoringKinematicCharacterProperties2D m_CharacterProperties =
             AuthoringKinematicCharacterProperties2D.GetDefault();
 
@@ -164,10 +166,7 @@ namespace Zori.Entities.CharacterController2D.Authoring
             m_ProxyRadius = math.max(0f, m_ProxyRadius);
             m_ProxyBoxSize = math.max(float2.zero, m_ProxyBoxSize);
             m_ProxyCapsuleSize = math.max(float2.zero, m_ProxyCapsuleSize);
-            m_CharacterProperties.GroundSnappingDistance = math.max(
-                0f,
-                m_CharacterProperties.GroundSnappingDistance
-            );
+            m_CharacterProperties.GroundSnappingDistance = math.max(0f, m_CharacterProperties.GroundSnappingDistance);
             m_CharacterProperties.Mass = math.max(0f, m_CharacterProperties.Mass);
         }
     }

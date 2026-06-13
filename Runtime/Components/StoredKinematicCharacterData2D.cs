@@ -39,7 +39,10 @@ namespace Zori.Entities.CharacterController2D
         /// </summary>
         /// <param name="characterProperties"> A character properties component to read from </param>
         /// <param name="characterBody"> A character body component to read from </param>
-        public void SetFrom(in KinematicCharacterProperties2D characterProperties, in KinematicCharacterBody2D characterBody)
+        public void SetFrom(
+            in KinematicCharacterProperties2D characterProperties,
+            in KinematicCharacterBody2D characterBody
+        )
         {
             SimulateDynamicBody = characterProperties.SimulateDynamicBody;
             Mass = characterProperties.Mass;

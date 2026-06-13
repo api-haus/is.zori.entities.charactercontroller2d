@@ -78,7 +78,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
                     // Not yet under an AssetDatabase path (e.g. still in Samples~ before import) — nothing to build.
                     throw new System.InvalidOperationException(
                         "PlatformerSceneBuilder is not under an AssetDatabase path; import the sample into "
-                            + "Assets/Samples/ first (or copy the sample tree into Assets/), then run the builder.");
+                            + "Assets/Samples/ first (or copy the sample tree into Assets/), then run the builder."
+                    );
                 }
 
                 string editorDir = Path.GetDirectoryName(scriptPath).Replace('\\', '/');
@@ -126,8 +127,18 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             // A bouncy DYNAMIC crate sitting on the normal segment: a high-bounciness PhysicsMaterial2D-style surface
             // (authored inline via the shape's bounciness override) so it visibly bounces when dropped / shoved, and a
             // plain pushable crate the character can shove onto the ICE to show the crate's own material response.
-            AddBouncyCrate(new Vector2(-6f, FloorTopY + 0.5f + 0.05f), size: new Vector2(1f, 1f), mass: 0.5f, "BouncyCrate");
-            AddPushableCrate(new Vector2(2f, FloorTopY + 0.5f + 0.05f), size: new Vector2(1f, 1f), mass: 1f, "PushCrate");
+            AddBouncyCrate(
+                new Vector2(-6f, FloorTopY + 0.5f + 0.05f),
+                size: new Vector2(1f, 1f),
+                mass: 0.5f,
+                "BouncyCrate"
+            );
+            AddPushableCrate(
+                new Vector2(2f, FloorTopY + 0.5f + 0.05f),
+                size: new Vector2(1f, 1f),
+                mass: 1f,
+                "PushCrate"
+            );
 
             // === Station 2 — step + slope course (carried from the SideScroller, verified green) ===============
             //
@@ -146,10 +157,20 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             // A gap to the right of the ledge bridged by a lateral platform, then a vertical platform lifting the
             // character to a higher ledge. The character rides each (the SideScroller's verified carry, generalized to
             // two axes).
-            AddMovingPlatform(new Vector2(58f, 6f - 0.25f), size: new Vector2(4f, 0.5f),
-                travelHalfExtent: new Vector2(4f, 0f), speed: 3f, "MovingPlatform_Lateral");
-            AddMovingPlatform(new Vector2(66f, 5f), size: new Vector2(4f, 0.5f),
-                travelHalfExtent: new Vector2(0f, 3f), speed: 2.5f, "MovingPlatform_Vertical");
+            AddMovingPlatform(
+                new Vector2(58f, 6f - 0.25f),
+                size: new Vector2(4f, 0.5f),
+                travelHalfExtent: new Vector2(4f, 0f),
+                speed: 3f,
+                "MovingPlatform_Lateral"
+            );
+            AddMovingPlatform(
+                new Vector2(66f, 5f),
+                size: new Vector2(4f, 0.5f),
+                travelHalfExtent: new Vector2(0f, 3f),
+                speed: 2.5f,
+                "MovingPlatform_Vertical"
+            );
 
             // The higher ledge the vertical platform tops out at, leading into the wind zone.
             AddStaticBox(new Vector2(73f, 9f - 0.5f), new Vector2(10f, 1f), "Ledge_HighWind"); // top at Y = 9
@@ -159,7 +180,12 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             // A sensor volume above the high ledge with a constant upward+forward force: the character walking through
             // is pushed up and along (the trigger-read WindZoneSystem2D writes RelativeVelocity). An updraft that helps
             // clear the next obstacle.
-            AddWindZone(new Vector2(73f, 11f), size: new Vector2(8f, 4f), force: new Vector2(2f, 14f), "WindZone_Updraft");
+            AddWindZone(
+                new Vector2(73f, 11f),
+                size: new Vector2(8f, 4f),
+                force: new Vector2(2f, 14f),
+                "WindZone_Updraft"
+            );
 
             // === Station 5 — rope swing across a gap too wide to jump =========================================
             //
@@ -176,10 +202,16 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             // A sensor pad on the far rope ledge; stepping on it teleports the character to a destination marker back
             // near the spawn (so the course loops). The destination is an empty marker GameObject; the teleporter
             // baker resolves it to its entity and TeleporterSystem2D moves the character there on entry.
-            var teleportDestination = AddDestinationMarker(new Vector3(0f, FloorTopY + CharacterHalfHeight + 0.1f, 0f),
-                "TeleportDestination");
-            AddTeleporter(new Vector2(97f, FloorTopY + 9f + 0.5f), size: new Vector2(1.5f, 1f),
-                destination: teleportDestination, "Teleporter_BackToSpawn");
+            var teleportDestination = AddDestinationMarker(
+                new Vector3(0f, FloorTopY + CharacterHalfHeight + 0.1f, 0f),
+                "TeleportDestination"
+            );
+            AddTeleporter(
+                new Vector2(97f, FloorTopY + 9f + 0.5f),
+                size: new Vector2(1.5f, 1f),
+                destination: teleportDestination,
+                "Teleporter_BackToSpawn"
+            );
 
             // === The character ================================================================================
             //
@@ -472,8 +504,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
             SpawnLabel("Wind Zone", new Vector3(73f, 14f, 0f), labelsRoot.transform);
 
             // The rope anchor floating above the wide gap (X = 85, Y = 16) — the explicit grab/release keys.
-            SpawnLabel("Rope — press E to grab  (Q/Shift to release)", new Vector3(85f, 17.5f, 0f),
-                labelsRoot.transform);
+            SpawnLabel(
+                "Rope — press E to grab  (Q/Shift to release)",
+                new Vector3(85f, 17.5f, 0f),
+                labelsRoot.transform
+            );
 
             // The teleporter sensor pad on the far rope ledge (center (97, 9.5)).
             SpawnLabel("Teleporter", new Vector3(97f, 11.5f, 0f), labelsRoot.transform);

@@ -31,7 +31,9 @@ namespace Zori.Entities.CharacterController2D
         /// <summary>
         /// Horizontal offset distance of the extra downward raycasts used to detect grounding around a step
         /// </summary>
-        [UnityEngine.Tooltip("Horizontal offset distance of extra downwards raycasts used to detect grounding around a step")]
+        [UnityEngine.Tooltip(
+            "Horizontal offset distance of extra downwards raycasts used to detect grounding around a step"
+        )]
         public float ExtraStepChecksDistance;
 
         /// <summary>
@@ -39,7 +41,9 @@ namespace Zori.Entities.CharacterController2D
         /// for a circle, twice the radius. It guards against a round-based shape being grounded on a step one
         /// frame and pushed past its max step height the next.
         /// </summary>
-        [UnityEngine.Tooltip("Character width used to determine grounding for steps. For a circle this should be 2x radius, and for a box it should be maximum box width.")]
+        [UnityEngine.Tooltip(
+            "Character width used to determine grounding for steps. For a circle this should be 2x radius, and for a box it should be maximum box width."
+        )]
         public float CharacterWidthForStepGroundingCheck;
 
         /// <summary>
@@ -67,7 +71,9 @@ namespace Zori.Entities.CharacterController2D
         /// Whether to constrain the character velocity to the ground plane when it hits a non-grounded slope
         /// </summary>
         [UnityEngine.Header("Misc")]
-        [UnityEngine.Tooltip("Whether or not to constrain the character velocity to ground plane when it hits a non-grounded slope")]
+        [UnityEngine.Tooltip(
+            "Whether or not to constrain the character velocity to ground plane when it hits a non-grounded slope"
+        )]
         public bool ConstrainVelocityToGroundPlane;
 
         /// <summary>

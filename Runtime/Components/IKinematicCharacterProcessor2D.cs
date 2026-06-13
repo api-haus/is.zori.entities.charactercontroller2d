@@ -13,16 +13,15 @@ namespace Zori.Entities.CharacterController2D
     /// <see cref="KinematicCharacterUpdateContext2D"/>, defined by chunk C3 — this interface forward-references it.
     /// </summary>
     /// <typeparam name="C"> The type of the user "context" struct created by the consumer </typeparam>
-    public interface IKinematicCharacterProcessor2D<C> where C : unmanaged
+    public interface IKinematicCharacterProcessor2D<C>
+        where C : unmanaged
     {
         /// <summary>
         /// Requests that the grounding-up direction be updated.
         /// </summary>
         /// <param name="context"> The user context struct </param>
         /// <param name="baseContext"> The built-in context struct (C3) </param>
-        void UpdateGroundingUp(
-            ref C context,
-            ref KinematicCharacterUpdateContext2D baseContext);
+        void UpdateGroundingUp(ref C context, ref KinematicCharacterUpdateContext2D baseContext);
 
         /// <summary>
         /// Determines whether a hit can be collided with.
@@ -31,10 +30,7 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="baseContext"> The built-in context struct (C3) </param>
         /// <param name="hit"> The evaluated hit </param>
         /// <returns> True if the hit can be collided with </returns>
-        bool CanCollideWithHit(
-            ref C context,
-            ref KinematicCharacterUpdateContext2D baseContext,
-            in BasicHit2D hit);
+        bool CanCollideWithHit(ref C context, ref KinematicCharacterUpdateContext2D baseContext, in BasicHit2D hit);
 
         /// <summary>
         /// Determines whether the character can be grounded on the hit.
@@ -48,7 +44,8 @@ namespace Zori.Entities.CharacterController2D
             ref C context,
             ref KinematicCharacterUpdateContext2D baseContext,
             in BasicHit2D hit,
-            int groundingEvaluationType);
+            int groundingEvaluationType
+        );
 
         /// <summary>
         /// Determines what happens when the character detects a hit during its movement phase.
@@ -67,7 +64,8 @@ namespace Zori.Entities.CharacterController2D
             ref float2 remainingMovementDirection,
             ref float remainingMovementLength,
             float2 originalVelocityDirection,
-            float hitDistance);
+            float hitDistance
+        );
 
         /// <summary>
         /// Requests that the character velocity be projected on the hits detected so far in the update.
@@ -86,7 +84,8 @@ namespace Zori.Entities.CharacterController2D
             ref bool characterIsGrounded,
             ref BasicHit2D characterGroundHit,
             in DynamicBuffer<KinematicVelocityProjectionHit2D> velocityProjectionHits,
-            float2 originalVelocityDirection);
+            float2 originalVelocityDirection
+        );
 
         /// <summary>
         /// Provides an opportunity to modify the masses used to solve impulses between the character and a hit body.
@@ -101,6 +100,7 @@ namespace Zori.Entities.CharacterController2D
             ref KinematicCharacterUpdateContext2D baseContext,
             ref KinematicCharacterMass2D characterMass,
             ref KinematicCharacterMass2D otherMass,
-            BasicHit2D hit);
+            BasicHit2D hit
+        );
     }
 }

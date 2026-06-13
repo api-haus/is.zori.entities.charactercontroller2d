@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using Unity.U2D.Physics;
-using static Unity.Mathematics.math;
 using Zori.Entities.Physics2D;
+using static Unity.Mathematics.math;
 
 namespace Zori.Entities.CharacterController2D
 {
@@ -47,7 +47,9 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="storedCharacterData"> The character's pre-solve stored data </param>
         /// <returns> The character's 2D mass for the impulse solve </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static KinematicCharacterMass2D GetKinematicCharacterMass(in StoredKinematicCharacterData2D storedCharacterData)
+        public static KinematicCharacterMass2D GetKinematicCharacterMass(
+            in StoredKinematicCharacterData2D storedCharacterData
+        )
         {
             return new KinematicCharacterMass2D
             {
@@ -64,7 +66,9 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="characterProperties"> The character properties </param>
         /// <returns> The character's 2D mass for the impulse solve </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static KinematicCharacterMass2D GetKinematicCharacterMass(in KinematicCharacterProperties2D characterProperties)
+        public static KinematicCharacterMass2D GetKinematicCharacterMass(
+            in KinematicCharacterProperties2D characterProperties
+        )
         {
             return new KinematicCharacterMass2D
             {
@@ -86,7 +90,12 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="point"> The world-space point to evaluate </param>
         /// <returns> The point's world-space linear velocity </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float2 GetPointVelocity(float2 linearVelocity, float angularVelocityRadians, float2 centerOfMassWorld, float2 point)
+        public static float2 GetPointVelocity(
+            float2 linearVelocity,
+            float angularVelocityRadians,
+            float2 centerOfMassWorld,
+            float2 point
+        )
         {
             float2 r = point - centerOfMassWorld;
             return linearVelocity + (angularVelocityRadians * MathUtilities2D.perp(r));
@@ -127,13 +136,24 @@ namespace Zori.Entities.CharacterController2D
             float2 collisionPoint,
             float2 collisionNormalBToA,
             out float2 impulseOnA,
-            out float2 impulseOnB)
+            out float2 impulseOnB
+        )
         {
             impulseOnA = default;
             impulseOnB = default;
 
-            float2 pointVelocityA = GetPointVelocity(linearVelA, angularVelARadians, centerOfMassWorldA, collisionPoint);
-            float2 pointVelocityB = GetPointVelocity(linearVelB, angularVelBRadians, centerOfMassWorldB, collisionPoint);
+            float2 pointVelocityA = GetPointVelocity(
+                linearVelA,
+                angularVelARadians,
+                centerOfMassWorldA,
+                collisionPoint
+            );
+            float2 pointVelocityB = GetPointVelocity(
+                linearVelB,
+                angularVelBRadians,
+                centerOfMassWorldB,
+                collisionPoint
+            );
 
             float2 centerOfMassAToPoint = collisionPoint - centerOfMassWorldA;
             float2 centerOfMassBToPoint = collisionPoint - centerOfMassWorldB;
@@ -169,7 +189,11 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="mass"> The body's 2D mass </param>
         /// <param name="impulse"> The linear impulse to apply </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ApplyLinearImpulse(ref float2 linearVelocity, in KinematicCharacterMass2D mass, float2 impulse)
+        public static void ApplyLinearImpulse(
+            ref float2 linearVelocity,
+            in KinematicCharacterMass2D mass,
+            float2 impulse
+        )
         {
             linearVelocity += impulse * mass.InverseMass;
         }
@@ -187,7 +211,14 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="impulse"> The linear impulse to apply </param>
         /// <param name="worldPoint"> The world-space point the impulse is applied at </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ApplyImpulse(ref float2 linearVelocity, ref float angularVelocityRadians, in KinematicCharacterMass2D mass, float2 centerOfMassWorld, float2 impulse, float2 worldPoint)
+        public static void ApplyImpulse(
+            ref float2 linearVelocity,
+            ref float angularVelocityRadians,
+            in KinematicCharacterMass2D mass,
+            float2 centerOfMassWorld,
+            float2 impulse,
+            float2 worldPoint
+        )
         {
             linearVelocity += impulse * mass.InverseMass;
             float2 r = worldPoint - centerOfMassWorld;
@@ -216,7 +247,11 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="linearVelocity"> The body's linear velocity (m/s) </param>
         /// <param name="angularVelocityRadians"> The body's angular velocity, converted to rad/s </param>
         /// <returns> True if the handle was valid and the velocity was read </returns>
-        public static bool TryGetDynamicBodyMotion(PhysicsBody body, out float2 linearVelocity, out float angularVelocityRadians)
+        public static bool TryGetDynamicBodyMotion(
+            PhysicsBody body,
+            out float2 linearVelocity,
+            out float angularVelocityRadians
+        )
         {
             linearVelocity = Unity.Mathematics.float2.zero;
             angularVelocityRadians = 0f;

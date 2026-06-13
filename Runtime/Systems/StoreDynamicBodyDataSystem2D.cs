@@ -56,11 +56,13 @@ namespace Zori.Entities.CharacterController2D
             // applied AFTER the iteration (a structural change mid-Query invalidates the iterator); the body's
             // velocity is captured next step, once the component exists.
             var toAdd = new NativeList<Entity>(Allocator.Temp);
-            foreach (var (def, entity) in SystemAPI
-                         .Query<RefRO<PhysicsBody2DDefinition>>()
-                         .WithAll<PhysicsBody2D>()
-                         .WithNone<StoredDynamicBodyData2D, KinematicCharacterProperties2D>()
-                         .WithEntityAccess())
+            foreach (
+                var (def, entity) in SystemAPI
+                    .Query<RefRO<PhysicsBody2DDefinition>>()
+                    .WithAll<PhysicsBody2D>()
+                    .WithNone<StoredDynamicBodyData2D, KinematicCharacterProperties2D>()
+                    .WithEntityAccess()
+            )
             {
                 if (def.ValueRO.bodyType == PhysicsBody.BodyType.Dynamic)
                 {
@@ -78,16 +80,20 @@ namespace Zori.Entities.CharacterController2D
             // off the live handle on the main thread; the mass/inertia are sourced from the authored definition
             // (the substrate exposes no read for a regular body's solved mass — the authored value is the faithful
             // source, processor-overridable at solve time).
-            foreach (var (stored, body, def) in SystemAPI
-                         .Query<RefRW<StoredDynamicBodyData2D>, RefRO<PhysicsBody2D>, RefRO<PhysicsBody2DDefinition>>()
-                         .WithNone<KinematicCharacterProperties2D>())
+            foreach (
+                var (stored, body, def) in SystemAPI
+                    .Query<RefRW<StoredDynamicBodyData2D>, RefRO<PhysicsBody2D>, RefRO<PhysicsBody2DDefinition>>()
+                    .WithNone<KinematicCharacterProperties2D>()
+            )
             {
                 bool isDynamic = def.ValueRO.bodyType == PhysicsBody.BodyType.Dynamic;
                 float2 linearVelocity = new float2(0f, 0f);
                 float angularVelocity = 0f;
 
-                if (isDynamic
-                    && PhysicsUtilities2D.TryGetDynamicBodyMotion(body.ValueRO.body, out float2 v, out float w))
+                if (
+                    isDynamic
+                    && PhysicsUtilities2D.TryGetDynamicBodyMotion(body.ValueRO.body, out float2 v, out float w)
+                )
                 {
                     linearVelocity = v;
                     angularVelocity = w;

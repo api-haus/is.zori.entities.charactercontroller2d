@@ -59,7 +59,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             bool grabEdge = keyboard.eKey.wasPressedThisFrame;
             bool releaseEdge = keyboard.qKey.wasPressedThisFrame || keyboard.leftShiftKey.wasPressedThisFrame;
 
-            foreach (var control in SystemAPI.Query<RefRW<PlatformerCharacterControl2D>>().WithAll<PlatformerCharacterTag>())
+            foreach (
+                var control in SystemAPI.Query<RefRW<PlatformerCharacterControl2D>>().WithAll<PlatformerCharacterTag>()
+            )
             {
                 control.ValueRW.MoveX = moveX;
                 // Latch (OR), never overwrite to false here: the consuming system clears each latch after it acts on the

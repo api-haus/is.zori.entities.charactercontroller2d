@@ -69,11 +69,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         {
             return DirectPhysics2DAuthoring.Create(
                 em,
-                new PhysicsBody2DDefinition
-                {
-                    bodyType = PhysicsBody.BodyType.Static,
-                    initialPosition = pos,
-                },
+                new PhysicsBody2DDefinition { bodyType = PhysicsBody.BodyType.Static, initialPosition = pos },
                 new PhysicsShape2D
                 {
                     kind = PhysicsShape2DKind.Circle,
@@ -161,13 +157,45 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             var pw = GetWorld(em);
             const float searchRadius = 12f;
 
-            var gotA = RunGrabQuery(pw, new float2(0f, 0f), searchRadius, characterRopeMask, out var hitsA, out var entA, out var ptA);
-            var gotB = RunGrabQuery(pw, new float2(20f, 0f), searchRadius, characterRopeMask, out var hitsB, out var entB, out var ptB);
-            var gotC = RunGrabQuery(pw, new float2(40f, 0f), searchRadius, characterRopeMask, out var hitsC, out var entC, out var ptC);
+            var gotA = RunGrabQuery(
+                pw,
+                new float2(0f, 0f),
+                searchRadius,
+                characterRopeMask,
+                out var hitsA,
+                out var entA,
+                out var ptA
+            );
+            var gotB = RunGrabQuery(
+                pw,
+                new float2(20f, 0f),
+                searchRadius,
+                characterRopeMask,
+                out var hitsB,
+                out var entB,
+                out var ptB
+            );
+            var gotC = RunGrabQuery(
+                pw,
+                new float2(40f, 0f),
+                searchRadius,
+                characterRopeMask,
+                out var hitsC,
+                out var entC,
+                out var ptC
+            );
 
             // Control: the SAME case-B anchor queried with an UNFILTERED mask (0 = hit everything). If this finds
             // it but the filtered query does not, the bug is squarely in the layer-mask filter, not the geometry.
-            var gotBUnfiltered = RunGrabQuery(pw, new float2(20f, 0f), searchRadius, 0ul, out var hitsBUnf, out _, out _);
+            var gotBUnfiltered = RunGrabQuery(
+                pw,
+                new float2(20f, 0f),
+                searchRadius,
+                0ul,
+                out var hitsBUnf,
+                out _,
+                out _
+            );
 
             // --- FIX PROBE: query the contacts=0 case-B anchor directly via world.OverlapGeometry with two
             //     candidate QueryFilter shapes, to pin the exact substrate fix. The substrate's Filter() starts
@@ -180,7 +208,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             var filterCurrent = PhysicsQuery.QueryFilter.Everything;
             filterCurrent.hitCategories = new PhysicsMask { bitMask = characterRopeMask };
             var resCurrent = pw.OverlapGeometry(probeGeom, filterCurrent, Allocator.Temp);
-            var nCurrent = resCurrent.Length; resCurrent.Dispose();
+            var nCurrent = resCurrent.Length;
+            resCurrent.Dispose();
 
             // Candidate 2 (CANDIDATE FIX): a query category that shares a bit with EVERY shape's contacts is
             // impossible when contacts = 0, so the fix is the OTHER direction — leave the categories-vs-contacts
@@ -192,9 +221,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // the grab must use a non-filter query path.
             var filterCat2 = new PhysicsQuery.QueryFilter(
                 new PhysicsMask { bitMask = characterRopeMask }, // categories = the anchor category
-                new PhysicsMask { bitMask = characterRopeMask }); // hitCategories = the anchor category
+                new PhysicsMask { bitMask = characterRopeMask }
+            ); // hitCategories = the anchor category
             var resCat2 = pw.OverlapGeometry(probeGeom, filterCat2, Allocator.Temp);
-            var nCat2 = resCat2.Length; resCat2.Dispose();
+            var nCat2 = resCat2.Length;
+            resCat2.Dispose();
 
             Debug.Log(
                 $"[ROPE-GRAB-FIXPROBE] contacts=0 anchor via world.OverlapGeometry:\n"

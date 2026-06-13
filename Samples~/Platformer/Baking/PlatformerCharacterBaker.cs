@@ -33,10 +33,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
             // buffer stamp starts at NegativeInfinity (NOT the struct-default 0) so the very first grounded step at
             // simulation time ≈ 0 does NOT read a phantom buffered jump (0 − 0 ≤ 0.15 would be a spurious window hit).
             AddComponent<PlatformerCharacterTag>(entity);
-            AddComponent(
-                entity,
-                new PlatformerCharacterControl2D { JumpBufferElapsedTime = float.NegativeInfinity }
-            );
+            AddComponent(entity, new PlatformerCharacterControl2D { JumpBufferElapsedTime = float.NegativeInfinity });
 
             // Per-character movement + rope tuning, read per-entity in the solve (the coordinator correction — NOT a
             // scene config singleton, NOT const-on-the-system). The LayerMask authors a 1<<layer bitfield; the
@@ -67,10 +64,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
 
             // The persistent stance state, initialized to GroundMove — the character starts on the ground line; the
             // solve flips it to AirMove when it leaves the ground and to RopeSwing on a grab near an anchor.
-            AddComponent(
-                entity,
-                new PlatformerCharacterState2D { Stance = PlatformerStance2D.GroundMove }
-            );
+            AddComponent(entity, new PlatformerCharacterState2D { Stance = PlatformerStance2D.GroundMove });
 
             // The active-rope params, defaulted (Anchor = Entity.Null, no rope) — valid only once the AirMove ->
             // RopeSwing transition writes a grabbed anchor into it. Baked once so the RopeSwing block reads/writes an

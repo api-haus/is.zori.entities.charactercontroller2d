@@ -76,7 +76,8 @@ namespace Zori.Entities.CharacterController2D
         public float Rotation;
 
         /// <summary>The identity rigid transform (zero position, zero angle).</summary>
-        public static RigidTransform2D Identity => new RigidTransform2D { Position = Unity.Mathematics.float2.zero, Rotation = 0f };
+        public static RigidTransform2D Identity =>
+            new RigidTransform2D { Position = Unity.Mathematics.float2.zero, Rotation = 0f };
 
         /// <summary>
         /// Transforms a point from this transform's local space into world space: rotate by

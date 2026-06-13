@@ -119,11 +119,7 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="maxLength"> The maximum length of the de-projected vector (de-projection can blow up for near-perpendicular directions) </param>
         /// <returns> The de-projected vector </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float2 ReverseProjectOnVector(
-            float2 projectedVector,
-            float2 onNormalizedVector,
-            float maxLength
-        )
+        public static float2 ReverseProjectOnVector(float2 projectedVector, float2 onNormalizedVector, float maxLength)
         {
             float projectionRatio = dot(normalizesafe(projectedVector), onNormalizedVector);
             if (projectionRatio == 0f)
@@ -131,11 +127,7 @@ namespace Zori.Entities.CharacterController2D
                 return projectedVector;
             }
 
-            float deprojectedLength = clamp(
-                length(projectedVector) / projectionRatio,
-                0f,
-                maxLength
-            );
+            float deprojectedLength = clamp(length(projectedVector) / projectionRatio, 0f, maxLength);
             return onNormalizedVector * deprojectedLength;
         }
 

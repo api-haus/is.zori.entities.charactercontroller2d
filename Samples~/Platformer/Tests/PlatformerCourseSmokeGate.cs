@@ -113,10 +113,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 _character = ents[0];
 
             _fixedGroup = _world.GetExistingSystemManaged<FixedStepSimulationSystemGroup>();
-            Assert.IsNotNull(
-                _fixedGroup,
-                "No FixedStepSimulationSystemGroup in the default world."
-            );
+            Assert.IsNotNull(_fixedGroup, "No FixedStepSimulationSystemGroup in the default world.");
             _savedRateManager = _fixedGroup.RateManager;
             _fixedGroup.RateManager = new Unity.Entities.RateUtils.FixedRateSimpleManager(FixedDt);
 
@@ -133,13 +130,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             _fixedGroup.Update();
         }
 
-        void Step(
-            int count,
-            float moveX = 0f,
-            bool jump = false,
-            bool grab = false,
-            bool release = false
-        )
+        void Step(int count, float moveX = 0f, bool jump = false, bool grab = false, bool release = false)
         {
             for (var i = 0; i < count; i++)
             {
@@ -166,11 +157,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             return _em.GetComponentData<LocalToWorld>(_character).Position.xy;
         }
 
-        KinematicCharacterBody2D Body() =>
-            _em.GetComponentData<KinematicCharacterBody2D>(_character);
+        KinematicCharacterBody2D Body() => _em.GetComponentData<KinematicCharacterBody2D>(_character);
 
-        PlatformerStance2D Stance() =>
-            _em.GetComponentData<PlatformerCharacterState2D>(_character).Stance;
+        PlatformerStance2D Stance() => _em.GetComponentData<PlatformerCharacterState2D>(_character).Stance;
 
         // Place the kinematic character at a world position. Two facts make this non-trivial: (1) the
         // PhysicsBody2DWriteBackSystem scatters the simulated body pose into LocalToWorld each step, so writing
@@ -229,10 +218,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         // PlaceCharacter does not wedge on a wall on the way), then dropping straight to the target. Used for stations
         // hemmed in by geometry (the wind sensor sits beside the right wall of Ledge_HighWind, which a horizontal
         // approach catches on).
-        void PlaceCharacterViaSky(
-            float2 pos,
-            PlatformerStance2D stance = PlatformerStance2D.GroundMove
-        )
+        void PlaceCharacterViaSky(float2 pos, PlatformerStance2D stance = PlatformerStance2D.GroundMove)
         {
             PlaceCharacter(new float2(pos.x, pos.y + 25f), stance);
             PlaceCharacter(pos, stance);
@@ -272,19 +258,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         // Count trigger events currently in the substrate's per-step buffer (on the PhysicsWorldSingleton2D entity).
         int TriggerEventCount()
         {
-            var q = _em.CreateEntityQuery(
-                ComponentType.ReadOnly<Zori.Entities.Physics2D.PhysicsWorldSingleton2D>()
-            );
+            var q = _em.CreateEntityQuery(ComponentType.ReadOnly<Zori.Entities.Physics2D.PhysicsWorldSingleton2D>());
             using var ents = q.ToEntityArray(Allocator.Temp);
-            if (
-                ents.Length == 0
-                || !_em.HasBuffer<Zori.Entities.Physics2D.PhysicsTriggerEvent2D>(ents[0])
-            )
+            if (ents.Length == 0 || !_em.HasBuffer<Zori.Entities.Physics2D.PhysicsTriggerEvent2D>(ents[0]))
                 return 0;
-            return _em.GetBuffer<Zori.Entities.Physics2D.PhysicsTriggerEvent2D>(
-                ents[0],
-                true
-            ).Length;
+            return _em.GetBuffer<Zori.Entities.Physics2D.PhysicsTriggerEvent2D>(ents[0], true).Length;
         }
 
         // ----- per-feature gates ----------------------------------------------------------------------------------
@@ -298,21 +276,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             PlaceCharacter(new float2(-1f, 1.5f));
             Step(20); // settle onto the normal floor
 
-            Assert.IsTrue(
-                Body().IsGrounded,
-                "character should be grounded on the normal floor after settling"
-            );
+            Assert.IsTrue(Body().IsGrounded, "character should be grounded on the normal floor after settling");
             var startX = Position().x;
             var restY = Position().y;
 
             // Walk right for ~0.8s; the character should advance meaningfully in +X.
             Step(50, moveX: 1f);
             var walkedX = Position().x;
-            Assert.Greater(
-                walkedX,
-                startX + 1.5f,
-                $"GroundMove: character should walk right ({startX} -> {walkedX})"
-            );
+            Assert.Greater(walkedX, startX + 1.5f, $"GroundMove: character should walk right ({startX} -> {walkedX})");
 
             // Jump: the character must leave the ground (peak Y above the grounded rest). JumpSpeed 9 / gravity 20
             // gives an ideal apex rise of 9^2/(2*20) ≈ 2.0; assert a conservative 0.4 to absorb the one-step pose
@@ -330,11 +301,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 Step(1);
                 peakY = max(peakY, Position().y);
             }
-            Assert.Greater(
-                peakY,
-                restY + 0.4f,
-                $"Jump: peak Y {peakY} should rise above rest {restY}"
-            );
+            Assert.Greater(peakY, restY + 0.4f, $"Jump: peak Y {peakY} should rise above rest {restY}");
             Assert.IsFalse(
                 Body().IsGrounded && abs(peakY - restY) < 0.1f,
                 "Jump: the character must actually leave the ground"
@@ -385,10 +352,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // added by PlatformInitSystem2D at load; MovingPlatformSystem2D drives it each fixed step. With NO player
             // input, the C4b-verified auto-parent carry (Update_ParentMovement) should sweep the rider in X.
             var platformX = FindPlatformX();
-            PlaceCharacterViaSky(
-                new float2(platformX, LateralPlatformHome.y + 1.0f),
-                PlatformerStance2D.AirMove
-            );
+            PlaceCharacterViaSky(new float2(platformX, LateralPlatformHome.y + 1.0f), PlatformerStance2D.AirMove);
             // Let the character settle onto the platform and ground.
             for (var i = 0; i < 120; i++)
             {
@@ -421,11 +385,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 minX = min(minX, x);
                 maxX = max(maxX, x);
             }
-            Assert.Greater(
-                groundedFrames,
-                10,
-                "character should ride the platform grounded for a sustained window"
-            );
+            Assert.Greater(groundedFrames, 10, "character should ride the platform grounded for a sustained window");
             Assert.Greater(
                 maxX - minX,
                 0.3f,
@@ -535,10 +495,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
 
             // Place the character airborne just below the rope anchor (anchor at (85,16), RopeLength authored 6) so a
             // grab finds it. Put it slightly off-centre so gravity drives a swing rather than hanging straight down.
-            PlaceCharacter(
-                new float2(RopeAnchorPos.x - 2f, RopeAnchorPos.y - 5f),
-                PlatformerStance2D.AirMove
-            );
+            PlaceCharacter(new float2(RopeAnchorPos.x - 2f, RopeAnchorPos.y - 5f), PlatformerStance2D.AirMove);
             Step(2); // let the airborne pose settle into the solve
 
             // Grab: in AirMove, the GrabPressed edge runs the anchor query and should enter RopeSwing.
@@ -550,12 +507,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             );
 
             var rope = _em.GetComponentData<RopeSwingState2D>(_character);
-            Assert.AreEqual(
-                RopeAnchorPos.x,
-                rope.AnchorPoint.x,
-                0.5f,
-                "rope anchor X should match the scene anchor"
-            );
+            Assert.AreEqual(RopeAnchorPos.x, rope.AnchorPoint.x, 0.5f, "rope anchor X should match the scene anchor");
 
             // Swing: with the character off-centre, gravity + the rope clamp produce pendulum motion. Track the X
             // range over the swing — a real pendulum sweeps a horizontal arc; a frozen/non-swinging body would not.
@@ -611,10 +563,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // controller's casts exclude the isTrigger pad, so the character passes INTO it as a visitor rather than
             // grounding on it). TeleporterSystem2D reads that Begin and teleports the character to TeleportDestination.
             var padX = TeleporterPadPos.x;
-            PlaceCharacterViaSky(
-                new float2(TeleporterPadPos.x, TeleporterPadPos.y + 6f),
-                PlatformerStance2D.AirMove
-            );
+            PlaceCharacterViaSky(new float2(TeleporterPadPos.x, TeleporterPadPos.y + 6f), PlatformerStance2D.AirMove);
             var anyTrigger = false;
             var groundedOnPad = false;
             var arrived = false;
@@ -689,10 +638,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // safe point: it records only while grounded AND grounded the prior step (a sustained stand, not a graze).
             PlaceCharacter(new float2(-3f, 1.1f));
             Step(40);
-            Assert.IsTrue(
-                Body().IsGrounded,
-                "Respawn: the character must be grounded so a safe point is recorded."
-            );
+            Assert.IsTrue(Body().IsGrounded, "Respawn: the character must be grounded so a safe point is recorded.");
             var safe = _em.GetComponentData<LastSafePoint2D>(_character);
             Assert.IsTrue(
                 safe.HasPoint,
@@ -848,10 +794,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 }
                 Step(1);
             }
-            Assert.IsTrue(
-                armed,
-                "the descent must reach the pre-landing band so the in-window press can be issued"
-            );
+            Assert.IsTrue(armed, "the descent must reach the pre-landing band so the in-window press can be issued");
 
             // Now let it ground and re-launch: the in-window buffered press must fire a fresh jump on landing, lifting
             // the character above rest again.
@@ -884,10 +827,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // one stamping step, then NO further presses — never re-latch JumpPressed. The character should jump once,
             // then settle back on the floor and STAY there (no perpetual re-jump from the held button).
             PressJumpOnce();
-            Assert.IsFalse(
-                Body().IsGrounded,
-                "the single edge from the (held) press must jump once"
-            );
+            Assert.IsFalse(Body().IsGrounded, "the single edge from the (held) press must jump once");
 
             // Drive many steps with NO further press edge (the held key re-stamps nothing). After the hop, the
             // character must settle grounded and stay grounded — count the airborne→grounded transitions; a held-button
@@ -942,10 +882,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // platform's GroundHit is a MovingPlatform2D body, excluded). Crucially the character has NEVER stood on a
             // static surface yet in this run, so HasPoint must stay false the whole ride.
             var platformX = FindPlatformX();
-            PlaceCharacterViaSky(
-                new float2(platformX, LateralPlatformHome.y + 1.0f),
-                PlatformerStance2D.AirMove
-            );
+            PlaceCharacterViaSky(new float2(platformX, LateralPlatformHome.y + 1.0f), PlatformerStance2D.AirMove);
             var groundedOnPlatformFrames = 0;
             var recordedWhileOnPlatform = false;
             for (var i = 0; i < 220; i++)
@@ -977,10 +914,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             Step(40);
             Assert.IsTrue(Body().IsGrounded, "Respawn/platform: must ground on the static floor.");
             var staticGround = _em.HasComponent<MovingPlatform2D>(Body().GroundHit.Entity);
-            Assert.IsFalse(
-                staticGround,
-                "the normal floor must NOT be a moving platform (sanity)."
-            );
+            Assert.IsFalse(staticGround, "the normal floor must NOT be a moving platform (sanity).");
             var safe = _em.GetComponentData<LastSafePoint2D>(_character);
             Assert.IsTrue(
                 safe.HasPoint,
@@ -996,11 +930,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             PhysicsBody2DCommands.SetTransform(sinkCmds, new float2(-3f, -40f), 0f);
             _fixedGroup.Update();
             _em.AddComponent<PlatformerCharacterTag>(_character);
-            Assert.Less(
-                Position().y,
-                -15f,
-                "Respawn/platform: must be below the fall threshold before respawn."
-            );
+            Assert.Less(Position().y, -15f, "Respawn/platform: must be below the fall threshold before respawn.");
 
             var respawned = false;
             for (var i = 0; i < 60; i++)
@@ -1012,10 +942,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                     break;
                 }
             }
-            Assert.IsTrue(
-                respawned,
-                $"Respawn/platform: must respawn above the floor (was at {Position()})."
-            );
+            Assert.IsTrue(respawned, $"Respawn/platform: must respawn above the floor (was at {Position()}).");
             Step(20);
             Assert.AreEqual(
                 staticSafeX,
@@ -1084,10 +1011,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         {
             PlaceCharacter(placeAt);
             Step(25); // settle onto the surface
-            Assert.IsTrue(
-                Body().IsGrounded,
-                "character must settle grounded on the step+slope cluster before walking"
-            );
+            Assert.IsTrue(Body().IsGrounded, "character must settle grounded on the step+slope cluster before walking");
 
             var startX = Position().x;
             // The backward bound: walking +X the character must never cross more than a small tolerance below its
@@ -1200,10 +1124,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         {
             PlaceCharacter(placeAt);
             Step(25);
-            Assert.IsTrue(
-                Body().IsGrounded,
-                "capsule must settle grounded before walking the step corner"
-            );
+            Assert.IsTrue(Body().IsGrounded, "capsule must settle grounded before walking the step corner");
 
             var startPos = Position();
             var sb = new System.Text.StringBuilder();
@@ -1230,10 +1151,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 var dy = landed.y - prePos.y;
                 var gap = any(isnan(target)) ? 0f : length(target - landed);
 
-                Assert.IsFalse(
-                    float.IsNaN(landed.x) || float.IsNaN(landed.y),
-                    $"no NaN at tick {i}"
-                );
+                Assert.IsFalse(float.IsNaN(landed.x) || float.IsNaN(landed.y), $"no NaN at tick {i}");
 
                 if (moveX > 0f)
                     extremeBack = min(extremeBack, landed.x);
@@ -1364,24 +1282,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         public IEnumerator StepUser_PlainStep_WalkRight_SnapOn()
         {
             yield return LoadCourse();
-            yield return StepTraceUserParams(
-                new float2(StepLowLeftFaceX - 3f, 1.1f),
-                +1f,
-                true,
-                stopAtX: 27.5f
-            );
+            yield return StepTraceUserParams(new float2(StepLowLeftFaceX - 3f, 1.1f), +1f, true, stopAtX: 27.5f);
         }
 
         [UnityTest]
         public IEnumerator StepUser_PlainStep_WalkRight_SnapOff()
         {
             yield return LoadCourse();
-            yield return StepTraceUserParams(
-                new float2(StepLowLeftFaceX - 3f, 1.1f),
-                +1f,
-                false,
-                stopAtX: 27.5f
-            );
+            yield return StepTraceUserParams(new float2(StepLowLeftFaceX - 3f, 1.1f), +1f, false, stopAtX: 27.5f);
         }
 
         [UnityTest]
@@ -1390,24 +1298,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             yield return LoadCourse();
             // Spawn ON StepLow's top (X=26 centre) and walk −X down off its LEFT lip (X=24) onto the sticky floor
             // (top 0). The R-to-L step traversal; stop at X=22 (well onto the floor, before any other feature).
-            yield return StepTraceUserParams(
-                new float2(26f, StepLowTopY + 1.05f),
-                -1f,
-                true,
-                stopAtX: 22f
-            );
+            yield return StepTraceUserParams(new float2(26f, StepLowTopY + 1.05f), -1f, true, stopAtX: 22f);
         }
 
         [UnityTest]
         public IEnumerator StepUser_PlainStep_WalkLeftDescend_SnapOff()
         {
             yield return LoadCourse();
-            yield return StepTraceUserParams(
-                new float2(26f, StepLowTopY + 1.05f),
-                -1f,
-                false,
-                stopAtX: 22f
-            );
+            yield return StepTraceUserParams(new float2(26f, StepLowTopY + 1.05f), -1f, false, stopAtX: 22f);
         }
 
         // The StepLow→StepHigh TRANSITION (the exact reproduction): walk +X across StepLow's right edge (X=28) into
@@ -1421,24 +1319,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         public IEnumerator StepUser_PlainStep_WalkRightIntoStepHighTransition_NoBackwardSnap_SnapOn()
         {
             yield return LoadCourse();
-            yield return StepTraceUserParams(
-                new float2(StepLowLeftFaceX - 3f, 1.1f),
-                +1f,
-                true,
-                stopAtX: 33f
-            );
+            yield return StepTraceUserParams(new float2(StepLowLeftFaceX - 3f, 1.1f), +1f, true, stopAtX: 33f);
         }
 
         [UnityTest]
         public IEnumerator StepUser_PlainStep_WalkRightIntoStepHighTransition_NoBackwardSnap_SnapOff()
         {
             yield return LoadCourse();
-            yield return StepTraceUserParams(
-                new float2(StepLowLeftFaceX - 3f, 1.1f),
-                +1f,
-                false,
-                stopAtX: 33f
-            );
+            yield return StepTraceUserParams(new float2(StepLowLeftFaceX - 3f, 1.1f), +1f, false, stopAtX: 33f);
         }
 
         // The StepHigh+ramp corner (geometry 1): StepHigh X[29,33] top 0.9 (over the 0.5 max — a WALL) abutting the
@@ -1451,36 +1339,21 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         {
             yield return LoadCourse();
             // Spawn up the ramp (X=38, slope Y≈(38−34)·tan30≈2.31), drive −X DOWN the ramp toward the lip + wall.
-            yield return StepTraceUserParams(
-                new float2(38f, 2.31f + 1.1f),
-                -1f,
-                true,
-                stopAtX: 34.2f
-            );
+            yield return StepTraceUserParams(new float2(38f, 2.31f + 1.1f), -1f, true, stopAtX: 34.2f);
         }
 
         [UnityTest]
         public IEnumerator StepUser_SlopeCorner_WalkLeftDownToWall_SnapOff()
         {
             yield return LoadCourse();
-            yield return StepTraceUserParams(
-                new float2(38f, 2.31f + 1.1f),
-                -1f,
-                false,
-                stopAtX: 34.2f
-            );
+            yield return StepTraceUserParams(new float2(38f, 2.31f + 1.1f), -1f, false, stopAtX: 34.2f);
         }
 
         // Drives the REAL baked character with the user's exact params over a real Station-2 geometry, tracing every
         // tick, and asserts no backward snap-back to the climb-start X. Bounded by stopAtX (reached in the drive
         // direction) and by a fell-off-the-course Y floor, so the trace reads the step region, not the downstream
         // intended course gaps + the RespawnSystem SetTransform they trigger (which is not a controller fling).
-        IEnumerator StepTraceUserParams(
-            float2 placeAt,
-            float moveX,
-            bool snapToGround,
-            float stopAtX
-        )
+        IEnumerator StepTraceUserParams(float2 placeAt, float moveX, bool snapToGround, float stopAtX)
         {
             PlaceCharacter(placeAt);
             ApplyUserStepParams(snapToGround); // set AFTER placement (placement detaches/re-attaches the tag)
@@ -1516,10 +1389,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 var dy = landed.y - prePos.y;
                 var gap = any(isnan(target)) ? 0f : length(target - landed);
 
-                Assert.IsFalse(
-                    float.IsNaN(landed.x) || float.IsNaN(landed.y),
-                    $"no NaN at tick {i}"
-                );
+                Assert.IsFalse(float.IsNaN(landed.x) || float.IsNaN(landed.y), $"no NaN at tick {i}");
 
                 if (moveX > 0f)
                 {
@@ -1564,9 +1434,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                     break;
                 if (landed.y < fellOffY)
                 {
-                    sb.AppendLine(
-                        $"  (fell off the course at tick {i}, y={landed.y:F3} — past the step region)"
-                    );
+                    sb.AppendLine($"  (fell off the course at tick {i}, y={landed.y:F3} — past the step region)");
                     break;
                 }
             }
@@ -1602,11 +1470,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                     $"jumped BACKWARD (+X) past start while walking −X; furthest back {extremeBack:F3}"
                 );
             // 3. NO vertical fling.
-            Assert.Less(
-                maxY,
-                startPos.y + 4f,
-                $"flung vertically (maxY {maxY:F3} vs start {startPos.y:F3})"
-            );
+            Assert.Less(maxY, startPos.y + 4f, $"flung vertically (maxY {maxY:F3} vs start {startPos.y:F3})");
             // 4. Net forward progress in the drive direction over the bounded region (it traversed, not stuck).
             if (moveX > 0f)
                 Assert.Greater(

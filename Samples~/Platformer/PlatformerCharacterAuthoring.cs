@@ -50,7 +50,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         [Tooltip(
             "Sharpness of the interpolation toward the desired ground velocity (higher = snappier). With no input the "
                 + "desired velocity is zero, so this is the ground grip that decelerates the character to a stop; it is "
-                + "scaled per-surface by the FrictionModifier2D (low = slippery ice).")]
+                + "scaled per-surface by the FrictionModifier2D (low = slippery ice)."
+        )]
         float m_GroundedMovementSharpness = 15f;
 
         [SerializeField]

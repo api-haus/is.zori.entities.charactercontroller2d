@@ -97,8 +97,9 @@ namespace Zori.Entities.CharacterController2D
                     bool isImpulseOnCharacter = CharacterPropertiesLookup.HasComponent(deferredImpulse.OnEntity);
                     if (isImpulseOnCharacter)
                     {
-                        KinematicCharacterProperties2D hitCharacterProperties =
-                            CharacterPropertiesLookup[deferredImpulse.OnEntity];
+                        KinematicCharacterProperties2D hitCharacterProperties = CharacterPropertiesLookup[
+                            deferredImpulse.OnEntity
+                        ];
                         if (hitCharacterProperties.SimulateDynamicBody)
                         {
                             KinematicCharacterBody2D hitCharacterBody = CharacterBodyLookup[deferredImpulse.OnEntity];
@@ -108,18 +109,21 @@ namespace Zori.Entities.CharacterController2D
                     }
                     else if (
                         lengthsq(deferredImpulse.LinearVelocityChange) > 0f
-                        && CommandBufferLookup.HasBuffer(deferredImpulse.OnEntity))
+                        && CommandBufferLookup.HasBuffer(deferredImpulse.OnEntity)
+                    )
                     {
                         // A regular body has no PhysicsVelocity in the 2D substrate; its velocity is changed by
                         // an Impulse write-in command that PhysicsWorld2DSystem drains before the next step. The
                         // helper appends the raw Δv and Box2D mass-scales it during the step — the substrate's
                         // documented impulse contract (P2D/Runtime/PhysicsBody2DCommands.cs).
-                        DynamicBuffer<PhysicsBody2DCommand> targetCommands =
-                            CommandBufferLookup[deferredImpulse.OnEntity];
+                        DynamicBuffer<PhysicsBody2DCommand> targetCommands = CommandBufferLookup[
+                            deferredImpulse.OnEntity
+                        ];
                         PhysicsBody2DCommands.AddForce(
                             targetCommands,
                             deferredImpulse.LinearVelocityChange,
-                            PhysicsForceMode2D.Impulse);
+                            PhysicsForceMode2D.Impulse
+                        );
                     }
                 }
             }

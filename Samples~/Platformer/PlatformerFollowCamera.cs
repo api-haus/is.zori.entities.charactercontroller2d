@@ -45,7 +45,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             {
                 _characterQuery = _world.EntityManager.CreateEntityQuery(
                     ComponentType.ReadOnly<PlatformerCharacterTag>(),
-                    ComponentType.ReadOnly<LocalToWorld>());
+                    ComponentType.ReadOnly<LocalToWorld>()
+                );
             }
         }
 
@@ -74,7 +75,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             }
 
             float2 characterPos = transforms[0].Value.c3.xy;
-            Vector3 target = new Vector3(characterPos.x + m_Offset.x, characterPos.y + m_Offset.y, transform.position.z);
+            Vector3 target = new Vector3(
+                characterPos.x + m_Offset.x,
+                characterPos.y + m_Offset.y,
+                transform.position.z
+            );
 
             float t = 1f - Mathf.Exp(-m_FollowSharpness * Time.deltaTime);
             transform.position = Vector3.Lerp(transform.position, target, t);
