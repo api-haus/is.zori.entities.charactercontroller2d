@@ -12,7 +12,7 @@ namespace Zori.Entities.CharacterController2D
     public struct DefaultCharacterUpdateContext2D { }
 
     /// <summary>
-    /// The concrete default processor (design D4) — a faithful 2D port of the Standard Characters sample's
+    /// The concrete default processor — a faithful 2D port of the Standard Characters sample's
     /// <c>IKinematicCharacterProcessor</c> implementation (REF/Samples~/…/FirstPersonCharacterProcessor.cs:24),
     /// minus the camera/look concerns that have no 2D meaning. It wires the six callbacks to the
     /// <c>Default_*</c> core behaviours so the package has a runnable out-of-box character.
@@ -151,7 +151,7 @@ namespace Zori.Entities.CharacterController2D
         )
         {
             // No mass override by default (matches the 3D sample's empty OverrideDynamicHitMasses,
-            // REF/Samples~/…:283). The dynamics path that consumes the masses is chunk C4b.
+            // REF/Samples~/…:283). The dynamics path that consumes the masses is the hit-dynamics path.
         }
     }
 }

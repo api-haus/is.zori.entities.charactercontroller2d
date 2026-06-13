@@ -10,7 +10,7 @@ namespace Zori.Entities.CharacterController2D
     /// <c>float2</c>, the 3D <c>BasicHit</c>/<c>KinematicCharacterHit</c>/<c>KinematicVelocityProjectionHit</c>
     /// replaced by their 2D ports, and the 3D <c>PhysicsMass</c> replaced by <see cref="KinematicCharacterMass2D"/>
     /// (scalar inertia). The 3D <c>KinematicCharacterUpdateContext</c> base-context parameter becomes
-    /// <see cref="KinematicCharacterUpdateContext2D"/>, defined by chunk C3 — this interface forward-references it.
+    /// <see cref="KinematicCharacterUpdateContext2D"/>, which this interface forward-references.
     /// </summary>
     /// <typeparam name="C"> The type of the user "context" struct created by the consumer </typeparam>
     public interface IKinematicCharacterProcessor2D<C>
@@ -20,14 +20,14 @@ namespace Zori.Entities.CharacterController2D
         /// Requests that the grounding-up direction be updated.
         /// </summary>
         /// <param name="context"> The user context struct </param>
-        /// <param name="baseContext"> The built-in context struct (C3) </param>
+        /// <param name="baseContext"> The built-in context struct </param>
         void UpdateGroundingUp(ref C context, ref KinematicCharacterUpdateContext2D baseContext);
 
         /// <summary>
         /// Determines whether a hit can be collided with.
         /// </summary>
         /// <param name="context"> The user context struct </param>
-        /// <param name="baseContext"> The built-in context struct (C3) </param>
+        /// <param name="baseContext"> The built-in context struct </param>
         /// <param name="hit"> The evaluated hit </param>
         /// <returns> True if the hit can be collided with </returns>
         bool CanCollideWithHit(ref C context, ref KinematicCharacterUpdateContext2D baseContext, in BasicHit2D hit);
@@ -36,7 +36,7 @@ namespace Zori.Entities.CharacterController2D
         /// Determines whether the character can be grounded on the hit.
         /// </summary>
         /// <param name="context"> The user context struct </param>
-        /// <param name="baseContext"> The built-in context struct (C3) </param>
+        /// <param name="baseContext"> The built-in context struct </param>
         /// <param name="hit"> The evaluated hit </param>
         /// <param name="groundingEvaluationType"> Which solve phase is asking (a <see cref="GroundingEvaluationType2D"/> cast to int) </param>
         /// <returns> True if the character is grounded on the hit </returns>
@@ -51,7 +51,7 @@ namespace Zori.Entities.CharacterController2D
         /// Determines what happens when the character detects a hit during its movement phase.
         /// </summary>
         /// <param name="context"> The user context struct </param>
-        /// <param name="baseContext"> The built-in context struct (C3) </param>
+        /// <param name="baseContext"> The built-in context struct </param>
         /// <param name="hit"> The evaluated hit </param>
         /// <param name="remainingMovementDirection"> The direction of the movement vector that remains to be processed </param>
         /// <param name="remainingMovementLength"> The magnitude of the movement vector that remains to be processed </param>
@@ -71,7 +71,7 @@ namespace Zori.Entities.CharacterController2D
         /// Requests that the character velocity be projected on the hits detected so far in the update.
         /// </summary>
         /// <param name="context"> The user context struct </param>
-        /// <param name="baseContext"> The built-in context struct (C3) </param>
+        /// <param name="baseContext"> The built-in context struct </param>
         /// <param name="velocity"> The character velocity to project </param>
         /// <param name="characterIsGrounded"> Whether the character is grounded </param>
         /// <param name="characterGroundHit"> The character's current effective ground hit </param>
@@ -91,7 +91,7 @@ namespace Zori.Entities.CharacterController2D
         /// Provides an opportunity to modify the masses used to solve impulses between the character and a hit body.
         /// </summary>
         /// <param name="context"> The user context struct </param>
-        /// <param name="baseContext"> The built-in context struct (C3) </param>
+        /// <param name="baseContext"> The built-in context struct </param>
         /// <param name="characterMass"> The mass of the character </param>
         /// <param name="otherMass"> The mass of the other body that was hit </param>
         /// <param name="hit"> The evaluated hit with the dynamic body </param>

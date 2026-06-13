@@ -30,7 +30,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Editor
     ///
     /// <para><b>EditorBuildSettings is NOT touched.</b> Unlike the SideScroller builder — which registered both its
     /// scenes into <c>ProjectSettings/EditorBuildSettings.asset</c> and so polluted the consuming project's build list
-    /// with sample scenes (the P0 commit had to restore that file) — this builder registers NOTHING. In-editor PlayMode
+    /// with sample scenes (a prior commit had to restore that file) — this builder registers NOTHING. In-editor PlayMode
     /// SubScene loading needs no build-settings registration: the parent scene's <see cref="SubScene"/> references the
     /// child by its <c>SceneAsset</c> GUID and Unity loads/bakes it from that reference when the parent scene plays,
     /// regardless of whether either scene is in the build list. A player BUILD that ships this sample would add the

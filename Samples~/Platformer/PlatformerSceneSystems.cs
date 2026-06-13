@@ -20,8 +20,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// substrate's <c>TrackedTransformSystem2D</c> then records the platform's just-stepped pose
     /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>, and the character's solve (also after the step) carries
     /// itself with
-    /// that one-fixed-step platform delta (<c>Update_ParentMovement</c>) — the moving-platform feature the C4b gate
-    /// verified.
+    /// that one-fixed-step platform delta (<c>Update_ParentMovement</c>) — the moving-platform feature the
+    /// advanced-feature gate verified.
     ///
     /// <para>This generalizes the SideScroller's lateral-only mover: the oscillation is a per-axis sine on
     /// <see cref="MovingPlatform2D.TravelHalfExtent"/> around the captured <see cref="MovingPlatform2D.Home"/>, so a
@@ -80,7 +80,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <c>DynamicBuffer&lt;PhysicsBody2DCommand&gt;</c> (so <see cref="MovingPlatformSystem2D"/> can drive it) to any
     /// <see cref="MovingPlatform2D"/> that lacks them. A substrate kinematic body baked from
     /// <c>PhysicsBody2DAuthoring</c> has neither (no baker authors a tracked-transform, and the command buffer is the
-    /// body owner's responsibility) — this is the runtime-add pattern the C4b gate flagged, identical to the
+    /// body owner's responsibility) — this is the runtime-add pattern the advanced-feature gate flagged, identical to the
     /// SideScroller's. Runs in the <see cref="InitializationSystemGroup"/> (a structural change, off the fixed-step hot
     /// path) and uses an <see cref="EntityCommandBuffer"/> so the add happens at a sync point, never mid-query.
     /// </summary>
@@ -133,7 +133,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// dynamic body only <c>if HasBuffer(target)</c> — and a <c>PhysicsBody2DAuthoring</c> crate is baked WITHOUT a
     /// command buffer (only the controller's own baker adds one, to the character). So out of the box the character's
     /// mass-scaled push of a crate is silently dropped; this system closes that gap for the tagged crates. The
-    /// single most important integration fact from the C4b gate, carried forward from the SideScroller.
+    /// single most important integration fact from the advanced-feature gate, carried forward from the SideScroller.
     /// </summary>
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     public partial struct PushableInitSystem2D : ISystem

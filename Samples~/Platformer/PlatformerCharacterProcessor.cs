@@ -6,7 +6,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <summary>
     /// The Platformer sample's user-context (the <c>C</c> in <see cref="IKinematicCharacterProcessor2D{C}"/>). Unlike
     /// the SideScroller's empty <c>SideScrollerCharacterUpdateContext</c>, the Platformer carries a
-    /// <see cref="ComponentLookup{T}"/> over <see cref="FrictionModifier2D"/> — the documented place a richer Phase-B
+    /// <see cref="ComponentLookup{T}"/> over <see cref="FrictionModifier2D"/> — the documented place a richer
     /// platformer adds its own lookups. The GroundMove stance reads the modifier off the character's ground hit entity
     /// through this lookup to scale its move sharpness (the "different physics materials" feature), because the
     /// kinematic controller is material-blind to Box2D friction and computes its own velocity.

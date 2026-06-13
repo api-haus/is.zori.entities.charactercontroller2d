@@ -18,7 +18,7 @@ namespace Zori.Entities.CharacterController2D.Authoring
     /// Those are dropped here: 2D has no per-body custom-tags consumer (the substrate defers it — its bake contract
     /// records <c>CustomPhysicsBodyTags</c> as a deferred, no-consumer component), and render-rate smoothing is the
     /// substrate's own <c>PhysicsBody2DInterpolation</c> on the body, not a per-character interpolation flag
-    /// (design D7 — the substrate's <c>PhysicsBody2DSmoothing</c> replaces the 3D <c>CharacterInterpolation</c>).
+    /// (the substrate's <c>PhysicsBody2DSmoothing</c> replaces the 3D <c>CharacterInterpolation</c>).
     /// The interpolation choice is therefore an authoring field on this component (<see cref="Interpolation"/>),
     /// baked into the body's <c>PhysicsBody2DDefinition.interpolation</c>.
     /// </remarks>

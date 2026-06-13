@@ -214,7 +214,7 @@ namespace Zori.Entities.CharacterController2D
         /// <summary>
         /// Reorients a vector onto the line whose normal is <paramref name="onLineNormal"/>, preserving the
         /// vector's length and choosing the on-line direction the 3D double-cross would. This is the faithful 2D
-        /// reduction of the 3D reorient REF/MathUtilities.cs:171 (design D6):
+        /// reduction of the 3D reorient REF/MathUtilities.cs:171:
         /// <c>normalize(cross(onPlaneNormal, cross(vector, alongDirection))) * length</c>. Reducing both
         /// cross-products for planar (z=0) inputs:
         /// <list type="bullet">

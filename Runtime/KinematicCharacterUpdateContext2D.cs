@@ -67,8 +67,8 @@ namespace Zori.Entities.CharacterController2D
         /// regular (non-character) dynamic body's velocity and mass (written by
         /// <see cref="StoreDynamicBodyDataSystem2D"/>). It is how the Burst character solve reads another body's
         /// motion for the hit-dynamics impulse exchange without touching the managed <c>PhysicsBody</c> handle (the
-        /// D5 resolution — the velocity read is not Burst-callable, so it is snapshotted on the main thread and read
-        /// here as a Burst-safe component).
+        /// velocity read is not Burst-callable, so it is snapshotted on the main thread and read here as a Burst-safe
+        /// component).
         /// </summary>
         [ReadOnly]
         public ComponentLookup<StoredDynamicBodyData2D> DynamicBodyDataLookup;

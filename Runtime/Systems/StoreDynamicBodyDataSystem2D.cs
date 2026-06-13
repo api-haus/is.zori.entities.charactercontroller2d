@@ -8,11 +8,11 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D
 {
     /// <summary>
-    /// The main-thread pre-pass that resolves the D5 substrate gap: it snapshots every regular (non-character)
+    /// The main-thread pre-pass that resolves the substrate's Burst gap: it snapshots every regular (non-character)
     /// dynamic body's velocity and mass into a <see cref="StoredDynamicBodyData2D"/> component, so the Burst
     /// character solve can read another body's motion for the hit-dynamics impulse exchange through a
     /// <see cref="ComponentLookup{T}"/> instead of touching the managed <c>PhysicsBody</c> handle (whose
-    /// <c>linearVelocity</c>/<c>angularVelocity</c> are not Burst-callable — see the C2 deliverable's D5 verdict).
+    /// <c>linearVelocity</c>/<c>angularVelocity</c> are not Burst-callable).
     ///
     /// <para><b>Why a main-thread snapshot and not the live handle in the solve.</b> The velocity read is a managed
     /// property on the raw <c>Unity.U2D.Physics.PhysicsBody</c> handle and CANNOT run inside a <c>[BurstCompile]</c>
@@ -21,8 +21,8 @@ namespace Zori.Entities.CharacterController2D
     /// Unity.U2D.Physics handle, which is not Burst"). Snapshotting it here, on the main thread, before the solve,
     /// lets the solve stay <c>ScheduleParallel</c> and HPC#-clean (the character ↔ character path was already
     /// Burst-clean via <see cref="StoredKinematicCharacterData2D"/>; this extends the same store-then-read pattern
-    /// to regular bodies). This is option (b) of the C2 D5 verdict — snapshot into a lookup-readable component
-    /// rather than serialize the whole hit-dynamics phase onto the main thread.</para>
+    /// to regular bodies). The chosen resolution snapshots into a lookup-readable component rather than serialize
+    /// the whole hit-dynamics phase onto the main thread.</para>
     ///
     /// <para><b>Burst.</b> NO <c>[BurstCompile]</c> on <c>OnUpdate</c>: the body-velocity read is managed, so the
     /// snapshot loop runs as plain main-thread C# (a <c>SystemAPI.Query</c> <c>foreach</c>). The component-add for a
@@ -47,7 +47,7 @@ namespace Zori.Entities.CharacterController2D
 
         public void OnDestroy(ref SystemState state) { }
 
-        // No [BurstCompile]: PhysicsBody.linearVelocity/angularVelocity are managed reads (D5).
+        // No [BurstCompile]: PhysicsBody.linearVelocity/angularVelocity are managed reads.
         public void OnUpdate(ref SystemState state)
         {
             // (1) Add the snapshot component to any dynamic body that has a live handle + a body definition but is

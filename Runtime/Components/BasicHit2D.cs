@@ -44,7 +44,7 @@ namespace Zori.Entities.CharacterController2D
         /// Constructs a basic hit from a substrate query hit. A cast hit (raycast / circle-cast / box-cast)
         /// fills <see cref="PhysicsQueryHit2D.point"/> and <see cref="PhysicsQueryHit2D.normal"/>; an overlap hit
         /// leaves them zero (the substrate documents that overlaps carry no contact geometry), so a caller using
-        /// this constructor for an overlap result must reconstruct the normal separately (design D2).
+        /// this constructor for an overlap result must reconstruct the normal separately.
         /// </summary>
         /// <param name="hit"> A substrate query hit </param>
         public BasicHit2D(PhysicsQueryHit2D hit)
@@ -57,7 +57,7 @@ namespace Zori.Entities.CharacterController2D
 
         /// <summary>
         /// Constructs a basic hit from explicit fields, for callers that reconstruct a hit's geometry (e.g. the
-        /// overlap-depenetration cast-back of design D2, where the normal comes from a separate cast).
+        /// overlap-depenetration cast-back, where the normal comes from a separate cast).
         /// </summary>
         /// <param name="entity"> The hit entity </param>
         /// <param name="position"> The hit point (world space) </param>

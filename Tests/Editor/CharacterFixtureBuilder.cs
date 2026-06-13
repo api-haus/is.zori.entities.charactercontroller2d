@@ -14,7 +14,7 @@ using PhysicsShape2DKind = Zori.Entities.Physics2D.PhysicsShape2DKind;
 namespace Zori.Entities.CharacterController2D.Tests.Editor
 {
     /// <summary>
-    /// Click-free, reproducible authoring of the C4a behavioural-gate PlayMode fixtures — one parent scene per
+    /// Click-free, reproducible authoring of the behavioural-gate PlayMode fixtures — one parent scene per
     /// gate, each carrying a SubScene with a kinematic <see cref="CharacterController2DAuthoring"/> character and
     /// the static world geometry (floor / wall / slope / overlap) the gate exercises. Mirrors the substrate's
     /// fixture builders (<c>FallingBodyFixtureBuilder</c>, <c>ColliderShapeFixtureBuilder</c>): the static world is
@@ -50,7 +50,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string OverlapGroundParent = FixtureRoot + "/CC2D_OverlapGround.unity";
         public const string OverlapGroundChild = FixtureRoot + "/CC2D_OverlapGround_Sub.unity";
 
-        // ---- C4b advanced-feature fixtures -----------------------------------------------------------------
+        // ---- advanced-feature fixtures ---------------------------------------------------------------------
         public const string StepLowParent = FixtureRoot + "/CC2D_StepLow.unity";
         public const string StepLowChild = FixtureRoot + "/CC2D_StepLow_Sub.unity";
         public const string StepHighParent = FixtureRoot + "/CC2D_StepHigh.unity";
@@ -66,7 +66,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string MovingPlatformParent = FixtureRoot + "/CC2D_MovingPlatform.unity";
         public const string MovingPlatformChild = FixtureRoot + "/CC2D_MovingPlatform_Sub.unity";
 
-        // ---- P0 capsule-proxy fixtures (the capsule character mandate) -------------------------------------
+        // ---- capsule-proxy fixtures (the capsule character mandate) ----------------------------------------
         public const string CapsuleStepLowParent = FixtureRoot + "/CC2D_CapsuleStepLow.unity";
         public const string CapsuleStepLowChild = FixtureRoot + "/CC2D_CapsuleStepLow_Sub.unity";
         public const string CapsuleGroundParent = FixtureRoot + "/CC2D_CapsuleGround.unity";
@@ -142,7 +142,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string SensorPassThroughParent = FixtureRoot + "/CC2D_SensorPassThrough.unity";
         public const string SensorPassThroughChild = FixtureRoot + "/CC2D_SensorPassThrough_Sub.unity";
 
-        // ---- gate-4 future-slope / downward-ledge fixtures -------------------------------------------------
+        // ---- future-slope / downward-ledge fixtures -------------------------------------------------------
         public const string DownLedgeParent = FixtureRoot + "/CC2D_DownLedge.unity";
         public const string DownLedgeChild = FixtureRoot + "/CC2D_DownLedge_Sub.unity";
         public const string DownSlopeGentleParent = FixtureRoot + "/CC2D_DownSlopeGentle.unity";
@@ -185,7 +185,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         // Distance from the capsule centre to its bottom-most point (cap radius + cap offset).
         public const float CapsuleBottomReach = CapsuleHeight * 0.5f;
 
-        // gate-4 future-slope / downward-ledge geometry. The downward-ledge platform ends at LedgeEdgeX; the
+        // Future-slope / downward-ledge geometry. The downward-ledge platform ends at LedgeEdgeX; the
         // downslope fixtures put the flat-to-downhill lip at SlopeLipX. The gentle downhill is within the gate's
         // configured max downward slope-change angle, the steep one is over it — see CharacterFixtureBuilder-
         // Constants.MaxDownwardSlopeChangeForGate (the runtime gate sets the same value on the character).
@@ -222,7 +222,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildOverlapDeep();
             BuildOverlapGround();
 
-            // C4b advanced features.
+            // Advanced features.
             BuildStepLow();
             BuildStepHigh();
             BuildJump();
@@ -231,7 +231,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildDynamicPushHeavy();
             BuildMovingPlatform();
 
-            // gate-4 future-slope / downward-ledge.
+            // Future-slope / downward-ledge.
             BuildDownLedge();
             BuildDownSlopeGentle();
             BuildDownSlopeSteep();
@@ -239,7 +239,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             // Sensor / trigger pass-through (the negative-space regression case).
             BuildSensorPassThrough();
 
-            // P0 capsule-proxy character (the capsule mandate).
+            // Capsule-proxy character (the capsule mandate).
             BuildCapsuleGround();
             BuildCapsuleWall();
             BuildCapsuleStepLow();
@@ -476,7 +476,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             );
         }
 
-        // ---- C4b advanced-feature fixtures -----------------------------------------------------------------
+        // ---- advanced-feature fixtures ---------------------------------------------------------------------
 
         // Step within limit: a grounded character walks +X into a low step (top at LowStepTopY = 0.3, below the
         // 0.5 MaxStepHeight). With step handling enabled it must climb onto the step top and stay grounded.
@@ -513,7 +513,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             );
         }
 
-        // ---- P0 capsule-proxy fixtures ---------------------------------------------------------------------
+        // ---- capsule-proxy fixtures ------------------------------------------------------------------------
 
         // Capsule grounding: a CAPSULE character dropped above a flat floor → settles at ~CapsuleBottomReach above
         // the floor top, the capsule analogue of BuildGrounding (which uses a circle).
@@ -546,7 +546,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             );
         }
 
-        // Capsule step-up (the UNVERIFIED case the box-only gate-4 fix left open): a grounded CAPSULE walks +X
+        // Capsule step-up (the UNVERIFIED case the box-only future-slope fix left open): a grounded CAPSULE walks +X
         // into the same low step (top 0.3, below the 0.5 max). A capsule's rounded bottom should mount the step
         // at least as cleanly as a box (no top-left-corner catch). The runtime gate asserts it climbs and holds a
         // stable stand, the capsule analogue of Step_WalkIntoLowStep_StepsUp_HoldsStableStandOnStep.
@@ -582,7 +582,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             AddFloor(root, new Vector2(-7f, FloorTopY - 0.5f), new Vector2(14f, 1f)); // top 0, X[-14,0]
             // StepLow: top LowStepTopY=0.3, X[0,4] (mountable, ≤ 0.5 max).
             AddFloor(root, new Vector2(2f, LowStepTopY - 1f), new Vector2(4f, 2f)); // top 0.3, X[0,4]
-            // StepHigh: top 0.9, X[5,9] (over the 0.5 max — a wall the gate-3 high-step test proves is not climbed).
+            // StepHigh: top 0.9, X[5,9] (over the 0.5 max — a wall the high-step test proves is not climbed).
             AddFloor(root, new Vector2(7f, HighStepTopY - 1.5f), new Vector2(4f, 3f)); // top 0.9, X[5,9]
             // The 30° slope-within-limit, lip at (StepSlopeSlopeLipX, 0) at FLOOR level, len 12, rising right —
             // exactly the Platformer AddRamp (a thin box rotated about the lip). A short floor bridges StepHigh's
@@ -985,7 +985,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             );
         }
 
-        // ---- gate-4 future-slope / downward-ledge fixtures -------------------------------------------------
+        // ---- future-slope / downward-ledge fixtures -------------------------------------------------------
 
         // Downward ledge: a flat platform that ENDS in mid-air. A grounded character running +X off the edge, with
         // PreventGroundingWhenMovingTowardsNoGrounding on (the default), must UNGROUND as it crosses the edge
@@ -1104,7 +1104,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             var auth = go.AddComponent<CharacterController2DAuthoring>();
 
             var props = AuthoringKinematicCharacterProperties2D.GetDefault();
-            // The default mass-interaction with dynamic bodies is irrelevant to the C4a core gates and there are no
+            // The default mass-interaction with dynamic bodies is irrelevant to the core gates and there are no
             // dynamic bodies in these fixtures; leave SimulateDynamicBody default. Use a circle proxy at the shared
             // radius so the grounded settle-height assertion is exact.
             auth.CharacterProperties = props;
@@ -1137,7 +1137,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
 
         // A capsule-proxy character: a vertical capsule (width CapsuleWidth → cap radius 0.5, height CapsuleHeight
         // → caps at ±0.5). The proxy cast is a CapsuleCast, the world body shape a capsule, both derived from the
-        // same authored size — the P0 capsule mandate end-to-end.
+        // same authored size — the capsule mandate end-to-end.
         static CharacterController2DAuthoring AddCapsuleCharacter(GameObject parent, Vector3 position)
         {
             var go = new GameObject("Character");

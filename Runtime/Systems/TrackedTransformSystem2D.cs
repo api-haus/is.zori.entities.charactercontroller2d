@@ -21,7 +21,7 @@ namespace Zori.Entities.CharacterController2D
     /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c> captures the pose after the whole physics group,
     /// including the write-back that lands it in <see cref="LocalToWorld"/>, matching
     /// <see cref="StoreKinematicCharacterBodyPropertiesSystem2D"/>, so the solve reads a current/previous pair from
-    /// the step it queries (design section 5).
+    /// the step it queries.
     /// </remarks>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
     [UpdateAfter(typeof(Physics2DSimulationSystemGroup))]

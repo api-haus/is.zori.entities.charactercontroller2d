@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Zori.Entities.CharacterController2D.Samples.Platformer
 {
     /// <summary>
-    /// A static rope-anchor marker the RopeSwing stance (P4) detects by overlap query. The anchor is a static collider
+    /// A static rope-anchor marker the RopeSwing stance detects by overlap query. The anchor is a static collider
     /// (authored with the substrate's collider authoring) placed on a dedicated rope-anchor collision layer; the
     /// RopeSwing grab logic runs <c>PhysicsQueries2D.OverlapCircle</c> filtered to
     /// <c>PlatformerCharacterTuning2D.RopeAnchorLayerMask</c> and, of the anchors in range, grabs the nearest by centre.
@@ -16,8 +16,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     public sealed class RopeAnchor2DAuthoring : MonoBehaviour { }
 
     /// <summary>
-    /// Tags a static collider as a rope anchor — a candidate pivot the RopeSwing stance's grab query selects. P1's
-    /// <c>PlatformerComponents.cs</c> did not define this marker (it is the one prop tag the rope STANCE owns rather
+    /// Tags a static collider as a rope anchor — a candidate pivot the RopeSwing stance's grab query selects.
+    /// <c>PlatformerComponents.cs</c> does not define this marker (it is the one prop tag the rope STANCE owns rather
     /// than a feature-prop driver), so it is defined here alongside its authoring. It is a plain
     /// <see cref="IComponentData"/> tag, so it may share this file with the one MonoBehaviour above (the one-per-file
     /// rule binds only <c>MonoBehaviour</c> / <c>ScriptableObject</c> types, not ECS structs).

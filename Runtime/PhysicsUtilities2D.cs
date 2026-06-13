@@ -13,7 +13,7 @@ namespace Zori.Entities.CharacterController2D
     /// character mass-from-properties builders, and the read of a regular dynamic body's velocity for impulse
     /// exchange.
     ///
-    /// Two reference methods are intentionally dropped (design file-map): <c>GetHitFaceNormal</c> (it recovered a
+    /// Two reference methods are intentionally dropped: <c>GetHitFaceNormal</c> (it recovered a
     /// triangle face normal from a 3D mesh leaf — the 2D substrate's casts already return the contact normal in
     /// <see cref="PhysicsQueryHit2D.normal"/>) and the mesh-leaf <c>SetCollisionResponse</c> path (a
     /// <c>ChildCollider</c> pointer write that has no 2D analogue). The physics-tag and material helpers are also
@@ -33,7 +33,7 @@ namespace Zori.Entities.CharacterController2D
     /// and are NOT HPC# — exactly as the substrate's own write-back reads them on the main thread
     /// (PhysicsBody2DWriteBackSystem.cs:95-135, "reads the body's managed velocity via the Unity.U2D.Physics
     /// handle, which is not Burst"). That one helper must be called from main-thread code, never from inside a
-    /// Burst entry point. See the C2 deliverable's D5 verdict.</para>
+    /// Burst entry point.</para>
     /// </summary>
     public static class PhysicsUtilities2D
     {
@@ -236,8 +236,8 @@ namespace Zori.Entities.CharacterController2D
         /// <para><b>Not Burst-callable.</b> <see cref="PhysicsBody.linearVelocity"/> returns a
         /// <c>UnityEngine.Vector2</c> and <see cref="PhysicsBody.angularVelocity"/> a managed <c>float</c>
         /// (deg/sec); these are managed property reads, not HPC#. Call this only from main-thread code — the
-        /// caller (C4's hit-dynamics path) must read the other body's velocity on the main thread, mirroring the
-        /// write-back's main-thread <c>CaptureSmoothing</c> pass. See the C2 deliverable's D5 verdict.</para>
+        /// caller (the hit-dynamics path) must read the other body's velocity on the main thread, mirroring the
+        /// write-back's main-thread <c>CaptureSmoothing</c> pass.</para>
         ///
         /// <para>The angular velocity is converted from the engine's deg/sec to rad/sec so it composes with the
         /// rad/sec the impulse solver and <see cref="GetPointVelocity"/> assume (the package's angular-velocity

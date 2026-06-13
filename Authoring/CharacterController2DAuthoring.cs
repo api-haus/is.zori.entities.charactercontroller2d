@@ -7,7 +7,7 @@ namespace Zori.Entities.CharacterController2D.Authoring
     /// Which cast-proxy shape the controller's solve sweeps against the world. A subset of the substrate's
     /// <c>Zori.Entities.Physics2D.PhysicsShape2DKind</c> — Circle, Box, and Capsule have a substrate cast surface
     /// (<c>PhysicsQueries2D.CircleCast</c> / <c>BoxCast</c> / <c>CapsuleCast</c>), so the proxy is one of those
-    /// three (design D1). A local authoring enum (rather than exposing the full substrate enum) so the inspector
+    /// three. A local authoring enum (rather than exposing the full substrate enum) so the inspector
     /// offers only the valid choices and the Authoring assembly stays free of a substrate-runtime reference.
     /// </summary>
     public enum CharacterProxyShape2D : byte
@@ -68,7 +68,7 @@ namespace Zori.Entities.CharacterController2D.Authoring
         [Tooltip(
             "The cast-proxy shape the solve sweeps against the world. Circle (round) or Box (flat sides). "
                 + "The substrate exposes only circle/box casts, so a capsule character is approximated by one of "
-                + "these (design D1)."
+                + "these."
         )]
         CharacterProxyShape2D m_ProxyShape = CharacterProxyShape2D.Circle;
 

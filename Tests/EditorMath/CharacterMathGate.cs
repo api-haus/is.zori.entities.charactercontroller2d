@@ -7,9 +7,9 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D.Tests.EditorMath
 {
     /// <summary>
-    /// The adversarial EditMode gate for the C4a core-solve PURE MATH — the killer cases live in the math, not in
+    /// The adversarial EditMode gate for the core-solve PURE MATH — the killer cases live in the math, not in
     /// the integration. The validating agent (not the implementer) built every case from the solve's own decision
-    /// points, not from inputs the implementer imagined: the D6 velocity-projection corner-kill at its branch
+    /// points, not from inputs the implementer imagined: the velocity-projection corner-kill at its branch
     /// boundaries (single wall slides, two-wall wedge kills, near-parallel walls = the crease-vs-corner boundary,
     /// grounded-slope + wall = the ground-plane constraint), the slope-grounding threshold at exactly /just over /
     /// just under <c>MaxGroundedSlopeAngle</c>, the grounded velocity reorient (parallel-keeps-magnitude /
@@ -106,7 +106,7 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             return velocity;
         }
 
-        // ===================== D6 — velocity projection (the compounding-risk math) =====================
+        // ===================== velocity projection (the compounding-risk math) =====================
 
         [Test]
         public void D6_SingleWall_VelocityEndsParallel_MagnitudeReducedNotReversed()
@@ -456,7 +456,7 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
         [Test]
         public void Math_ReorientOnLine_FlatGroundWalkRight_KeepsRightward_Not_Left()
         {
-            // The exact case the C4a reduction got wrong: a character walking +X on flat ground. The ground line is
+            // The exact case the 2D reduction got wrong: a character walking +X on flat ground. The ground line is
             // horizontal (normal +Y) and alongDirection is grounding-up (+Y, perpendicular to the line). The 3D
             // double-cross keeps the velocity +X; a dot(lineDir, up)-based pick flips it to -X (the dot is zero, so
             // it never flips off the arbitrary perp(up) = -X). This regression pins the +X result.
@@ -496,14 +496,14 @@ namespace Zori.Entities.CharacterController2D.Tests.EditorMath
             Assert.IsTrue(Approx(twice, projected), "ProjectOnPlane is idempotent");
         }
 
-        // ---- Future-slope angle sign (gate 4, symptom 2) ----------------------------------------------------
+        // ---- Future-slope angle sign -----------------------------------------------------------------------
         //
         // CalculateAngleOfHitWithGroundUp signs the slope change so the future-slope feature's downward-ledge test
         // — degrees(angle) < -MaxDownwardSlopeChangeAngle (KinematicCharacterUtilities2D.Update_PreventGrounding-
         // FromFutureSlopeChange, the 2D port of REF :852) — fires only on a DOWNWARD change. A wrong sign would
-        // never unground at a downward ledge (or would unground spuriously on an upward step), and the C4b
-        // deliverable flagged this 2D reduction as its least-certain. These tests are the direct, deterministic
-        // arbiter of the sign that the C4a/C4b gates left unexercised: a downward slope change (relative to the
+        // never unground at a downward ledge (or would unground spuriously on an upward step), and this 2D
+        // reduction is the least-certain part of the future-slope port. These tests are the direct, deterministic
+        // arbiter of the sign that the behavioural gates left unexercised: a downward slope change (relative to the
         // current ground, along the movement direction) must yield a NEGATIVE angle; an upward change a POSITIVE
         // one. The convention matches the 3D: walking +X over flat ground (up = +Y) onto a surface that tilts DOWN
         // ahead (its normal leans forward, +X-ward) is a negative angle; onto a surface that tilts UP ahead (normal

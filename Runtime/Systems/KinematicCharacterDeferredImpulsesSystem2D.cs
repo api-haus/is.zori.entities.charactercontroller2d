@@ -27,10 +27,10 @@ namespace Zori.Entities.CharacterController2D
     /// <see cref="ComponentLookup{T}"/>.
     ///
     /// <para>Ordering: <c>[UpdateInGroup(FixedStepSimulationSystemGroup)]</c> after this system's sibling store
-    /// system; the solve system (<c>KinematicCharacterPhysicsSolveSystem2D</c>, chunk C4) declares
-    /// <c>[UpdateBefore(KinematicCharacterDeferredImpulsesSystem2D)]</c> so the drain runs after the solve. C3
-    /// owns no forward reference to the C4 solve type — the drain-after-solve order is C4's to declare against
-    /// this type.</para>
+    /// system; the solve system (<c>KinematicCharacterPhysicsSolveSystem2D</c>) declares
+    /// <c>[UpdateBefore(KinematicCharacterDeferredImpulsesSystem2D)]</c> so the drain runs after the solve. This
+    /// system owns no forward reference to the solve type — the drain-after-solve order is the solve system's to
+    /// declare against this type.</para>
     ///
     /// <para>The buffer helpers are HPC#-clean buffer appends (no <c>[BurstCompile]</c>, per the entry-point-only
     /// rule), so this <c>[BurstCompile]</c> job calls them and they auto-compile from the Burst context

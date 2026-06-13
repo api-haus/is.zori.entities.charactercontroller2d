@@ -14,9 +14,9 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D.Tests
 {
     /// <summary>
-    /// The C4b behavioural gate: integration tests for the advanced solve features that layer onto the C4a core —
-    /// step handling, jump, character ↔ character hit dynamics, character ↔ regular-dynamic-body push, and
-    /// moving-platform parenting. Built adversarially from the decision points C4b's own deliverable flagged as
+    /// The advanced-feature behavioural gate: integration tests for the advanced solve features that layer onto the
+    /// core — step handling, jump, character ↔ character hit dynamics, character ↔ regular-dynamic-body push, and
+    /// moving-platform parenting. Built adversarially from the decision points the advanced-feature port flagged as
     /// uncertain (the authored-mass approximation for char ↔ dynamic-body, the recorded-not-applied displacement
     /// channel, and the step/slope angle sign), not from the inputs the implementer imagined. No mocks — the real
     /// default solve (<c>KinematicCharacterPhysicsSolveSystem2D</c>), the real
@@ -24,11 +24,11 @@ namespace Zori.Entities.CharacterController2D.Tests
     /// and the real <c>TrackedTransformSystem2D</c> run over a real Box2D world.
     /// </summary>
     /// <remarks>
-    /// Same driving harness as the C4a gate (<c>CharacterSolveGate</c>): the FixedStepSimulationSystemGroup is
+    /// Same driving harness as the core gate (<c>CharacterSolveGate</c>): the FixedStepSimulationSystemGroup is
     /// ticked explicitly with a swapped <c>FixedRateSimpleManager</c> (the substrate's FallingBodyValidation
     /// pattern), the baked characters get the <see cref="DefaultCharacterController2DTag"/> added at runtime (the
-    /// real opt-in API), and the solve's <c>MovePosition</c> applies on the NEXT step (one-step pipeline latency,
-    /// design D3), so each test drives enough steps to settle. Render interpolation is off in every fixture so the
+    /// real opt-in API), and the solve's <c>MovePosition</c> applies on the NEXT step (one-step pipeline latency),
+    /// so each test drives enough steps to settle. Render interpolation is off in every fixture so the
     /// test reads the raw fixed-step pose off <see cref="LocalToWorld"/>. Coroutines yield <c>null</c>, never
     /// <c>WaitForEndOfFrame</c> (does not tick in batchmode).
     /// </remarks>
@@ -225,10 +225,10 @@ namespace Zori.Entities.CharacterController2D.Tests
 
         // Step ≤ MaxStepHeight: the step-up logic must ENGAGE, lift the character onto the step top, AND hold a
         // stable stand there for several fixed steps with no slide-back or reset — including while the box's CENTRE
-        // still overhangs the lower floor (the case the C4b gate-3 originally found regressing). The fix is the
+        // still overhangs the lower floor (the case the step gate originally found regressing). The fix is the
         // localized grounding change (KinematicCharacterUtilities2D.cs): step-up lifts the proxy onto the step top
         // with the same CollisionOffset clearance normal ground-snapping keeps, and a one-frame snap-suppression
-        // bridges the swept-MovePosition delivery latency (design D3), so the next frame's grounding re-grounds on
+        // bridges the swept-MovePosition delivery latency (the one-step pipeline latency), so the next frame's grounding re-grounds on
         // the STEP top instead of yanking the character down to the lower floor it climbed from. The constant Y the
         // character holds is the step top + radius + offset (~0.815 for the 0.3 step, radius 0.5, offset 0.01).
         // The contrast test below proves a too-high step is never climbed at all (the "> max → blocked" branch).
@@ -359,9 +359,9 @@ namespace Zori.Entities.CharacterController2D.Tests
 
         // ---- step + adjacent-slope DIRECTIONAL regression (the lateral-jump fix) ----------------------------
         //
-        // The directional gap gate-4 / P0 left: a character walking a step that sits next to a climbable slope (the
+        // The directional gap prior validation left: a character walking a step that sits next to a climbable slope (the
         // Platformer course Station-2 cluster) is flung laterally + vertically backward when approached from one
-        // direction but not the other. Root cause (trace-diagnosed): the D2 depenetration's ReconstructOverlap
+        // direction but not the other. Root cause (trace-diagnosed): the depenetration's ReconstructOverlap
         // double-counted the proxy bounding radius, inflating a grazing/resting contact at the step+slope corner
         // into a multi-unit "overlap"; the grounded vertical-decollide then reverse-projected that bogus depth into
         // an up-and-back fling. The fix (KinematicCharacterUtilities2D.ReconstructOverlap) removes the double-count.
@@ -590,7 +590,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             // by Box2D's kinematic-sweep contact resolution (mass-independent). Add the buffer at runtime (the real
             // API — EntityManager.AddBuffer, the same opt-in pattern as the default tag) so the controller's
             // mass-scaled impulse actually reaches the box. This is the body-owner's responsibility for any regular
-            // body that should be pushable by a character — a load-bearing integration fact for C6/Phase B.
+            // body that should be pushable by a character — a load-bearing integration fact for the sample wiring.
             {
                 var em = _world.EntityManager;
                 var box = TheDynamicBox();
@@ -636,7 +636,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             );
 
             // The box moved in the push direction (+X), by a plausible amount (not a teleport), and the character
-            // never penetrated it. The DIRECTION is the load-bearing assertion (C4b flagged the magnitude as
+            // never penetrated it. The DIRECTION is the load-bearing assertion (the magnitude is
             // mass-sensitive); the sign of the impulse exchange must push the box AWAY from the character.
             Assert.Greater(
                 boxMovedX,
@@ -648,7 +648,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             Assert.IsFalse(float.IsNaN(charPos.x) || float.IsNaN(charPos.y), "no NaN");
         }
 
-        // Adversarial mass test (C4b's flagged authored-mass approximation): the SAME character push against a
+        // Adversarial mass test (the flagged authored-mass approximation): the SAME character push against a
         // box authored 50x heavier must move the box LESS. If the authored-mass read were wrong (ignored, or
         // inverted), the heavy box would move the same or more — this is the probe built from that decision point.
         [UnityTest]
@@ -740,7 +740,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             );
         }
 
-        // ---- Future-slope / downward-ledge (gate 4, symptom 2 — the angle-sign behavioural arbiter) ---------
+        // ---- Future-slope / downward-ledge (the angle-sign behavioural arbiter) -----------------------------
 
         // Configure the character's step/slope params at runtime (the real API, the same opt-in pattern as the
         // default tag): enable the future-slope feature(s) the test exercises.
@@ -877,7 +877,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             Assert.IsFalse(float.IsNaN(Position().x) || float.IsNaN(Position().y), "no NaN at the steep lip");
         }
 
-        // ---- P0 capsule character (the capsule mandate, end-to-end) ----------------------------------------
+        // ---- capsule character (the capsule mandate, end-to-end) -------------------------------------------
 
         // The capsule's grounded settle: the centre rests CapsuleBottomReach (+ ~Offset) above the surface it
         // stands on (the bottom cap touches the surface). Used by the capsule grounding + step tests.
@@ -973,7 +973,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             );
         }
 
-        // Capsule step-up (the UNVERIFIED case the box-only gate-4 fix left open): a grounded capsule walks +X
+        // Capsule step-up (the UNVERIFIED case the box-only future-slope fix left open): a grounded capsule walks +X
         // into the low step (top 0.3, below the 0.5 max). The capsule must MOUNT it and HOLD a stable stand
         // (grounded, Y at step-top + CapsuleBottomReach) across the step surface — the capsule analogue of the
         // strict box step test (Step_WalkIntoLowStep_StepsUp_HoldsStableStandOnStep). A capsule's rounded bottom

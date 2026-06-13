@@ -104,9 +104,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         /// <summary>The rope's length (units): the radius of the circle the swing constrains the character onto.
         /// This is the pendulum-constraint radius — <see cref="ConstrainToRope2D"/> holds the character on a circle of
         /// this radius around the anchor. It is NOT the grab reach: the distance within which a grab finds an anchor is
-        /// the separate <see cref="RopeAnchorSearchRadius"/>. The two were conflated in P4 (one <c>RopeLength</c> for
-        /// both, matching the 3D reference's single field), but the scene's anchor sits well above the launch-ledge
-        /// jump apex, so a grab reach equal to the rope length never reached it — separating the two lets the grab
+        /// the separate <see cref="RopeAnchorSearchRadius"/>. The 3D reference conflates the two into one
+        /// <c>RopeLength</c> field; they are split here because the scene's anchor sits well above the launch-ledge
+        /// jump apex, so a grab reach equal to the rope length never reaches it — separating the two lets the grab
         /// reach be large while the swing radius stays whatever the level designer wants. The rope is slack — no clamp
         /// — until the character swings out to this full extension.</summary>
         public float RopeLength;

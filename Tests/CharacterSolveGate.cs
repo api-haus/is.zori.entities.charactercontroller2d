@@ -14,11 +14,11 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D.Tests
 {
     /// <summary>
-    /// The C4a behavioural gate: integration tests that author a kinematic character + static world geometry (via
+    /// The core behavioural gate: integration tests that author a kinematic character + static world geometry (via
     /// the editor-side <c>CharacterFixtureBuilder</c>), drive the FixedStepSimulationSystemGroup, and assert
     /// <see cref="LocalToWorld"/> invariants — built adversarially from the solve's own decision points, not from the
-    /// inputs the implementer imagined. The gates exercise the C4a core: grounding, collide-and-slide, slope climb,
-    /// wall-while-grounded slide, and the D2 overlap depenetration at shallow / DEEP / grounded depths (the most
+    /// inputs the implementer imagined. The gates exercise the core: grounding, collide-and-slide, slope climb,
+    /// wall-while-grounded slide, and the overlap depenetration at shallow / DEEP / grounded depths (the most
     /// uncertain port). No mocks — the real default solve system (<c>KinematicCharacterPhysicsSolveSystem2D</c>) runs
     /// over a real Box2D world.
     /// </summary>
@@ -26,7 +26,7 @@ namespace Zori.Entities.CharacterController2D.Tests
     /// The fixed-step group is driven explicitly with a swapped <c>FixedRateSimpleManager</c> (the substrate's
     /// FallingBodyValidation pattern), because the default catch-up manager gates each step on wall-clock time, which
     /// barely advances per <c>yield null</c> in batchmode. The controller solve runs <c>[UpdateAfter(PhysicsWorld2DSystem)]</c>
-    /// and the resulting <c>MovePosition</c> applies on the NEXT step (one-step pipeline latency, design D3), so the
+    /// and the resulting <c>MovePosition</c> applies on the NEXT step (one-step pipeline latency), so the
     /// tests drive enough steps for the pipeline to settle. The baker does not author the
     /// <see cref="DefaultCharacterController2DTag"/> (the tag is the opt-in to the default solve), so each test adds
     /// it to the baked character at runtime — the real API, no mock.
@@ -291,7 +291,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             Assert.IsFalse(float.IsNaN(pos.x) || float.IsNaN(pos.y), "no NaN");
         }
 
-        // ---- Depenetration (D2 — probed hard) --------------------------------------------------------------
+        // ---- Depenetration (probed hard) -------------------------------------------------------------------
 
         [UnityTest]
         public IEnumerator Depenetration_ShallowOverlapWithWall_PushedOut_NoResidualOverlap()
@@ -302,7 +302,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             Assert.IsTrue(PenetratesWorld(startPos), "sanity: character starts penetrating the wall");
 
             // Grounding is off in this fixture (pure horizontal-overlap probe). Drive zero velocity each step so the
-            // default solve's airborne gravity does not accumulate into a free-fall confound — only the D2 cast-back
+            // default solve's airborne gravity does not accumulate into a free-fall confound — only the cast-back
             // depenetration moves the character. It must push out (to the LEFT, away from the wall to its right)
             // within a bounded number of fixed steps.
             Step(80, new float2(0f, 0f));
@@ -393,7 +393,7 @@ namespace Zori.Entities.CharacterController2D.Tests
         public const float SensorBoxHalfHeight = 1f;
         public const float SensorSolidFloorTopY = -4f;
 
-        // C4b moving-platform: the lateral speed (m/s) the runtime gate drives the kinematic platform at. The
+        // Moving-platform: the lateral speed (m/s) the runtime gate drives the kinematic platform at. The
         // gate asserts the ridden character's X travel tracks the platform's; the editor builder references this
         // so the platform geometry and the drive speed share one home.
         public const float PlatformSpeedX = 2f;
@@ -420,7 +420,7 @@ namespace Zori.Entities.CharacterController2D.Tests
         public const float MaxDownwardSlopeChangeForGate = 35f;
         public const float LedgeEdgeX = 3f;
 
-        // P0 capsule character: a vertical capsule of full extents (CapsuleWidth, CapsuleHeight) → cap radius
+        // Capsule character: a vertical capsule of full extents (CapsuleWidth, CapsuleHeight) → cap radius
         // CapsuleWidth/2 and bottom-most point CapsuleHeight/2 below the centre. The capsule gate asserts the
         // grounded settle (centre at surface + CapsuleBottomReach + offset) against these; the editor builder
         // authors the same dims (kept in lockstep by convention, like LowStepTopY above).

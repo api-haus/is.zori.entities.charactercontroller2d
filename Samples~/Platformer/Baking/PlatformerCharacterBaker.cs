@@ -16,8 +16,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
     /// <remarks>
     /// Editor-only assembly (<c>includePlatforms: ["Editor"]</c>, like every baking assembly in the family), so the
     /// <c>UnityEngine.*</c> authoring reference never reaches a player build. This file is character-only on purpose:
-    /// P5's feature-prop bakers (platform, pushable, wind zone, friction, teleporter, rope anchor) live in their own
-    /// baker file(s), so naming this <c>PlatformerCharacterBaker.cs</c> avoids a collision with that work.
+    /// the feature-prop bakers (platform, pushable, wind zone, friction, teleporter, rope anchor) live in their own
+    /// baker file(s), so naming this <c>PlatformerCharacterBaker.cs</c> keeps the two apart.
     /// </remarks>
     public sealed class PlatformerCharacterBaker : Baker<PlatformerCharacterAuthoring>
     {

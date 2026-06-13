@@ -27,7 +27,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
     /// anchor, and the character pose. The exact tick + surface where the rope trajectory dies is therefore observable.
     ///
     /// <para>It is BOTH the e2e gate the user wants (grab → swing → land over real input) AND the instrument that
-    /// decomposes the two upstream suspects Phase 0 left un-adjudicated: "never reached AirMove+grab in range"
+    /// decomposes the two upstream suspects an earlier diagnostic pass left un-adjudicated: "never reached AirMove+grab in range"
     /// (trigger/input/stance) vs "reached it but detection returned nothing" (scene bake) vs "detected but never
     /// swung/landed" (swing path). The substrate masked closest-point primitive itself is already proven sound by
     /// <c>RopeAnchorMaskedClosestPointGate</c> (physics2d) and <c>RopeGrabQueryDiagnosisGate</c> (this assembly) — this

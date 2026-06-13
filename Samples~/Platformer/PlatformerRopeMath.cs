@@ -8,7 +8,7 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D.Samples.Platformer
 {
     /// <summary>
-    /// The rope-swing math the RopeSwing stance runs each fixed step (P4). Two static helpers, both HPC#-clean and
+    /// The rope-swing math the RopeSwing stance runs each fixed step. Two static helpers, both HPC#-clean and
     /// reached from the Bursted solve job's <c>Execute</c> (no <c>[BurstCompile]</c> — the entry-point-only rule,
     /// docs/unity/burst/compilation-context.md:31): the pendulum constraint <see cref="ConstrainToRope2D"/> and the
     /// grab-time anchor query <see cref="TryDetectRopeAnchor"/>.

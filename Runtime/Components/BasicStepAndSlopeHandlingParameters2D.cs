@@ -9,7 +9,7 @@ namespace Zori.Entities.CharacterController2D
     /// (REF/BasicStepAndSlopeHandlingParameters.cs:9): every field is scalar or bool, so the port is verbatim
     /// with no dimensional reduction. The 3D reference embeds this as a plain serializable struct inside the
     /// sample's component; the 2D port makes it an <see cref="IComponentData"/> so the baker can add it directly
-    /// to the character entity (design section 7). The <c>[Header]</c>/<c>[Tooltip]</c> attributes are kept for
+    /// to the character entity. The <c>[Header]</c>/<c>[Tooltip]</c> attributes are kept for
     /// the inspector when an authoring component exposes the struct.
     /// </summary>
     [Serializable]

@@ -8,13 +8,14 @@ namespace Zori.Entities.CharacterController2D
     /// A pre-solve snapshot of a regular (non-character) dynamic body's velocity and mass, so the Burst character
     /// solve can read another body's motion for the hit-dynamics impulse exchange WITHOUT touching the managed
     /// <c>Unity.U2D.Physics.PhysicsBody</c> handle (whose <c>linearVelocity</c>/<c>angularVelocity</c> are managed
-    /// property reads — not HPC#, not Burst-callable; see the C2 deliverable's D5 verdict). The 2D substrate
+    /// property reads — not HPC#, not Burst-callable). The 2D substrate
     /// surfaces no Burst-safe body-velocity read and no body-mass read at all, so the read is performed once per
     /// step on the MAIN THREAD by <see cref="StoreDynamicBodyDataSystem2D"/> and deposited here, where the Burst
-    /// solve reads it through a <see cref="ComponentLookup{T}"/> — the same store-then-read pattern C3 already uses
-    /// for character ↔ character exchange (<see cref="StoredKinematicCharacterData2D"/>), extended to regular bodies.
+    /// solve reads it through a <see cref="ComponentLookup{T}"/> — the same store-then-read pattern
+    /// <see cref="StoreKinematicCharacterBodyPropertiesSystem2D"/> already uses for character ↔ character exchange
+    /// (<see cref="StoredKinematicCharacterData2D"/>), extended to regular bodies.
     ///
-    /// <para>This is the resolution of the D5 substrate gap: rather than run the hit-dynamics phase on the main
+    /// <para>This is the resolution of the substrate gap: rather than run the hit-dynamics phase on the main
     /// thread (which would serialize the whole parallel solve), a small main-thread pre-pass snapshots only the
     /// dynamic-body data the Burst solve reads, leaving the solve <c>ScheduleParallel</c> and HPC#-clean.</para>
     ///

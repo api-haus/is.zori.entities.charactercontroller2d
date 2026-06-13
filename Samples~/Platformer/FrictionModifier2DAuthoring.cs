@@ -5,7 +5,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <summary>
     /// Authors a <see cref="FrictionModifier2D"/> on a surface entity (a floor segment authored with the substrate's
     /// collider authoring). The baker (<c>PlatformerPropBakers</c>) emits a <see cref="FrictionModifier2D"/> carrying
-    /// <see cref="Friction"/>. The GroundMove stance (P2) reads it off the character's ground hit
+    /// <see cref="Friction"/>. The GroundMove stance reads it off the character's ground hit
     /// (<c>BasicHit2D.Entity</c>) via a <c>ComponentLookup&lt;FrictionModifier2D&gt;</c> and scales the ground-move
     /// acceleration sharpness — low <see cref="Friction"/> is slippery ice, high is sticky.
     ///

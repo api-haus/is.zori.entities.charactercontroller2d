@@ -15,13 +15,13 @@ namespace Zori.Entities.CharacterController2D
     /// </summary>
     /// <remarks>
     /// In 2D there is no <c>AfterPhysicsSystemGroup</c>; the substrate's pipeline runs in
-    /// <see cref="Physics2DSimulationSystemGroup"/>, against which the controller orders explicitly
-    /// (design section 5). This system runs <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>
+    /// <see cref="Physics2DSimulationSystemGroup"/>, against which the controller orders explicitly.
+    /// This system runs <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>
     /// — it reads the just-stepped poses and writes the snapshot the solve consumes — and the solve system
-    /// (<c>KinematicCharacterPhysicsSolveSystem2D</c>, chunk C4) declares
-    /// <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c> to run after it. C3 owns no forward
-    /// reference to the C4 solve type; C4 references this type, so the snapshot-before-solve order is C4's to
-    /// declare.
+    /// (<c>KinematicCharacterPhysicsSolveSystem2D</c>) declares
+    /// <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c> to run after it. This store system owns
+    /// no forward reference to the solve type; the solve system references this type, so the snapshot-before-solve
+    /// order is the solve system's to declare.
     /// </remarks>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
     [UpdateAfter(typeof(Physics2DSimulationSystemGroup))]

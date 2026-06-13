@@ -14,7 +14,7 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
 {
     /// <summary>
-    /// The P7 behavioural smoke gate for the Platformer sample course: it loads the authored course scene
+    /// The behavioural smoke gate for the Platformer sample course: it loads the authored course scene
     /// (<c>PlatformerSample.unity</c> + its baked SubScene), drives the <c>FixedStepSimulationSystemGroup</c> while
     /// feeding the capsule character <see cref="PlatformerCharacterControl2D"/> intent, and asserts that each named
     /// feature actually works — move/jump, the moving platforms, the wind zone, the rope swing, the friction
@@ -350,7 +350,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // so the test reads where it actually is rather than assuming home). Then drop the character onto it from
             // straight above (clear air → no wall to wedge on). The platform's TrackedTransform2D + command buffer were
             // added by PlatformInitSystem2D at load; MovingPlatformSystem2D drives it each fixed step. With NO player
-            // input, the C4b-verified auto-parent carry (Update_ParentMovement) should sweep the rider in X.
+            // input, the verified auto-parent carry (Update_ParentMovement) should sweep the rider in X.
             var platformX = FindPlatformX();
             PlaceCharacterViaSky(new float2(platformX, LateralPlatformHome.y + 1.0f), PlatformerStance2D.AirMove);
             // Let the character settle onto the platform and ground.
@@ -403,7 +403,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // trigger Begin and adds the zone's force to the character's RelativeVelocity while inside. Now that the
             // controller's grounding / collide-and-slide casts EXCLUDE sensor (isTrigger) shapes (the sensor fix), the
             // character passes INTO the sensor as a visitor instead of grounding on it: the trigger Begin fires, the
-            // InWindZone2D Stay tag lands, and the updraft applies. This test was the P7 known-limitation case; it now
+            // InWindZone2D Stay tag lands, and the updraft applies. This test was a known-limitation case; it now
             // asserts the working behaviour — the sensor fix flipped it from RED to a real feature gate.
             //
             // Place the character ABOVE the wind sensor (sensor at (73,11)) and let it FALL through under gravity. A
@@ -460,7 +460,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             }
 
             UnityEngine.Debug.Log(
-                $"[P7-WIND] everInZone={everInZone} groundedOnSensor={groundedOnSensor} "
+                $"[WIND] everInZone={everInZone} groundedOnSensor={groundedOnSensor} "
                     + $"bestVyWithWind={bestVyWithWind:F3} bestVyNoWind={bestVyNoWind:F3}. The controller now excludes "
                     + "the isTrigger sensor from its casts, so the character enters the trigger interior — the wind "
                     + "Begin fires, InWindZone2D is set, and the updraft arrests the fall relative to free-fall."
@@ -694,7 +694,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             );
         }
 
-        // ---- jump-buffer window (Task 1) -------------------------------------------------------------------------
+        // ---- jump-buffer window -----------------------------------------------------------------------------------
         //
         // The jump buffer is a TIME WINDOW (PlatformerCharacterTuning2D.JumpBufferTime, default 0.15s of fixed-step
         // time), not the old unbounded latch. A press is buffered when fresh; on a grounded step the buffered jump
@@ -864,7 +864,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             );
         }
 
-        // ---- moving platform is NOT a safe respawn point (Task 2) ------------------------------------------------
+        // ---- moving platform is NOT a safe respawn point ---------------------------------------------------------
         //
         // PlatformerRespawnSystem records the last safe (grounded, stable) position, but a MOVING PLATFORM is not a
         // stable anchor — its pose travels. This gate stands the character on the lateral moving platform, confirms no
@@ -959,7 +959,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         // 0.9 X[29,33], the slope-within-limit lip (34,0) rising right at 30° — is exactly the user-reported spot
         // where the capsule was "teleported" laterally instead of traversing it. The bug was directional (one
         // approach direction wedged the capsule at the step/slope corner with a body→character axis badly skewed
-        // from the contact normal, so the D2 depenetration's cast-back over-reported a grazing contact as a multi-
+        // from the contact normal, so the depenetration's cast-back over-reported a grazing contact as a multi-
         // unit overlap and the grounded vertical-decollide flung the character up-and-back). Root cause + fix:
         // KinematicCharacterUtilities2D.ReconstructOverlap (project the recovered depth onto the true normal).
         //

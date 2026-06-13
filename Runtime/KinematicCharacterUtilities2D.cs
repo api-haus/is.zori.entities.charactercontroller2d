@@ -18,23 +18,23 @@ namespace Zori.Entities.CharacterController2D
     /// <c>IJobEntity</c>) supplies those from the entity's own data plus the per-system
     /// <see cref="KinematicCharacterUpdateContext2D"/>.
     ///
-    /// <para><b>Scope (chunk C4a — the core).</b> This file implements the critical path:
+    /// <para><b>Scope — the core.</b> This file implements the critical path:
     /// <see cref="Update_Initialize{T,C}"/>, <see cref="Update_Grounding{T,C}"/> + <see cref="GroundDetection{T,C}"/>,
     /// <see cref="Update_MovementAndDecollisions{T,C}"/> = collide-and-slide
-    /// (<see cref="MoveWithCollisions{T,C}"/>) + depenetration (<see cref="SolveOverlaps{T,C}"/> via the D2
+    /// (<see cref="MoveWithCollisions{T,C}"/>) + depenetration (<see cref="SolveOverlaps{T,C}"/> via the
     /// overlap-cast-back) + <see cref="DecollideFromHit{T,C}"/>, the query-mapping filter loops, the velocity
-    /// projection collapsed to corner-only (D6, <see cref="Default_ProjectVelocityOnHits"/>), and the
+    /// projection collapsed to corner-only (<see cref="Default_ProjectVelocityOnHits"/>), and the
     /// <c>Default_*</c> processor callbacks. The features that LAYER on this core — step handling, the
     /// prevent-grounding-from-future-slope-change pass, character ↔ character + dynamic-body hit dynamics
     /// (<c>ProcessCharacterHitDynamics</c>), ground pushing, parent / moving-platform movement, and the stateful-hit
-    /// Enter/Stay/Exit diff — are chunk C4b; every place one plugs in is marked with a <c>// C4b:</c> seam comment so
-    /// C4b integrates without rewriting this code.</para>
+    /// Enter/Stay/Exit diff — are the advanced layer; every place one plugs into the core is marked with a <c>// advanced-feature seam:</c> comment so
+    /// the advanced layer integrates without rewriting this code.</para>
     ///
     /// <para><b>Burst.</b> Plain <c>static</c> helpers, NO <c>[BurstCompile]</c> (entry-point-only rule,
     /// docs/unity/burst/compilation-context.md:31-56): the solve <c>IJobEntity</c> is the Burst entry point and
     /// every method here auto-compiles from it. Every method is HPC#-clean: the substrate queries it calls
     /// (<see cref="PhysicsQueries2D"/>) are HPC#, and the core path never reads a regular dynamic body's managed
-    /// velocity (that read, <see cref="PhysicsUtilities2D.TryGetDynamicBodyMotion"/>, lives only on the C4b
+    /// velocity (that read, <see cref="PhysicsUtilities2D.TryGetDynamicBodyMotion"/>, lives only on the
     /// hit-dynamics path, which runs main-thread).</para>
     /// </summary>
     public static class KinematicCharacterUtilities2D
@@ -83,16 +83,16 @@ namespace Zori.Entities.CharacterController2D
             public const float MinVelocityDotRatioWithGroundingUpForSteppingUpHits = -0.85f;
 
             /// <summary>
-            /// The layer mask the controller's casts/overlaps use. C4a hits every layer (the
-            /// <see cref="PhysicsQueries2D"/> "0 means all" convention); a later chunk may surface a per-character
-            /// collision filter. The <see cref="IKinematicCharacterProcessor2D{C}.CanCollideWithHit"/> callback is
+            /// The layer mask the controller's casts/overlaps use. Zero hits every layer (the
+            /// <see cref="PhysicsQueries2D"/> "0 means all" convention); a per-character collision filter may be
+            /// surfaced later. The <see cref="IKinematicCharacterProcessor2D{C}.CanCollideWithHit"/> callback is
             /// the per-hit accept/reject gate in the meantime.
             /// </summary>
             public const ulong CharacterHitLayerMask = 0ul;
         }
 
         // =====================================================================================================
-        // Cast-proxy query wrappers — the single place the circle/box/capsule proxy (design D1) chooses CircleCast
+        // Cast-proxy query wrappers — the single place the circle/box/capsule proxy chooses CircleCast
         // vs BoxCast vs CapsuleCast / OverlapCircle vs OverlapBox vs OverlapCapsule. The reference cast the
         // character's actual collider; the substrate offers circle/box/capsule casts (PhysicsQueries2D.cs), so the
         // proxy decides the shape. A capsule's two local end-cap centers are translated by the character centre
@@ -182,7 +182,7 @@ namespace Zori.Entities.CharacterController2D
         /// Overlap-tests the character's cast proxy at <paramref name="center"/>, writing the overlapping shapes
         /// (no contact geometry — substrate overlaps carry zero point/normal/fraction) into the context scratch
         /// list. Dispatches by proxy kind. Used by <see cref="SolveOverlaps{T,C}"/> to find penetrating bodies
-        /// before the D2 cast-back recovers each one's normal+depth.
+        /// before the cast-back recovers each one's normal+depth.
         /// </summary>
         static int OverlapProxy(
             ref KinematicCharacterUpdateContext2D baseContext,
@@ -226,7 +226,7 @@ namespace Zori.Entities.CharacterController2D
 
         /// <summary>
         /// The proxy's bounding radius — half the box diagonal for a box, half the capsule's tip-to-tip span (the
-        /// segment half-length plus the cap radius) for a capsule, the radius for a circle. The D2 cast-back
+        /// segment half-length plus the cap radius) for a capsule, the radius for a circle. The cast-back
         /// starts from a point this far outside the overlapping shape and casts back toward the character,
         /// guaranteeing the cast begins clear of the overlap so it can register a clean contact normal.
         /// </summary>
@@ -248,7 +248,7 @@ namespace Zori.Entities.CharacterController2D
 
         /// <summary>
         /// Whether a hit body is a regular dynamic body, read from the main-thread <see cref="StoredDynamicBodyData2D"/>
-        /// snapshot on the base context (the D5 resolution — Burst-safe component read, never the live handle). A
+        /// snapshot on the base context (a Burst-safe component read, never the live handle). A
         /// character body or a static body returns false (a character carries no dynamic snapshot; a static body's
         /// snapshot, if any, has <c>IsDynamic == false</c>).
         /// </summary>
@@ -351,8 +351,8 @@ namespace Zori.Entities.CharacterController2D
             processor.UpdateGroundingUp(ref context, ref baseContext);
         }
 
-        // Update_ParentMovement (the C4b parent-movement feature) chains between Initialize and Grounding — its call
-        // site is in KinematicCharacterPhysicsUpdate2D.PhysicsUpdate2D; the method itself is in the C4b block below.
+        // Update_ParentMovement (the advanced parent-movement feature) chains between Initialize and Grounding — its call
+        // site is in KinematicCharacterPhysicsUpdate2D.PhysicsUpdate2D; the method itself is in the advanced-feature block below.
 
         // =====================================================================================================
         // Step 3 — Grounding (REF/KinematicCharacterUtilities.cs:642) + GroundDetection (:2449)
@@ -642,7 +642,7 @@ namespace Zori.Entities.CharacterController2D
 
                 // Dynamic-body skip: a non-SimulateDynamicBody character does not probe-ground on a dynamic body
                 // (it would let the character stand on a body rolling at it). The dynamic flag is sourced from the
-                // main-thread StoredDynamicBodyData2D snapshot (D5) — Burst-safe.
+                // main-thread StoredDynamicBodyData2D snapshot — Burst-safe.
                 if (ignoreDynamicBodies && IsHitDynamic(ref baseContext, hit.entity))
                     continue;
 
@@ -661,9 +661,9 @@ namespace Zori.Entities.CharacterController2D
             return found;
         }
 
-        // Update_PreventGroundingFromFutureSlopeChange (the C4b future-slope feature) chains between Grounding and
+        // Update_PreventGroundingFromFutureSlopeChange (the advanced future-slope feature) chains between Grounding and
         // MovementAndDecollisions — its call site is in KinematicCharacterPhysicsUpdate2D.PhysicsUpdate2D; the method
-        // itself is in the C4b block below.
+        // itself is in the advanced-feature block below.
 
         // =====================================================================================================
         // Step 5 — Movement and decollisions (REF/KinematicCharacterUtilities.cs:734)
@@ -673,7 +673,7 @@ namespace Zori.Entities.CharacterController2D
         /// The movement-and-decollision step: collide-and-slide (<see cref="MoveWithCollisions{T,C}"/>) then
         /// depenetration (<see cref="SolveOverlaps{T,C}"/>). 2D port of <c>Update_MovementAndDecollisions</c>
         /// (REF/KinematicCharacterUtilities.cs:734). The third 3D sub-phase, hit dynamics
-        /// (<c>ProcessCharacterHitDynamics</c>, REF :3166), is chunk C4b — its call site is the marked seam at the
+        /// (<c>ProcessCharacterHitDynamics</c>, REF :3166), is an advanced feature — its call site is the marked seam at the
         /// end of this method.
         /// </summary>
         public static void Update_MovementAndDecollisions<T, C>(
@@ -740,7 +740,7 @@ namespace Zori.Entities.CharacterController2D
             // character hit on a body ≠ parent it solves a collision impulse, applies the self-impulse to
             // RelativeVelocity, and emits a deferred impulse on the other body. The other body's velocity/mass come
             // from StoredKinematicCharacterData2D for a character (Burst-clean) or the main-thread
-            // StoredDynamicBodyData2D snapshot for a regular dynamic body (the D5 read resolution — no live-handle
+            // StoredDynamicBodyData2D snapshot for a regular dynamic body (no live-handle
             // touch in the Burst job).
             if (characterHitsBuffer.Length > 0)
             {
@@ -771,7 +771,7 @@ namespace Zori.Entities.CharacterController2D
         /// 3D.</para>
         ///
         /// <para>The 3D <c>ProjectVelocityOnInitialOverlaps</c> pre-pass (REF :2192) used
-        /// <c>CalculateDistance</c>, which the substrate lacks; for the core it is omitted (a C4b refinement —
+        /// <c>CalculateDistance</c>, which the substrate lacks; for the core it is omitted (an advanced refinement,
         /// marked below). It only mitigates tunneling when a rotation changes the detected collisions, which a
         /// mostly-upright 2D platformer character does not do.</para>
         /// </summary>
@@ -812,7 +812,7 @@ namespace Zori.Entities.CharacterController2D
             float2 remainingMovementDirection = normalizesafe(characterBody.RelativeVelocity);
 
             // Initial-overlap velocity pre-pass — ProjectVelocityOnInitialOverlaps (REF/KinematicCharacterUtilities.cs:2192). The 3D
-            // version used CalculateDistance (no substrate 1:1); this reuses OverlapProxy + the D2 cast-back to seed
+            // version used CalculateDistance (no substrate 1:1); this reuses OverlapProxy + the cast-back to seed
             // projection hits from the character's initial overlaps before the move iterations, mitigating tunneling
             // when a rotation changes the detected collisions.
             if (characterProperties.ProjectVelocityOnInitialOverlaps)
@@ -1003,7 +1003,7 @@ namespace Zori.Entities.CharacterController2D
 
                 // Dynamic-body skip: a non-SimulateDynamicBody character does not treat a dynamic body as a movement
                 // obstruction (it pushes through and the dynamics path handles the push). The dynamic flag comes from
-                // the main-thread StoredDynamicBodyData2D snapshot (D5).
+                // the main-thread StoredDynamicBodyData2D snapshot.
                 if (ignoreDynamicBodies && IsHitDynamic(ref baseContext, hit.entity))
                     continue;
 
@@ -1032,7 +1032,7 @@ namespace Zori.Entities.CharacterController2D
         /// The "OnMovementHit" core behaviour: advances the character to the hit, records the velocity-projection
         /// hit, projects velocity, and rescales the remaining movement by the projected/original velocity-length
         /// ratio. 2D port of <c>Default_OnMovementHit</c> (REF/KinematicCharacterUtilities.cs:1388) with the
-        /// step-up branch lifted out as the marked C4b seam.
+        /// step-up branch lifted out as the marked advanced-feature seam.
         ///
         /// <para>It is an internal static (not the processor callback) so the core solve calls it directly; the
         /// processor interface still exposes <see cref="IKinematicCharacterProcessor2D{C}.OnMovementHit"/> for a
@@ -1159,15 +1159,15 @@ namespace Zori.Entities.CharacterController2D
         }
 
         // =====================================================================================================
-        // Step 5b — Depenetration (REF/KinematicCharacterUtilities.cs:2666) via the D2 overlap-cast-back
+        // Step 5b — Depenetration (REF/KinematicCharacterUtilities.cs:2666) via the overlap-cast-back
         // =====================================================================================================
 
         /// <summary>
         /// Detects penetrating overlaps and decollides the character out of them. 2D port of <c>SolveOverlaps</c>
         /// (REF/KinematicCharacterUtilities.cs:2666), KINEMATIC mode only (the dynamic-mode push-back of overlapping
-        /// dynamic bodies is chunk C4b — see the seam below).
+        /// dynamic bodies is an advanced feature — see the seam below).
         ///
-        /// <para><b>The D2 reconstruction (the highest-uncertainty port).</b> The reference's
+        /// <para><b>The overlap reconstruction (the highest-uncertainty port).</b> The reference's
         /// <c>CalculateDistance</c> returns each overlap's penetration depth + surface normal directly; the
         /// substrate has NO closest-point/distance query — its overlaps report only WHICH shapes overlap, with zero
         /// point/normal/fraction (PhysicsQueries2D.cs:98-108). So each iteration:
@@ -1183,7 +1183,7 @@ namespace Zori.Entities.CharacterController2D
         /// <item>The most-penetrating non-dynamic overlap is decollided via <see cref="DecollideFromHit{T,C}"/>;
         /// the loop repeats up to <see cref="KinematicCharacterProperties2D.MaxOverlapDecollisionIterations"/>.</item>
         /// </list>
-        /// This is the behavioural gate after C4a — the cast-back is approximate (it recovers the normal at the
+        /// This is the behavioural gate over the core — the cast-back is approximate (it recovers the normal at the
         /// closest surface point along the body→character axis, not the exact MTV), but for a circle/box proxy
         /// against convex world shapes the body→character axis IS the separating axis, so the recovered normal
         /// matches the MTV direction.</para>
@@ -1229,7 +1229,7 @@ namespace Zori.Entities.CharacterController2D
 
                 // (2) Reconstruct each overlap, classify dynamic vs non-dynamic, and track the most-penetrating
                 // overall / dynamic / non-dynamic — the 2D analogue of FilterDistanceHitsForSolveOverlaps (REF :3038),
-                // sourcing the dynamic flag from the main-thread StoredDynamicBodyData2D snapshot (D5).
+                // sourcing the dynamic flag from the main-thread StoredDynamicBodyData2D snapshot.
                 BasicHit2D mostPenetratingHit = default;
                 float mostPenetratingDepth = 0f;
                 bool mostPenetratingIsDynamic = false;
@@ -1356,7 +1356,7 @@ namespace Zori.Entities.CharacterController2D
                 {
                     // Kinematic mode: decollide only from the closest non-dynamic hit; on the last iteration, record
                     // every dynamic overlap as a character hit (so ProcessCharacterHitDynamics solves the velocity
-                    // push) and emit its displacement impulse (recorded by the deferred system — C3 note).
+                    // push) and emit its displacement impulse (recorded by the deferred system).
                     bool isLastIteration =
                         !foundNonDynamicHit
                         || decollisionIterationsMade >= characterProperties.MaxOverlapDecollisionIterations;
@@ -1435,7 +1435,7 @@ namespace Zori.Entities.CharacterController2D
         }
 
         /// <summary>
-        /// Recovers an overlapping body's contact normal and penetration depth via the D2 cast-back. The character
+        /// Recovers an overlapping body's contact normal and penetration depth via the cast-back. The character
         /// proxy is conceptually pushed out to a point guaranteed clear of the overlap (along the
         /// body→character direction, by the proxy's bounding radius plus a margin), then the proxy is swept back
         /// toward the character; the first hit ON THAT BODY gives the surface normal, and the un-travelled distance
@@ -1564,12 +1564,12 @@ namespace Zori.Entities.CharacterController2D
         /// the hit is non-grounded), records the projection hit, projects velocity, and records a character hit. 2D
         /// port of <c>DecollideFromHit</c> (REF/KinematicCharacterUtilities.cs:2907).
         ///
-        /// <para><b>The dynamic-body branch (C4b).</b> When the character simulates as a dynamic body AND the hit
+        /// <para><b>The dynamic-body branch (advanced feature).</b> When the character simulates as a dynamic body AND the hit
         /// body is dynamic, the decollision is cast along the decollision direction first: if a THIRD body obstructs
         /// the path, the character moves only as far as the obstruction and a displacement impulse pushes the
         /// dynamic body the rest of the way (REF :2952-2984). Otherwise it fully decollides. (The 2D substrate's
         /// deferred-impulse system records but does not apply a regular body's displacement — no relative-move
-        /// command exists, C3 note — so the displacement field is recorded for forward-compat while the dynamic
+        /// command exists — so the displacement field is recorded for forward-compat while the dynamic
         /// body's velocity push rides the impulse exchange in <see cref="ProcessCharacterHitDynamics{T,C}"/> via the
         /// recorded character hit.)</para>
         /// </summary>
@@ -1630,7 +1630,7 @@ namespace Zori.Entities.CharacterController2D
                 );
             }
 
-            // Dynamic-body decollision (C4b): before decolliding from a dynamic body, check whether the path is
+            // Dynamic-body decollision (advanced feature): before decolliding from a dynamic body, check whether the path is
             // obstructed by a THIRD (non-dynamic) body. If so, move only as far as the obstruction and push the
             // dynamic body the rest of the way with a displacement impulse.
             bool decollidedAgainstObstruction = false;
@@ -1757,11 +1757,11 @@ namespace Zori.Entities.CharacterController2D
         /// snap to a wall it is launching off). 2D port of <c>ShouldPreventGroundingBasedOnVelocity</c>
         /// (REF/KinematicCharacterUtilities.cs:3618).
         ///
-        /// <para><b>Dynamic-ground-velocity comparison (C4b).</b> For a DYNAMIC ground body, grounding is prevented
+        /// <para><b>Dynamic-ground-velocity comparison (advanced feature).</b> For a DYNAMIC ground body, grounding is prevented
         /// only when the character's velocity along the hit normal exceeds the ground's velocity along the same
         /// normal (the character is escaping the ground's own motion) — exactly the 3D guard (REF :3630-3648). The
-        /// ground's velocity comes from the main-thread <see cref="StoredDynamicBodyData2D"/> snapshot (the D5 read
-        /// resolution — never the live handle in a Burst job). A static / un-snapshotted ground is treated as
+        /// ground's velocity comes from the main-thread <see cref="StoredDynamicBodyData2D"/> snapshot (never the
+        /// live handle in a Burst job). A static / un-snapshotted ground is treated as
         /// stationary, so the airborne-moving-away case always prevents grounding for static geometry.</para>
         /// </summary>
         public static bool ShouldPreventGroundingBasedOnVelocity(
@@ -1806,10 +1806,10 @@ namespace Zori.Entities.CharacterController2D
         }
 
         /// <summary>
-        /// The 2D velocity projection — the algorithm's hardest math, collapsed to corner-only (design D6). 2D port
+        /// The 2D velocity projection — the algorithm's hardest math, collapsed to corner-only. 2D port
         /// of <c>Default_ProjectVelocityOnHits</c> (REF/KinematicCharacterUtilities.cs:1202).
         ///
-        /// <para><b>The D6 collapse.</b> In 3D a surface is a plane and the projection walks pairs of planes to find
+        /// <para><b>The corner-only collapse.</b> In 3D a surface is a plane and the projection walks pairs of planes to find
         /// CREASES (the 1-D line <c>cross(planeA, planeB)</c> where two planes meet) and CORNERS (a third plane the
         /// crease-projected velocity would re-enter → kill velocity). In 2D every surface is a LINE and every normal
         /// is a <c>float2</c>; two non-parallel lines always meet at a POINT, so there is no crease — only the
@@ -1913,7 +1913,7 @@ namespace Zori.Entities.CharacterController2D
         /// Projects velocity on a single hit line, branching on the grounded × hit-grounded cases exactly as the 3D
         /// <c>ProjectVelocityOnSingleHit</c> local function (REF/KinematicCharacterUtilities.cs:1216), and replaces
         /// the character's effective ground when the hit grounds it. The 3D crease branch (project on
-        /// <c>cross(groundNormal, hitNormal)</c>) becomes the regular line projection in 2D — see the D6 note on
+        /// <c>cross(groundNormal, hitNormal)</c>) becomes the regular line projection in 2D — see the corner-only note on
         /// <see cref="Default_ProjectVelocityOnHits"/>.
         /// </summary>
         static void ProjectVelocityOnSingleHit(
@@ -1978,7 +1978,7 @@ namespace Zori.Entities.CharacterController2D
         }
 
         // =====================================================================================================
-        // C4b — advanced solve features layered on the C4a core
+        // Advanced solve features layered on the core
         // =====================================================================================================
 
         /// <summary>
@@ -2994,7 +2994,7 @@ namespace Zori.Entities.CharacterController2D
                 characterBody.GroundHit = stepHit;
 
                 // Suppress next frame's downward ground-snap until the centre clears the step edge. The swept
-                // MovePosition delivers this lifted pose next frame (D3 latency); a box proxy resting with its edge
+                // MovePosition delivers this lifted pose next frame; a box proxy resting with its edge
                 // flush against the step's vertical face makes the step a zero-fraction overlap in the down-probe (no
                 // opposing top normal), so the grounding step would otherwise snap the character down onto the lower
                 // floor it just climbed from. The flag holds the snap until the step top is cleanly grounded
@@ -3030,7 +3030,7 @@ namespace Zori.Entities.CharacterController2D
         /// Seeds velocity-projection hits from the character's initial overlaps, before the move iterations, so a
         /// character starting the step inside a body projects its velocity off that body's surface first. 2D port of
         /// <c>ProjectVelocityOnInitialOverlaps</c> (REF/KinematicCharacterUtilities.cs:2192): the 3D
-        /// <c>CalculateDistance</c> has no substrate analogue, so the overlap normals are recovered via the same D2
+        /// <c>CalculateDistance</c> has no substrate analogue, so the overlap normals are recovered via the same
         /// cast-back <see cref="SolveOverlaps{T,C}"/> uses.
         /// </summary>
         public static void ProjectVelocityOnInitialOverlaps<T, C>(
@@ -3134,17 +3134,17 @@ namespace Zori.Entities.CharacterController2D
         /// applying the self-impulse to the character's own velocity and emitting a deferred impulse on the other
         /// body. 2D port of <c>ProcessCharacterHitDynamics</c> (REF/KinematicCharacterUtilities.cs:3166).
         ///
-        /// <para><b>The D5 read resolution.</b> The other body's velocity/mass come from: a
+        /// <para><b>The body-velocity read resolution.</b> The other body's velocity/mass come from: a
         /// <see cref="StoredKinematicCharacterData2D"/> if the hit is another CHARACTER (Burst-clean — a
         /// <see cref="ComponentLookup{T}"/> read), or a <see cref="StoredDynamicBodyData2D"/> snapshot if the hit is
         /// a regular DYNAMIC body. That snapshot is written once per step on the main thread by
         /// <see cref="StoreDynamicBodyDataSystem2D"/> (the body-velocity read is a managed
-        /// <c>Unity.U2D.Physics.PhysicsBody</c> property, not Burst-callable — C2 D5), so this method — and the whole
+        /// <c>Unity.U2D.Physics.PhysicsBody</c> property, not Burst-callable), so this method — and the whole
         /// solve job — reads only Burst-safe component lookups and never touches the live handle, keeping the solve
         /// <c>ScheduleParallel</c>.</para>
         ///
         /// <para>The deferred impulse OUT carries the raw impulse the solver produced (the substrate's
-        /// <c>AddForce(Impulse)</c> mass-scales it during the step — C2 coupling note), and is skipped for a
+        /// <c>AddForce(Impulse)</c> mass-scales it during the step), and is skipped for a
         /// character that is itself moving toward us (it will solve the pair in its own update).</para>
         /// </summary>
         public static void ProcessCharacterHitDynamics<T, C>(
@@ -3327,7 +3327,7 @@ namespace Zori.Entities.CharacterController2D
                         {
                             OnEntity = hitBodyEntity,
                             // The deferred system applies this to a regular body as AddForce(Impulse), which Box2D
-                            // mass-scales — so the OUT value is the raw impulse, not a pre-divided Δv (C2 coupling note).
+                            // mass-scales — so the OUT value is the raw impulse, not a pre-divided Δv.
                             // For a character target the deferred system adds it as a RelativeVelocity Δv, so a
                             // character's deferred impulse must be a velocity change; the solver's impulseOnOther is a
                             // raw impulse, divided by the other character's mass here. otherIsCharacterMovingTowardsUs
@@ -3351,7 +3351,7 @@ namespace Zori.Entities.CharacterController2D
         /// Pushes the ground body down with the character's weight (gravity·mass) as a deferred impulse, when the
         /// character is grounded on a regular dynamic body and itself simulates as a dynamic body. 2D port of
         /// <c>Update_GroundPushing</c> (REF/KinematicCharacterUtilities.cs:873). The ground's velocity/mass come
-        /// from the main-thread <see cref="StoredDynamicBodyData2D"/> snapshot (D5 — never the live handle in a
+        /// from the main-thread <see cref="StoredDynamicBodyData2D"/> snapshot (never the live handle in a
         /// Burst job). The deferred OUT carries the raw impulse the solver produces.
         /// </summary>
         public static void Update_GroundPushing<T, C>(
@@ -3585,7 +3585,7 @@ namespace Zori.Entities.CharacterController2D
         // -----------------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The step-aware grounding test: the C4a slope-only <see cref="Default_IsGroundedOnHit"/> ORed with the
+        /// The step-aware grounding test: the slope-only <see cref="Default_IsGroundedOnHit"/> ORed with the
         /// step-grounding result (<see cref="IsGroundedOnSteps"/>) when step handling is on and the slope check
         /// failed. 2D port of the full <c>Default_IsGroundedOnHit</c> (REF/KinematicCharacterUtilities.cs:1131)
         /// step branch (REF :1151). A processor with step handling enabled calls THIS overload; the slope-only

@@ -14,7 +14,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
     /// (kinematic platform body, sensor shape, dynamic crate body, static surface collider) is emitted by the substrate
     /// bakers from the <c>PhysicsBody2DAuthoring</c> / <c>PhysicsShape2DAuthoring</c> on the SAME GameObject — each
     /// authoring component bakes independently onto one entity, so the entity converges on the union archetype. The
-    /// CHARACTER baker is a separate file (<c>PlatformerCharacterBaker.cs</c>, P3); these prop bakers live here to
+    /// CHARACTER baker is a separate file (<c>PlatformerCharacterBaker.cs</c>); these prop bakers live here to
     /// avoid a file collision.</para>
     /// </summary>
     public sealed class MovingPlatform2DBaker : Baker<MovingPlatform2DAuthoring>

@@ -10,7 +10,7 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D.Samples.Platformer
 {
     /// <summary>
-    /// The physics half of the design §8 control→physics split: the fixed-step solve that turns each Platformer
+    /// The physics half of the control→physics split: the fixed-step solve that turns each Platformer
     /// character's <see cref="PlatformerCharacterControl2D"/> intent into motion. It extends the SideScroller's verified
     /// solve with the three-stance machine and the per-character tuning / friction read. Per fixed step, for every
     /// <see cref="PlatformerCharacterTag"/> character it:
@@ -37,14 +37,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <item><see cref="PlatformerStance2D.AirMove"/> — gravity always, plus a touch of air control on the horizontal
     /// plane; if a step lands the character grounded, the same block accelerates it on the ground line and consumes a
     /// jump, mirroring the SideScroller's grounded/airborne split inside one stance.</item>
-    /// <item><see cref="PlatformerStance2D.RopeSwing"/> — <b>P4 stub.</b> The pendulum swing (position-clamp-to-rope +
-    /// inward-velocity-projection against the stored <see cref="RopeSwingState2D"/>) is filled by chunk P4; for now this
-    /// case falls through to the AirMove block so a rope-stanced character still moves (gravity + air control) rather
-    /// than freezing. The transition logic that ENTERS/EXITS RopeSwing is also P4.</item>
+    /// <item><see cref="PlatformerStance2D.RopeSwing"/> — runs the pendulum swing (position-clamp-to-rope +
+    /// inward-velocity-projection against the stored <see cref="RopeSwingState2D"/>) with grounding suppressed. The
+    /// stance is entered on a grab edge near an anchor (AirMove → RopeSwing) and left on a jump or release edge,
+    /// carrying the swing velocity back into AirMove.</item>
     /// </list>
     /// </para>
     ///
-    /// <para><b>Ordering (design D3 + the C3 contract).</b> <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>
+    /// <para><b>Ordering.</b> <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>
     /// (implied by the Store edge below — Store runs after the physics group) — the substrate's queries are valid only
     /// against the just-stepped world, so the solve reads frame N's world and enqueues the move the substrate drains
     /// on frame N+1. <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c> (read the pre-solve char↔char
@@ -73,10 +73,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         public void OnCreate(ref SystemState state)
         {
             // The query MUST list every component AND buffer the job's Execute accesses, plus Simulate (the job is
-            // [WithAll(typeof(Simulate))]) — the C4a gate's load-bearing lesson: an IJobEntity with a custom query
+            // [WithAll(typeof(Simulate))]): an IJobEntity with a custom query
             // validates the query against Execute at SCHEDULE time, so an omitted buffer throws there, not at compile.
             // The Platformer adds PlatformerCharacterTuning2D (per-character tuning) + PlatformerCharacterState2D
-            // (the stance) + RopeSwingState2D (the active rope params, read by the RopeSwing block / P4) to the
+            // (the stance) + RopeSwingState2D (the active rope params, read by the RopeSwing block) to the
             // SideScroller's set.
             _characterQuery = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<PlatformerCharacterTag>()
@@ -205,7 +205,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
                 bool jumpBuffered = HasBufferedJump(in control, in tuning, ElapsedTime);
 
-                // --- Stance transitions (P4): GroundMove ↔ AirMove ↔ RopeSwing, consumed BEFORE the velocity block ---
+                // --- Stance transitions: GroundMove ↔ AirMove ↔ RopeSwing, consumed BEFORE the velocity block ------
                 //
                 // The 3D reference flips state inside each state's DetectTransitions (RopeSwingState.cs:91-103,
                 // AirMoveState.cs grab edge); in 2D the {GroundMove, AirMove, RopeSwing} enum makes it a small block
@@ -532,7 +532,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             /// <para>The position clamp lands on <see cref="KinematicCharacterContext2D.CurrentPosition"/> — the
             /// pre-solve tracked position the package's <c>PhysicsUpdate2D</c> reads as the starting
             /// <c>characterPosition</c> and delivers via the single per-step <c>MovePosition</c>. So the rope clamp is a
-            /// pre-adjustment of that one verified motion-drive (design D3/D6), NOT a new pose-delivery path: the normal
+            /// pre-adjustment of that one verified motion-drive, NOT a new pose-delivery path: the normal
             /// collide-and-slide then runs from the clamped start and resolves any world collision along the swing arc.
             /// Grounding is already suppressed by the caller (EvaluateGrounding = false on the context), the 2D analogue
             /// of the 3D OnStateEnter (RopeSwingState.cs:18).</para>

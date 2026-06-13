@@ -10,32 +10,32 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D
 {
     /// <summary>
-    /// The package's built-in solve system (design D4): runs the C4a core solve chain
+    /// The package's built-in solve system: runs the core solve chain
     /// (<see cref="KinematicCharacterPhysicsUpdate2D.PhysicsUpdate2D{T,C}"/>) once per fixed step for every
     /// character tagged <see cref="DefaultCharacterController2DTag"/>, using the
     /// <see cref="DefaultKinematicCharacterProcessor2D"/>. A character WITHOUT the tag is never touched here, so a
-    /// consumer driving a custom processor from their own system is not double-stepped (the safe D4 resolution — a
-    /// concrete tag-gated default, not a generic auto-running system).
+    /// consumer driving a custom processor from their own system is not double-stepped — a concrete tag-gated
+    /// default, not a generic auto-running system.
     ///
-    /// <para><b>Ordering (design D3 + C3 contract).</b> The controller systems run
+    /// <para><b>Ordering.</b> The controller systems run
     /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c> — the substrate's queries are valid only against the
     /// just-stepped world, so the solve reads the world stepped on frame N, computes the target pose, and enqueues the
     /// <see cref="PhysicsBody2DCommands.MovePosition"/> that <c>PhysicsWorld2DSystem</c> drains and applies on frame
     /// N+1 (a one-step pipeline latency, the natural fit for the substrate's command-drain-before-step cycle). The
-    /// two C3-contract edges, declared verbatim: <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c>
+    /// two ordering edges, declared verbatim: <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c>
     /// (read the pre-solve snapshot) and <c>[UpdateBefore(KinematicCharacterDeferredImpulsesSystem2D)]</c> (the
     /// drain runs after the solve records impulses). Resolved order:
     /// <c>Physics2DSimulationSystemGroup → Store… → SolveSystem → DeferredImpulses…</c>.</para>
     ///
-    /// <para><b>Default gravity.</b> The 3D sample carries gravity on the character's own component; C1's
+    /// <para><b>Default gravity.</b> The 3D sample carries gravity on the character's own component;
     /// <see cref="KinematicCharacterProperties2D"/> has no gravity field, so the default path applies a fixed
-    /// <see cref="DefaultGravity"/> to <see cref="KinematicCharacterBody2D.RelativeVelocity"/> while airborne so a
+    /// <see cref="DefaultGravityMagnitude"/> to <see cref="KinematicCharacterBody2D.RelativeVelocity"/> while airborne so a
     /// default character falls and lands. A richer consumer drives velocity from its own control component and
     /// processor instead of the default tag.</para>
     ///
     /// <para><b>Burst.</b> <c>[BurstCompile]</c> on the <c>ISystem</c> entry points and the nested
     /// <see cref="KinematicCharacterPhysicsSolveJob"/> only (entry-point rule). The whole core solve is HPC#-clean:
-    /// it never reads a regular dynamic body's managed velocity (that read is the C4b hit-dynamics path, which would
+    /// it never reads a regular dynamic body's managed velocity (that read is the hit-dynamics path, which would
     /// run main-thread), so this job Bursts and parallelizes.</para>
     /// </summary>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
@@ -99,7 +99,7 @@ namespace Zori.Entities.CharacterController2D
             };
 
             // ScheduleParallel: each character solves independently (the store system already snapshotted the
-            // pre-solve state for deterministic char↔char exchange, which the C4a core does not yet use). The D2
+            // pre-solve state for deterministic char↔char exchange, which the core solve does not yet use). The
             // cast-back reads LocalToWorld through a [ReadOnly] lookup, so no write aliasing with the iterated
             // LocalToWorld (also read-only here).
             state.Dependency = job.ScheduleParallel(_characterQuery, state.Dependency);
@@ -177,8 +177,8 @@ namespace Zori.Entities.CharacterController2D
                 // pre-solve relative velocity, properties, constrain flag), taken AFTER grounding-up / was-grounded
                 // / gravity are set, exactly as the 3D callbacks read CharacterBody.ValueRO at the ground-probe
                 // phase. The snapshot's RelativeVelocity is the pre-movement velocity — correct for the dominant
-                // grounding-probe check; the movement-loop airborne-escape guard reads it slightly stale, a minor
-                // refinement noted in the deliverable's side notes.
+                // grounding-probe check; the movement-loop airborne-escape guard reads it slightly stale, a known
+                // minor refinement.
                 var processor = new DefaultKinematicCharacterProcessor2D
                 {
                     CharacterBodySnapshot = characterBody,
