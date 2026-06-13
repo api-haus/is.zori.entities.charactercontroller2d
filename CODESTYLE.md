@@ -29,3 +29,13 @@ Calibration: internal uniformity and subtractive discipline — no comment delet
 
 ## Forbidden in new/edited code
 Blanket `catch (Exception)`; null checks construction order rules out; tautological `<summary>`s; redundant `else` after `return`; idiom inconsistency with the host file; boilerplate enumeration of what a computation expresses.
+
+## Port fidelity (binding — read before refactoring the Runtime)
+
+The Runtime is a method-for-method 2D port of Unity's `com.unity.charactercontroller` (originally "Rival" by Philippe St-Amand, now an official Unity DOTS package). Each long solve method — `SolveOverlaps`, `MoveWithCollisions`, `CheckForSteppingUpHit`, `ProcessCharacterHitDynamics`, `GroundDetection`, and the rest — mirrors one upstream method by name and shape. A maintainer verifies this port by diffing each method against its upstream counterpart, so the method boundaries and the inline `// … (REF/<file>:<line>)` provenance citations ARE the verification surface, not noise. A refactor that decomposes a port-faithful method, or deletes the REF citations as "cleanup", breaks upstream-diffability and is regression, not improvement. The longest-methods list and the high comment density are port-fidelity features the generic smell catalogue misreads.
+
+### Resolving the REF citations
+
+Every `REF/<file>:<line>` citation resolves against the upstream `com.unity.charactercontroller` source — the upstream is not vendored in this repo, so the `REF/` paths are external by design. The upstream package version the line numbers pin against is not recorded in this repo; resolving a citation against a specific upstream revision requires fetching that package and accounting for line drift between revisions.
+
+The bare `c719d90` commit SHA in `Runtime/KinematicCharacterUtilities2D.cs` (the `ReconstructOverlap` depth-projection comment) is an upstream commit, not a commit in this repo's history — it is unreachable here and names a fix in the upstream lineage, the same external-only reachability as the `REF/` paths.
