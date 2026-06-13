@@ -137,7 +137,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
         public const string SteepRampNoStepParent = FixtureRoot + "/CC2D_SteepRampNoStep.unity";
         public const string SteepRampNoStepChild = FixtureRoot + "/CC2D_SteepRampNoStep_Sub.unity";
 
-        // ---- sensor / trigger pass-through fixture (the negative-space case: a kinematic character must NOT
+        // ---- sensor / trigger pass-through fixture (a kinematic character must NOT
         // ground on a sensor; it passes through and the trigger Begin fires) -------------------------------
         public const string SensorPassThroughParent = FixtureRoot + "/CC2D_SensorPassThrough.unity";
         public const string SensorPassThroughChild = FixtureRoot + "/CC2D_SensorPassThrough_Sub.unity";
@@ -236,7 +236,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             BuildDownSlopeGentle();
             BuildDownSlopeSteep();
 
-            // Sensor / trigger pass-through (the negative-space regression case).
+            // Sensor / trigger pass-through.
             BuildSensorPassThrough();
 
             // Capsule-proxy character (the capsule mandate).
@@ -1056,7 +1056,7 @@ namespace Zori.Entities.CharacterController2D.Tests.Editor
             AddCharacter(root, new Vector3(SlopeLipX - 2f, CharacterRadius + 0.05f, 0f));
         }
 
-        // Sensor pass-through (the negative-space regression case): a character dropped from above a SENSOR box
+        // Sensor pass-through: a character dropped from above a SENSOR box
         // that straddles its fall path, with a SOLID floor far below. A kinematic character must treat the sensor
         // as NON-SOLID — pass THROUGH it (firing a trigger Begin as it enters) and land on the solid floor below —
         // not ground on the sensor as if it were floor. The runtime gate asserts (a) the character never grounds on

@@ -1067,7 +1067,7 @@ namespace Zori.Entities.CharacterController2D.Tests
         // This gate drives the LITERAL cluster geometry (CC2D_ClusterL2R / R2L, verbatim Platformer spacing incl.
         // the open-floor gaps the synthetic StepSlope fixtures closed) with the Platformer sample's own GroundMove /
         // AirMove dynamics — NOT a forced constant velocity, which masks the carried-velocity / corner-overlap
-        // interaction the bug needs. It is built from the solve's decision points (negative-space point 6):
+        // interaction the bug needs. It is built from the solve's decision points:
         //
         //   1. PER-STEP HORIZONTAL DELTA is bounded. A correct step-up advances at most forwardStepHitDistance per
         //      step (a fraction of one fixed-step move); the cap clamps every X delta to a small multiple of the

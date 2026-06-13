@@ -415,7 +415,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             // The decisive, force-driven observable is the updraft ARRESTING the fall (not an absolute upward
             // velocity — during a brief fast pass-through gravity, −20·dt/step, can outweigh the +14·dt/step
             // updraft in absolute terms). We measure it as a controlled A/B over the same fall window, varying ONLY
-            // the wind (negative-space measurement rule): the character falls through the sensor WITH the wind zone
+            // the wind: the character falls through the sensor WITH the wind zone
             // applied, then the wind zone's force is zeroed and the SAME fall is repeated; the with-wind descent must
             // be measurably slower (a less-negative vertical velocity) than the no-wind free-fall.
             var startWindFall = new float2(WindZoneCenter.x, WindZoneCenter.y + 6f);
@@ -1091,7 +1091,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         // tick), the actual landed pose, and the gap between the target and the landed pose (the swept-move clamp —
         // MovePosition is SetTransformTarget, a velocity-based collision-aware kinematic move, NOT a teleport).
         //
-        // The decision points (negative-space point 6 — built from the solve's observable behaviour, not imagined
+        // The decision points (built from the solve's observable behaviour, not imagined
         // inputs): the capsule must ADVANCE through the StepLow lip (monotonic forward X progress past the step
         // face) and SETTLE on the step top, with no snap-back to the climb-start X and no backward overshoot.
 

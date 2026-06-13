@@ -14,8 +14,8 @@ using PhysicsShape2D = Zori.Entities.Physics2D.PhysicsShape2D;
 namespace Zori.Entities.CharacterController2D.Tests
 {
     /// <summary>
-    /// The sensor (trigger) pass-through regression gate: the negative-space case the core and advanced-feature solve
-    /// fixtures never covered. A kinematic character controller must treat a SENSOR (<c>isTrigger</c>) shape as NON-SOLID to its
+    /// The sensor (trigger) pass-through regression gate: a kinematic character controller must treat a SENSOR
+    /// (<c>isTrigger</c>) shape as NON-SOLID to its
     /// collision/grounding sweeps — the character passes THROUGH a sensor volume (a zone, a teleporter pad) as a
     /// visitor rather than grounding on it as if it were floor — WHILE the separate trigger-EVENT channel still
     /// reports the character entering the sensor. The Platformer smoke gate surfaced the bug: a character dropped

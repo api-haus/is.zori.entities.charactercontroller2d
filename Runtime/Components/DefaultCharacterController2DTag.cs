@@ -11,7 +11,7 @@ namespace Zori.Entities.CharacterController2D
     ///
     /// <para>NEW component (no 3D origin): the 3D package ships no default solve system at all — the Standard
     /// Characters sample owns the solve loop. The 2D package ships a working default, and a concrete tag is the
-    /// negative-space guard that keeps that default from silently running on a custom-driven character. Add it via
+    /// guard that keeps that default from silently running on a custom-driven character. Add it via
     /// the authoring component (a "use default controller" toggle) when a consumer wants the out-of-box behaviour.</para>
     /// </summary>
     public struct DefaultCharacterController2DTag : IComponentData { }
