@@ -62,8 +62,7 @@ namespace Zori.Entities.CharacterController2D
             // The query MUST contain every component the solve job's Execute accesses, or scheduling an IJobEntity
             // with a custom query throws "the query must (at the very minimum) contain all the components required
             // for …Execute()". That includes the five DynamicBuffers the Execute takes and the Simulate tag the job
-            // is [WithAll(typeof(Simulate))]-gated on — both omitted from the original query, so the default solve
-            // never ran against a tagged character.
+            // is [WithAll(typeof(Simulate))]-gated on.
             _characterQuery = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<DefaultCharacterController2DTag>()
                 .WithAll<KinematicCharacterProperties2D, KinematicCharacterColliderProxy2D>()
