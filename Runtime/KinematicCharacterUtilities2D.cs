@@ -466,7 +466,11 @@ namespace Zori.Entities.CharacterController2D
             // Clear the stepped-up snap suppression if grounding did not run (EvaluateGrounding off), if snapping is
             // off (the suppression only guards the snap), or if the character is no longer grounded (it left the step
             // — e.g. jumped or walked off) so a stale flag never lingers into an unrelated future step-up.
-            if (!characterProperties.EvaluateGrounding || !characterProperties.SnapToGround || !newIsGrounded)
+            if (
+                !characterProperties.EvaluateGrounding //
+                || !characterProperties.SnapToGround //
+                || !newIsGrounded //
+            )
             {
                 characterBody.SuppressGroundSnappingUntilSteppedClear = false;
             }
@@ -2625,7 +2629,10 @@ namespace Zori.Entities.CharacterController2D
                 }
             }
 
-            if (!isGroundedOnBackStep && extraStepChecksDistance > Constants.StepGroundingDetectionHorizontalOffset)
+            if (
+                !isGroundedOnBackStep //
+                && extraStepChecksDistance > Constants.StepGroundingDetectionHorizontalOffset //
+            )
             {
                 if (
                     RaycastClosestNonCharacter(
@@ -2791,7 +2798,12 @@ namespace Zori.Entities.CharacterController2D
         {
             hasSteppedUp = false;
 
-            if (!characterProperties.EvaluateGrounding || !stepHandling || hit.IsGroundedOnHit || maxStepHeight <= 0f)
+            if (
+                !characterProperties.EvaluateGrounding //
+                || !stepHandling //
+                || hit.IsGroundedOnHit //
+                || maxStepHeight <= 0f //
+            )
             {
                 return;
             }
