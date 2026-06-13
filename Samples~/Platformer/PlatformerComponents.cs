@@ -219,7 +219,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// Marks a kinematic body the Platformer drives as a moving platform. Generalizes the SideScroller's
     /// lateral-only <c>SideScrollerMovingPlatform</c> to support both lateral and vertical travel. A platform-init
     /// system adds the <c>TrackedTransform2D</c> + the <c>DynamicBuffer&lt;PhysicsBody2DCommand&gt;</c> at runtime (no
-    /// baker authors them), and a mover system drives it <c>[UpdateBefore(PhysicsWorld2DSystem)]</c> via
+    /// baker authors them), and a mover system drives it <c>[UpdateBefore(Physics2DSimulationSystemGroup)]</c> via
     /// <c>PhysicsBody2DCommands.MovePosition</c> so the platform steps THIS frame and the rider is carried.
     /// </summary>
     public struct MovingPlatform2D : IComponentData
@@ -253,7 +253,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <summary>
     /// Marks a trigger-sensor body as a force / wind zone. A wind-zone system reading the substrate's
     /// <c>DynamicBuffer&lt;PhysicsTriggerEvent2D&gt;</c> (Begin/End, Stay derived from the interval), running
-    /// <c>[UpdateAfter(PhysicsWorld2DSystem)]</c>, adds <see cref="Force"/> to the kinematic character's
+    /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>, adds <see cref="Force"/> to the kinematic character's
     /// <see cref="KinematicCharacterBody2D.RelativeVelocity"/> while it is inside the zone. Zones that affect the
     /// kinematic character mutate <c>RelativeVelocity</c> from a trigger-event-read system, NOT via substrate effectors
     /// (effectors apply solver forces to dynamic bodies only — the kinematic character is invisible to them).

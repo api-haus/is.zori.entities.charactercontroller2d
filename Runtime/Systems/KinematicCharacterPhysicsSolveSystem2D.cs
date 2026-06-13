@@ -18,14 +18,14 @@ namespace Zori.Entities.CharacterController2D
     /// concrete tag-gated default, not a generic auto-running system).
     ///
     /// <para><b>Ordering (design D3 + C3 contract).</b> The controller systems run
-    /// <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> — the substrate's queries are valid only against the just-stepped
-    /// world, so the solve reads the world stepped on frame N, computes the target pose, and enqueues the
+    /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c> — the substrate's queries are valid only against the
+    /// just-stepped world, so the solve reads the world stepped on frame N, computes the target pose, and enqueues the
     /// <see cref="PhysicsBody2DCommands.MovePosition"/> that <c>PhysicsWorld2DSystem</c> drains and applies on frame
     /// N+1 (a one-step pipeline latency, the natural fit for the substrate's command-drain-before-step cycle). The
     /// two C3-contract edges, declared verbatim: <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c>
     /// (read the pre-solve snapshot) and <c>[UpdateBefore(KinematicCharacterDeferredImpulsesSystem2D)]</c> (the
     /// drain runs after the solve records impulses). Resolved order:
-    /// <c>PhysicsWorld2DSystem → Store… → SolveSystem → DeferredImpulses…</c>.</para>
+    /// <c>Physics2DSimulationSystemGroup → Store… → SolveSystem → DeferredImpulses…</c>.</para>
     ///
     /// <para><b>Default gravity.</b> The 3D sample carries gravity on the character's own component; C1's
     /// <see cref="KinematicCharacterProperties2D"/> has no gravity field, so the default path applies a fixed

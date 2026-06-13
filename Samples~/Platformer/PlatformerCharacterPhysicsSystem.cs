@@ -44,13 +44,14 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// </list>
     /// </para>
     ///
-    /// <para><b>Ordering (design D3 + the C3 contract).</b> <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> (implied by the
-    /// Store edge below — Store runs after the world step) — the substrate's queries are valid only against the
-    /// just-stepped world, so the solve reads frame N's world and enqueues the move the substrate drains on frame N+1.
-    /// <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c> (read the pre-solve char↔char snapshot) and
-    /// <c>[UpdateBefore(KinematicCharacterDeferredImpulsesSystem2D)]</c> (the deferred drain applies the recorded
-    /// impulses after the solve) — the exact edges the built-in solve and the SideScroller declare, so this slots into
-    /// the same resolved order: <c>PhysicsWorld2DSystem → Store… → (this) → DeferredImpulses…</c>.</para>
+    /// <para><b>Ordering (design D3 + the C3 contract).</b> <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>
+    /// (implied by the Store edge below — Store runs after the physics group) — the substrate's queries are valid only
+    /// against the just-stepped world, so the solve reads frame N's world and enqueues the move the substrate drains
+    /// on frame N+1. <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c> (read the pre-solve char↔char
+    /// snapshot) and <c>[UpdateBefore(KinematicCharacterDeferredImpulsesSystem2D)]</c> (the deferred drain applies the
+    /// recorded impulses after the solve) — the exact edges the built-in solve and the SideScroller declare, so this
+    /// slots into the same resolved order:
+    /// <c>Physics2DSimulationSystemGroup → Store… → (this) → DeferredImpulses…</c>.</para>
     ///
     /// <para><b>Burst.</b> The solve never touches managed input (the control system's job); it reads the already-written
     /// <see cref="PlatformerCharacterControl2D"/> component, so it Bursts and parallelizes. <c>[BurstCompile]</c> on the

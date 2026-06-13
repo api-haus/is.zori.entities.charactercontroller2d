@@ -14,9 +14,9 @@ namespace Zori.Entities.CharacterController2D
     /// physics group.
     /// </summary>
     /// <remarks>
-    /// In 2D there is no <c>AfterPhysicsSystemGroup</c>; the substrate runs in
-    /// <see cref="FixedStepSimulationSystemGroup"/> with explicit ordering against
-    /// <c>PhysicsWorld2DSystem</c> (design section 5). This system runs <c>[UpdateAfter(PhysicsWorld2DSystem)]</c>
+    /// In 2D there is no <c>AfterPhysicsSystemGroup</c>; the substrate's pipeline runs in
+    /// <see cref="Physics2DSimulationSystemGroup"/>, against which the controller orders explicitly
+    /// (design section 5). This system runs <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>
     /// — it reads the just-stepped poses and writes the snapshot the solve consumes — and the solve system
     /// (<c>KinematicCharacterPhysicsSolveSystem2D</c>, chunk C4) declares
     /// <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c> to run after it. C3 owns no forward
@@ -24,7 +24,7 @@ namespace Zori.Entities.CharacterController2D
     /// declare.
     /// </remarks>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-    [UpdateAfter(typeof(PhysicsWorld2DSystem))]
+    [UpdateAfter(typeof(Physics2DSimulationSystemGroup))]
     [BurstCompile]
     public partial struct StoreKinematicCharacterBodyPropertiesSystem2D : ISystem
     {

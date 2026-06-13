@@ -14,11 +14,12 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
     /// <summary>
     /// Drives each <see cref="MovingPlatform2D"/> along its per-axis oscillation each fixed step via a swept
-    /// <c>PhysicsBody2DCommands.MovePosition</c>. Runs <c>[UpdateBefore(PhysicsWorld2DSystem)]</c> so the substrate
-    /// drains the move and steps the platform THIS frame (a platform is a DRIVEN kinematic body, not a solved one —
-    /// unlike the character, whose move applies next frame via the read-after-step pipeline). The substrate's
-    /// <c>TrackedTransformSystem2D</c> then records the platform's just-stepped pose
-    /// <c>[UpdateAfter(PhysicsWorld2DSystem)]</c>, and the character's solve (also after the step) carries itself with
+    /// <c>PhysicsBody2DCommands.MovePosition</c>. Runs <c>[UpdateBefore(Physics2DSimulationSystemGroup)]</c> so the
+    /// substrate drains the move and steps the platform THIS frame (a platform is a DRIVEN kinematic body, not a
+    /// solved one — unlike the character, whose move applies next frame via the read-after-step pipeline). The
+    /// substrate's <c>TrackedTransformSystem2D</c> then records the platform's just-stepped pose
+    /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>, and the character's solve (also after the step) carries
+    /// itself with
     /// that one-fixed-step platform delta (<c>Update_ParentMovement</c>) — the moving-platform feature the C4b gate
     /// verified.
     ///
@@ -28,7 +29,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// the velocity continuous across the reversal (no rider-jerking instantaneous reversal a triangle wave gives).</para>
     /// </summary>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-    [UpdateBefore(typeof(PhysicsWorld2DSystem))]
+    [UpdateBefore(typeof(Physics2DSimulationSystemGroup))]
     [BurstCompile]
     public partial struct MovingPlatformSystem2D : ISystem
     {
@@ -188,8 +189,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <summary>
     /// Adds a <see cref="WindZone2D"/>'s force to the kinematic character's
     /// <c>KinematicCharacterBody2D.RelativeVelocity</c> while the character is inside the zone. Runs
-    /// <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> because the substrate trigger-event buffer is valid only against the
-    /// just-stepped world (the same read window the character solve uses). It reads
+    /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c> because the substrate trigger-event buffer is valid only
+    /// against the just-stepped world (the same read window the character solve uses). It reads
     /// <c>DynamicBuffer&lt;PhysicsTriggerEvent2D&gt;</c> on the <see cref="PhysicsWorldSingleton2D"/> entity, derives
     /// Stay from the Begin..End interval by tracking an <see cref="InWindZone2D"/> tag on the visitor character, and
     /// while in-zone adds <c>Force * dt</c> to the character's relative velocity (then the next character solve
@@ -207,7 +208,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// on the live character).</para>
     /// </summary>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-    [UpdateAfter(typeof(PhysicsWorld2DSystem))]
+    [UpdateAfter(typeof(Physics2DSimulationSystemGroup))]
     public partial struct WindZoneSystem2D : ISystem
     {
         ComponentLookup<WindZone2D> _windZoneLookup;
@@ -316,8 +317,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// position on a trigger Begin — a PROPER instantaneous teleport, the 2D mirror of the 3D
     /// <c>com.unity.charactercontroller</c> Platformer sample's <c>TeleporterSystem</c> (which writes
     /// <c>LocalTransform.Position</c> + calls <c>CharacterInterpolation.SkipNextInterpolation()</c>). Runs
-    /// <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> (the trigger buffer is valid only against the just-stepped world).
-    /// Reads the substrate trigger-event buffer; for each Begin where the trigger is a <see cref="Teleporter2D"/> and
+    /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c> (the trigger buffer is valid only against the just-stepped
+    /// world). Reads the substrate trigger-event buffer; for each Begin where the trigger is a
+    /// <see cref="Teleporter2D"/> and
     /// the visitor is a platformer character, it teleports the character with the two distinct substrate APIs that are
     /// the 2D analogues of the 3D pair:
     /// <list type="number">
@@ -342,7 +344,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// teleport; <c>SetTransform</c> deliberately does not clear velocity itself).</para>
     /// </summary>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-    [UpdateAfter(typeof(PhysicsWorld2DSystem))]
+    [UpdateAfter(typeof(Physics2DSimulationSystemGroup))]
     public partial struct TeleporterSystem2D : ISystem
     {
         ComponentLookup<Teleporter2D> _teleporterLookup;
@@ -456,7 +458,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// point recorded on it would respawn the character to a stale (or mid-gap) platform pose. The character can still
     /// ride the platform and, after a fall, respawn to the last STATIC point it stood on.</para>
     ///
-    /// <para><b>Ordering.</b> Runs <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> AND
+    /// <para><b>Ordering.</b> Runs <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c> AND
     /// <c>[UpdateAfter(PlatformerCharacterPhysicsSystem)]</c> in the fixed-step group, so it reads the just-solved
     /// grounding state and the current <c>LocalToWorld</c> pose AND — load-bearing — runs after the solve has enqueued
     /// its own swept <c>MovePosition</c> for the step. The respawn's <c>SetTransform</c> must be the LAST command on
@@ -469,7 +471,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <see cref="TeleporterSystem2D"/>.</para>
     /// </summary>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-    [UpdateAfter(typeof(PhysicsWorld2DSystem))]
+    [UpdateAfter(typeof(Physics2DSimulationSystemGroup))]
     [UpdateAfter(typeof(PlatformerCharacterPhysicsSystem))]
     public partial struct PlatformerRespawnSystem : ISystem
     {

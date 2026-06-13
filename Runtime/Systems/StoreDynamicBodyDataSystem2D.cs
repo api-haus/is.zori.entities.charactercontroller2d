@@ -29,12 +29,12 @@ namespace Zori.Entities.CharacterController2D
     /// newly-seen dynamic body is a structural change, applied via the
     /// <c>EndSimulationEntityCommandBufferSystem</c>.</para>
     ///
-    /// <para><b>Ordering.</b> <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> so the read sees the just-stepped
+    /// <para><b>Ordering.</b> <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c> so the read sees the just-stepped
     /// velocities, and <c>[UpdateBefore(KinematicCharacterPhysicsSolveSystem2D)]</c> so the snapshot exists before
     /// the solve reads it.</para>
     /// </summary>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-    [UpdateAfter(typeof(PhysicsWorld2DSystem))]
+    [UpdateAfter(typeof(Physics2DSimulationSystemGroup))]
     [UpdateBefore(typeof(KinematicCharacterPhysicsSolveSystem2D))]
     public partial struct StoreDynamicBodyDataSystem2D : ISystem
     {
