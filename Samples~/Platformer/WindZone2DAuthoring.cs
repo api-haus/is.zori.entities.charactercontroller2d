@@ -7,7 +7,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <c>CollisionResponse = Sensor</c>) as a constant-direction force / wind zone. The baker
     /// (<c>PlatformerPropBakers</c>) emits a <see cref="WindZone2D"/> carrying <see cref="Force"/>;
     /// <c>WindZoneSystem2D</c> reads the substrate trigger-event buffer (Begin/End, Stay derived from the interval),
-    /// running <c>[UpdateAfter(PhysicsWorld2DSystem)]</c>, and adds the force to the kinematic character's
+    /// running <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>, and adds the force to the kinematic character's
     /// <c>KinematicCharacterBody2D.RelativeVelocity</c> while it is inside the zone.
     ///
     /// <para>Zones that affect the kinematic character mutate <c>RelativeVelocity</c> from the trigger-event-read

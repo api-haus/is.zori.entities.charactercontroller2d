@@ -11,8 +11,8 @@ namespace Zori.Entities.CharacterController2D
     /// mass is a <c>float2</c>. This is a plain data struct (not an <see cref="Unity.Entities.IComponentData"/>):
     /// it is constructed at solve time from a character's stored data or from a regular body's properties, and
     /// passed by ref to the processor's <see cref="IKinematicCharacterProcessor2D{C}.OverrideDynamicHitMasses"/>
-    /// callback so user logic can tune the masses before the impulse solve. It lives in the data layer (C1)
-    /// because the processor interface names it; the impulse solver that consumes it is C2.
+    /// callback so user logic can tune the masses before the impulse solve. It lives in the data layer because the
+    /// processor interface names it; the impulse solver in <see cref="PhysicsUtilities2D"/> consumes it.
     /// </summary>
     [Serializable]
     public struct KinematicCharacterMass2D

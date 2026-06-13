@@ -12,7 +12,7 @@ namespace Zori.Entities.CharacterController2D
     public struct DefaultCharacterUpdateContext2D { }
 
     /// <summary>
-    /// The concrete default processor (design D4) — a faithful 2D port of the Standard Characters sample's
+    /// The concrete default processor — a faithful 2D port of the Standard Characters sample's
     /// <c>IKinematicCharacterProcessor</c> implementation (REF/Samples~/…/FirstPersonCharacterProcessor.cs:24),
     /// minus the camera/look concerns that have no 2D meaning. It wires the six callbacks to the
     /// <c>Default_*</c> core behaviours so the package has a runnable out-of-box character.
@@ -59,7 +59,8 @@ namespace Zori.Entities.CharacterController2D
         /// <inheritdoc/>
         public void UpdateGroundingUp(
             ref DefaultCharacterUpdateContext2D context,
-            ref KinematicCharacterUpdateContext2D baseContext)
+            ref KinematicCharacterUpdateContext2D baseContext
+        )
         {
             // 2D port of Default_UpdateGroundingUp (REF/KinematicCharacterUtilities.cs:1185): grounding-up is the
             // character transform's up. Built into the snapshot's GroundingUp by the solve system from the body's
@@ -71,7 +72,8 @@ namespace Zori.Entities.CharacterController2D
         public bool CanCollideWithHit(
             ref DefaultCharacterUpdateContext2D context,
             ref KinematicCharacterUpdateContext2D baseContext,
-            in BasicHit2D hit)
+            in BasicHit2D hit
+        )
         {
             // 2D port of the sample's CanCollideWithHit (REF/Samples~/…:220), which gated on
             // PhysicsUtilities.IsCollidable(hit.Material). The 2D substrate carries no per-hit material (BasicHit2D
@@ -85,7 +87,8 @@ namespace Zori.Entities.CharacterController2D
             ref DefaultCharacterUpdateContext2D context,
             ref KinematicCharacterUpdateContext2D baseContext,
             in BasicHit2D hit,
-            int groundingEvaluationType)
+            int groundingEvaluationType
+        )
         {
             return KinematicCharacterUtilities2D.Default_IsGroundedOnHit(
                 ref baseContext,
@@ -94,7 +97,8 @@ namespace Zori.Entities.CharacterController2D
                 in CharacterProperties,
                 in StepAndSlopeHandling,
                 in hit,
-                groundingEvaluationType);
+                groundingEvaluationType
+            );
         }
 
         /// <inheritdoc/>
@@ -105,7 +109,8 @@ namespace Zori.Entities.CharacterController2D
             ref float2 remainingMovementDirection,
             ref float remainingMovementLength,
             float2 originalVelocityDirection,
-            float hitDistance)
+            float hitDistance
+        )
         {
             // The core MoveWithCollisions calls KinematicCharacterUtilities2D.OnMovementHit directly (it needs the
             // live position/body refs). This callback is the override surface for a consumer driving the steps
@@ -122,7 +127,8 @@ namespace Zori.Entities.CharacterController2D
             ref bool characterIsGrounded,
             ref BasicHit2D characterGroundHit,
             in Unity.Entities.DynamicBuffer<KinematicVelocityProjectionHit2D> velocityProjectionHits,
-            float2 originalVelocityDirection)
+            float2 originalVelocityDirection
+        )
         {
             KinematicCharacterUtilities2D.Default_ProjectVelocityOnHits(
                 ref velocity,
@@ -131,7 +137,8 @@ namespace Zori.Entities.CharacterController2D
                 in velocityProjectionHits,
                 originalVelocityDirection,
                 StepAndSlopeHandling.ConstrainVelocityToGroundPlane,
-                in CharacterBodySnapshot);
+                in CharacterBodySnapshot
+            );
         }
 
         /// <inheritdoc/>
@@ -140,10 +147,11 @@ namespace Zori.Entities.CharacterController2D
             ref KinematicCharacterUpdateContext2D baseContext,
             ref KinematicCharacterMass2D characterMass,
             ref KinematicCharacterMass2D otherMass,
-            BasicHit2D hit)
+            BasicHit2D hit
+        )
         {
             // No mass override by default (matches the 3D sample's empty OverrideDynamicHitMasses,
-            // REF/Samples~/…:283). The dynamics path that consumes the masses is chunk C4b.
+            // REF/Samples~/…:283). The dynamics path that consumes the masses is the hit-dynamics path.
         }
     }
 }

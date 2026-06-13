@@ -14,7 +14,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
     /// (kinematic platform body, sensor shape, dynamic crate body, static surface collider) is emitted by the substrate
     /// bakers from the <c>PhysicsBody2DAuthoring</c> / <c>PhysicsShape2DAuthoring</c> on the SAME GameObject — each
     /// authoring component bakes independently onto one entity, so the entity converges on the union archetype. The
-    /// CHARACTER baker is a separate file (<c>PlatformerCharacterBaker.cs</c>, P3); these prop bakers live here to
+    /// CHARACTER baker is a separate file (<c>PlatformerCharacterBaker.cs</c>); these prop bakers live here to
     /// avoid a file collision.</para>
     /// </summary>
     public sealed class MovingPlatform2DBaker : Baker<MovingPlatform2DAuthoring>
@@ -32,7 +32,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
                     TravelHalfExtent = new float2(authoring.TravelHalfExtent.x, authoring.TravelHalfExtent.y),
                     Speed = authoring.Speed,
                     Phase = 0f,
-                });
+                }
+            );
         }
     }
 
@@ -54,9 +55,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
             // A sensor body is moved/positioned in the world but never solved against; Dynamic matches the substrate
             // shape baker's request so both author onto one entity.
             var entity = GetEntity(TransformUsageFlags.Dynamic);
-            AddComponent(
-                entity,
-                new WindZone2D { Force = new float2(authoring.Force.x, authoring.Force.y) });
+            AddComponent(entity, new WindZone2D { Force = new float2(authoring.Force.x, authoring.Force.y) });
         }
     }
 
@@ -82,9 +81,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Baking
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             // The destination is a position marker; Renderable captures its LocalToWorld without making it dynamic.
-            Entity destination = authoring.Destination != null
-                ? GetEntity(authoring.Destination, TransformUsageFlags.Renderable)
-                : Entity.Null;
+            Entity destination =
+                authoring.Destination != null
+                    ? GetEntity(authoring.Destination, TransformUsageFlags.Renderable)
+                    : Entity.Null;
             AddComponent(entity, new Teleporter2D { Destination = destination });
         }
     }

@@ -6,7 +6,6 @@ using Zori.Entities.CharacterController2D.Authoring;
 using Zori.Entities.Physics2D;
 using Zori.Entities.Physics2D.Baking;
 using static Unity.Mathematics.math;
-
 // The baker lives in the Zori.Entities.CharacterController2D.Baking namespace, so the substrate's
 // PhysicsShape2D is not in an enclosing namespace (unlike the substrate's own bakers) and the unqualified
 // name collides with UnityEngine.PhysicsShape2D pulled in by `using UnityEngine;`. Alias to the substrate type.
@@ -27,7 +26,7 @@ namespace Zori.Entities.CharacterController2D.Baking
     /// moved only by enqueuing a <see cref="PhysicsBody2DCommand"/> that <c>PhysicsWorld2DSystem</c> drains before
     /// the step. So the 2D analogue is a kinematic <see cref="PhysicsBody2DDefinition"/> (<c>gravityScale = 0</c>)
     /// plus the matching <see cref="PhysicsShape2D"/> plus an (empty) <c>DynamicBuffer&lt;PhysicsBody2DCommand&gt;</c>
-    /// move queue the solve writes a single <c>MovePosition</c> into each step (design section 7, motion-drive D6).
+    /// move queue the solve writes a single <c>MovePosition</c> into each step.
     /// The emitted body/shape are produced through the same idiom and the same scale-fold helpers
     /// (<see cref="Collider2DBaking"/>) the substrate's own bakers use, so the kinematic body is indistinguishable
     /// from a substrate-authored one (the dual-surface convergence the substrate guarantees).
@@ -46,7 +45,7 @@ namespace Zori.Entities.CharacterController2D.Baking
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             var t = GetComponent<Transform>();
 
-            // D9: fold the transform scale into the proxy + shape geometry the way the substrate folds scale into
+            // Fold the transform scale into the proxy + shape geometry the way the substrate folds scale into
             // shapes (bake-contract.md "Transform scale"), rather than rejecting non-unit scale like the 3D baker
             // (REF/KinematicCharacterUtilities.cs:337). ReadScale registers the transform dependency.
             var scale = Collider2DBaking.ReadScale(t);
@@ -90,7 +89,7 @@ namespace Zori.Entities.CharacterController2D.Baking
             // Step/slope params, baked verbatim (no reduction — every field is scalar/bool).
             AddComponent(entity, authoring.StepAndSlopeHandling);
 
-            // The circle-or-box cast proxy the solve sweeps (design D1). Scale-folded the same per-kind way the
+            // The circle-or-box cast proxy the solve sweeps. Scale-folded the same per-kind way the
             // substrate scales the matching shape below, so the proxy the solve casts and the world body's shape
             // describe the same geometry at the body's unit scale.
             var proxy = BuildProxy(authoring, scale);
@@ -124,7 +123,7 @@ namespace Zori.Entities.CharacterController2D.Baking
                     mass = 0f,
                     useAutoMass = false,
                     // Render-rate smoothing: the substrate's PhysicsBody2DSmoothing replaces the 3D
-                    // CharacterInterpolation (design D7). On → Interpolate (one step of render lag); off → None.
+                    // CharacterInterpolation. On → Interpolate (one step of render lag); off → None.
                     interpolation = authoring.InterpolateRendering
                         ? PhysicsBody2DInterpolation.Interpolate
                         : PhysicsBody2DInterpolation.None,
@@ -159,10 +158,7 @@ namespace Zori.Entities.CharacterController2D.Baking
         /// same per-kind way the substrate scales a circle (larger absolute axis) or box (per-axis) shape, so the
         /// proxy and the emitted <see cref="PhysicsShape2D"/> stay the same geometry at the body's unit scale.
         /// </summary>
-        static KinematicCharacterColliderProxy2D BuildProxy(
-            CharacterController2DAuthoring authoring,
-            float2 scale
-        )
+        static KinematicCharacterColliderProxy2D BuildProxy(CharacterController2DAuthoring authoring, float2 scale)
         {
             switch (authoring.ProxyShape)
             {

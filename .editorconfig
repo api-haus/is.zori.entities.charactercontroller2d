@@ -1,0 +1,52 @@
+# shipshape enforcement layer — committed by /shipshape, phase 1 (file-based).
+# Phase 2 (Roslyn analyzer wall via generated sln) layers severities on top.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+# Naming: Unity engine-package family (m_/s_/k_), agreed shipshape canon.
+dotnet_naming_rule.instance_fields_m_prefix.severity = warning
+dotnet_naming_rule.instance_fields_m_prefix.symbols = instance_fields
+dotnet_naming_rule.instance_fields_m_prefix.style = m_pascal
+dotnet_naming_symbols.instance_fields.applicable_kinds = field
+dotnet_naming_symbols.instance_fields.applicable_accessibilities = private, protected, private_protected
+dotnet_naming_symbols.instance_fields.required_modifiers =
+dotnet_naming_style.m_pascal.required_prefix = m_
+dotnet_naming_style.m_pascal.capitalization = pascal_case
+
+dotnet_naming_rule.static_fields_s_prefix.severity = warning
+dotnet_naming_rule.static_fields_s_prefix.symbols = static_fields
+dotnet_naming_rule.static_fields_s_prefix.style = s_pascal
+dotnet_naming_symbols.static_fields.applicable_kinds = field
+dotnet_naming_symbols.static_fields.applicable_accessibilities = private, protected, private_protected
+dotnet_naming_symbols.static_fields.required_modifiers = static
+dotnet_naming_style.s_pascal.required_prefix = s_
+dotnet_naming_style.s_pascal.capitalization = pascal_case
+
+dotnet_naming_rule.consts_k_prefix.severity = warning
+dotnet_naming_rule.consts_k_prefix.symbols = consts
+dotnet_naming_rule.consts_k_prefix.style = k_pascal
+dotnet_naming_symbols.consts.applicable_kinds = field
+dotnet_naming_symbols.consts.applicable_accessibilities = private, protected, private_protected
+dotnet_naming_symbols.consts.required_modifiers = const
+dotnet_naming_style.k_pascal.required_prefix = k_
+dotnet_naming_style.k_pascal.capitalization = pascal_case
+
+# Style preferences (advisory until the analyzer wall lands).
+csharp_style_var_when_type_is_apparent = true
+csharp_style_expression_bodied_methods = when_on_single_line
+csharp_prefer_braces = true
+dotnet_style_readonly_field = true:warning
+csharp_style_unused_value_expression_statement_preference = discard_variable
+
+[*.{json,asmdef,yml,yaml}]
+indent_style = space
+indent_size = 2

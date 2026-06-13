@@ -14,8 +14,8 @@ using PhysicsShape2D = Zori.Entities.Physics2D.PhysicsShape2D;
 namespace Zori.Entities.CharacterController2D.Tests
 {
     /// <summary>
-    /// The sensor (trigger) pass-through regression gate: the negative-space case the C4a/C4b solve fixtures never
-    /// covered. A kinematic character controller must treat a SENSOR (<c>isTrigger</c>) shape as NON-SOLID to its
+    /// The sensor (trigger) pass-through regression gate: a kinematic character controller must treat a SENSOR
+    /// (<c>isTrigger</c>) shape as NON-SOLID to its
     /// collision/grounding sweeps — the character passes THROUGH a sensor volume (a zone, a teleporter pad) as a
     /// visitor rather than grounding on it as if it were floor — WHILE the separate trigger-EVENT channel still
     /// reports the character entering the sensor. The Platformer smoke gate surfaced the bug: a character dropped
@@ -97,10 +97,7 @@ namespace Zori.Entities.CharacterController2D.Tests
             );
 
             _fixedGroup = _world.GetExistingSystemManaged<FixedStepSimulationSystemGroup>();
-            Assert.IsNotNull(
-                _fixedGroup,
-                "No FixedStepSimulationSystemGroup in the default world."
-            );
+            Assert.IsNotNull(_fixedGroup, "No FixedStepSimulationSystemGroup in the default world.");
             _savedRateManager = _fixedGroup.RateManager;
             _fixedGroup.RateManager = new Unity.Entities.RateUtils.FixedRateSimpleManager(FixedDt);
 
@@ -235,10 +232,7 @@ namespace Zori.Entities.CharacterController2D.Tests
 
             // Landed on the solid floor below the sensor: grounded, settled ~radius above the solid floor top, on
             // the solid floor entity (not the sensor).
-            Assert.IsTrue(
-                finalBody.IsGrounded,
-                "character must end grounded on the solid floor below the sensor."
-            );
+            Assert.IsTrue(finalBody.IsGrounded, "character must end grounded on the solid floor below the sensor.");
             Assert.AreNotEqual(
                 sensor,
                 finalBody.GroundHit.Entity,
@@ -254,10 +248,7 @@ namespace Zori.Entities.CharacterController2D.Tests
                 0.1f,
                 $"character must settle ~radius above the solid floor top; got {finalPos.y}, expected ~{expectedFloorY}."
             );
-            Assert.IsFalse(
-                float.IsNaN(finalPos.x) || float.IsNaN(finalPos.y),
-                "no NaN in the settled pose."
-            );
+            Assert.IsFalse(float.IsNaN(finalPos.x) || float.IsNaN(finalPos.y), "no NaN in the settled pose.");
         }
     }
 }

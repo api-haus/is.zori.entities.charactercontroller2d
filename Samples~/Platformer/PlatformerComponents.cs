@@ -104,9 +104,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         /// <summary>The rope's length (units): the radius of the circle the swing constrains the character onto.
         /// This is the pendulum-constraint radius — <see cref="ConstrainToRope2D"/> holds the character on a circle of
         /// this radius around the anchor. It is NOT the grab reach: the distance within which a grab finds an anchor is
-        /// the separate <see cref="RopeAnchorSearchRadius"/>. The two were conflated in P4 (one <c>RopeLength</c> for
-        /// both, matching the 3D reference's single field), but the scene's anchor sits well above the launch-ledge
-        /// jump apex, so a grab reach equal to the rope length never reached it — separating the two lets the grab
+        /// the separate <see cref="RopeAnchorSearchRadius"/>. The 3D reference conflates the two into one
+        /// <c>RopeLength</c> field; they are split here because the scene's anchor sits well above the launch-ledge
+        /// jump apex, so a grab reach equal to the rope length never reaches it — separating the two lets the grab
         /// reach be large while the swing radius stays whatever the level designer wants. The rope is slack — no clamp
         /// — until the character swings out to this full extension.</summary>
         public float RopeLength;
@@ -219,7 +219,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// Marks a kinematic body the Platformer drives as a moving platform. Generalizes the SideScroller's
     /// lateral-only <c>SideScrollerMovingPlatform</c> to support both lateral and vertical travel. A platform-init
     /// system adds the <c>TrackedTransform2D</c> + the <c>DynamicBuffer&lt;PhysicsBody2DCommand&gt;</c> at runtime (no
-    /// baker authors them), and a mover system drives it <c>[UpdateBefore(PhysicsWorld2DSystem)]</c> via
+    /// baker authors them), and a mover system drives it <c>[UpdateBefore(Physics2DSimulationSystemGroup)]</c> via
     /// <c>PhysicsBody2DCommands.MovePosition</c> so the platform steps THIS frame and the rider is carried.
     /// </summary>
     public struct MovingPlatform2D : IComponentData
@@ -253,7 +253,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <summary>
     /// Marks a trigger-sensor body as a force / wind zone. A wind-zone system reading the substrate's
     /// <c>DynamicBuffer&lt;PhysicsTriggerEvent2D&gt;</c> (Begin/End, Stay derived from the interval), running
-    /// <c>[UpdateAfter(PhysicsWorld2DSystem)]</c>, adds <see cref="Force"/> to the kinematic character's
+    /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>, adds <see cref="Force"/> to the kinematic character's
     /// <see cref="KinematicCharacterBody2D.RelativeVelocity"/> while it is inside the zone. Zones that affect the
     /// kinematic character mutate <c>RelativeVelocity</c> from a trigger-event-read system, NOT via substrate effectors
     /// (effectors apply solver forces to dynamic bodies only — the kinematic character is invisible to them).

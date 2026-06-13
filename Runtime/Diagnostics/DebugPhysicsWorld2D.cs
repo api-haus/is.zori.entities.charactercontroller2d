@@ -2,8 +2,8 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using static Unity.Mathematics.math;
 using Zori.Entities.Physics2D;
+using static Unity.Mathematics.math;
 using PhysicsBody2D = Zori.Entities.Physics2D.PhysicsBody2D;
 using PhysicsRotate = Unity.U2D.Physics.PhysicsRotate;
 using PhysicsShape2D = Zori.Entities.Physics2D.PhysicsShape2D;
@@ -129,9 +129,11 @@ namespace Zori.Entities.CharacterController2D.Diagnostics
             _bodyQuery = _world.EntityManager.CreateEntityQuery(
                 ComponentType.ReadOnly<PhysicsBody2D>(),
                 ComponentType.ReadOnly<PhysicsShape2D>(),
-                ComponentType.ReadOnly<LocalToWorld>());
+                ComponentType.ReadOnly<LocalToWorld>()
+            );
             _worldSingletonQuery = _world.EntityManager.CreateEntityQuery(
-                ComponentType.ReadOnly<PhysicsWorldSingleton2D>());
+                ComponentType.ReadOnly<PhysicsWorldSingleton2D>()
+            );
         }
 
         void LateUpdate()
@@ -232,7 +234,8 @@ namespace Zori.Entities.CharacterController2D.Diagnostics
                         shape.radius,
                         color,
                         0f,
-                        PhysicsWorld.DrawFillOptions.Outline);
+                        PhysicsWorld.DrawFillOptions.Outline
+                    );
                     break;
 
                 case PhysicsShape2DKind.Box:
@@ -244,7 +247,8 @@ namespace Zori.Entities.CharacterController2D.Diagnostics
                         shape.radius,
                         color,
                         0f,
-                        PhysicsWorld.DrawFillOptions.Outline);
+                        PhysicsWorld.DrawFillOptions.Outline
+                    );
                     break;
 
                 case PhysicsShape2DKind.Capsule:
@@ -255,7 +259,8 @@ namespace Zori.Entities.CharacterController2D.Diagnostics
                         shape.radius,
                         color,
                         0f,
-                        PhysicsWorld.DrawFillOptions.Outline);
+                        PhysicsWorld.DrawFillOptions.Outline
+                    );
                     break;
 
                 case PhysicsShape2DKind.Polygon:
@@ -265,7 +270,13 @@ namespace Zori.Entities.CharacterController2D.Diagnostics
             }
         }
 
-        void DrawVertexShape(PhysicsWorld world, in PhysicsShape2D shape, float2 worldPos, PhysicsRotate rot, Color color)
+        void DrawVertexShape(
+            PhysicsWorld world,
+            in PhysicsShape2D shape,
+            float2 worldPos,
+            PhysicsRotate rot,
+            Color color
+        )
         {
             if (!shape.vertices.IsCreated)
             {
@@ -286,12 +297,7 @@ namespace Zori.Entities.CharacterController2D.Diagnostics
             }
 
             bool loop = shape.kind == PhysicsShape2DKind.Polygon || shape.edgeIsLoop;
-            world.DrawLineStrip(
-                new PhysicsTransform(new Vector2(worldPos.x, worldPos.y), rot),
-                span,
-                loop,
-                color,
-                0f);
+            world.DrawLineStrip(new PhysicsTransform(new Vector2(worldPos.x, worldPos.y), rot), span, loop, color, 0f);
         }
     }
 }

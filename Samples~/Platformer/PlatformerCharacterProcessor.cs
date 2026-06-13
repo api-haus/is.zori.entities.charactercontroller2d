@@ -6,7 +6,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <summary>
     /// The Platformer sample's user-context (the <c>C</c> in <see cref="IKinematicCharacterProcessor2D{C}"/>). Unlike
     /// the SideScroller's empty <c>SideScrollerCharacterUpdateContext</c>, the Platformer carries a
-    /// <see cref="ComponentLookup{T}"/> over <see cref="FrictionModifier2D"/> — the documented place a richer Phase-B
+    /// <see cref="ComponentLookup{T}"/> over <see cref="FrictionModifier2D"/> — the documented place a richer
     /// platformer adds its own lookups. The GroundMove stance reads the modifier off the character's ground hit entity
     /// through this lookup to scale its move sharpness (the "different physics materials" feature), because the
     /// kinematic controller is material-blind to Box2D friction and computes its own velocity.
@@ -67,7 +67,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         /// <inheritdoc/>
         public void UpdateGroundingUp(
             ref PlatformerCharacterUpdateContext context,
-            ref KinematicCharacterUpdateContext2D baseContext)
+            ref KinematicCharacterUpdateContext2D baseContext
+        )
         {
             // A platformer's grounding-up is fixed at world +Y; the physics system sets it on the live body before
             // Initialize and the snapshot mirrors it, so this is a no-op.
@@ -77,7 +78,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         public bool CanCollideWithHit(
             ref PlatformerCharacterUpdateContext context,
             ref KinematicCharacterUpdateContext2D baseContext,
-            in BasicHit2D hit)
+            in BasicHit2D hit
+        )
         {
             return hit.Entity != Entity.Null;
         }
@@ -87,7 +89,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             ref PlatformerCharacterUpdateContext context,
             ref KinematicCharacterUpdateContext2D baseContext,
             in BasicHit2D hit,
-            int groundingEvaluationType)
+            int groundingEvaluationType
+        )
         {
             return KinematicCharacterUtilities2D.Default_IsGroundedOnHit(
                 ref baseContext,
@@ -96,7 +99,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 in CharacterProperties,
                 in StepAndSlopeHandling,
                 in hit,
-                groundingEvaluationType);
+                groundingEvaluationType
+            );
         }
 
         /// <inheritdoc/>
@@ -107,7 +111,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             ref float2 remainingMovementDirection,
             ref float remainingMovementLength,
             float2 originalVelocityDirection,
-            float hitDistance)
+            float hitDistance
+        )
         {
             // The core MoveWithCollisions applies the default movement-hit behaviour directly (it needs the live
             // position/body refs). This is the override seam for a consumer driving the steps themselves; empty here.
@@ -121,7 +126,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             ref bool characterIsGrounded,
             ref BasicHit2D characterGroundHit,
             in DynamicBuffer<KinematicVelocityProjectionHit2D> velocityProjectionHits,
-            float2 originalVelocityDirection)
+            float2 originalVelocityDirection
+        )
         {
             KinematicCharacterUtilities2D.Default_ProjectVelocityOnHits(
                 ref velocity,
@@ -130,7 +136,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 in velocityProjectionHits,
                 originalVelocityDirection,
                 StepAndSlopeHandling.ConstrainVelocityToGroundPlane,
-                in CharacterBodySnapshot);
+                in CharacterBodySnapshot
+            );
         }
 
         /// <inheritdoc/>
@@ -139,7 +146,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             ref KinematicCharacterUpdateContext2D baseContext,
             ref KinematicCharacterMass2D characterMass,
             ref KinematicCharacterMass2D otherMass,
-            BasicHit2D hit)
+            BasicHit2D hit
+        )
         {
             // No mass override — the pushable-box demo uses the authored masses directly.
         }

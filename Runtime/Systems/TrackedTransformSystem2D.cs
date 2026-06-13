@@ -17,12 +17,14 @@ namespace Zori.Entities.CharacterController2D
     /// <see cref="LocalToWorld"/> (not <c>LocalTransform</c>) — its pose is moved by the substrate and landed in
     /// <see cref="LocalToWorld"/> by <c>PhysicsBody2DWriteBackSystem</c> — so the tracked pose is read from
     /// <see cref="LocalToWorld"/>: the position from its translation, and the z-angle from its local +X basis
-    /// vector (a flat, unscaled physics-body matrix). Running <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> captures
-    /// the just-stepped pose, matching <see cref="StoreKinematicCharacterBodyPropertiesSystem2D"/>, so the solve
-    /// reads a current/previous pair from the step it queries (design section 5).
+    /// vector (a flat, unscaled physics-body matrix). Running
+    /// <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c> captures the pose after the whole physics group,
+    /// including the write-back that lands it in <see cref="LocalToWorld"/>, matching
+    /// <see cref="StoreKinematicCharacterBodyPropertiesSystem2D"/>, so the solve reads a current/previous pair from
+    /// the step it queries.
     /// </remarks>
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-    [UpdateAfter(typeof(PhysicsWorld2DSystem))]
+    [UpdateAfter(typeof(Physics2DSimulationSystemGroup))]
     [BurstCompile]
     public partial struct TrackedTransformSystem2D : ISystem
     {

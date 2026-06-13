@@ -17,7 +17,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     public sealed class Teleporter2DAuthoring : MonoBehaviour
     {
         [SerializeField]
-        [Tooltip("The destination GameObject whose world position the character is moved to on entering this teleporter.")]
+        [Tooltip(
+            "The destination GameObject whose world position the character is moved to on entering this teleporter."
+        )]
         GameObject m_Destination;
 
         /// <summary>The destination GameObject the character is teleported to on entry.</summary>

@@ -5,7 +5,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 {
     /// <summary>
     /// Reads the keyboard each regular update and writes one frame of intent into every Platformer character's
-    /// <see cref="PlatformerCharacterControl2D"/> — the control half of the design §8 control→physics split. Left/right
+    /// <see cref="PlatformerCharacterControl2D"/> — the control half of the control→physics split. Left/right
     /// (A/D or the arrows) set <see cref="PlatformerCharacterControl2D.MoveX"/>; Space/W LATCHES
     /// <see cref="PlatformerCharacterControl2D.JumpPressed"/>, E LATCHES
     /// <see cref="PlatformerCharacterControl2D.GrabPressed"/>, and Q (or Left-Shift) LATCHES
@@ -19,7 +19,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <see cref="SimulationSystemGroup"/> (the regular per-frame update) — input is sampled at the render rate and the
     /// fixed-step physics system consumes the latest sample, the standard input→simulation hand-off. It is gated on the
     /// sample's own <see cref="PlatformerCharacterTag"/> marker (like the physics system), so importing the package —
-    /// which bakes no such marker — runs nothing (design §8 — inert on import; gate on the real marker, not an empty
+    /// which bakes no such marker — runs nothing (inert on import; gate on the real marker, not an empty
     /// configures-nothing singleton).</para>
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
@@ -59,7 +59,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             bool grabEdge = keyboard.eKey.wasPressedThisFrame;
             bool releaseEdge = keyboard.qKey.wasPressedThisFrame || keyboard.leftShiftKey.wasPressedThisFrame;
 
-            foreach (var control in SystemAPI.Query<RefRW<PlatformerCharacterControl2D>>().WithAll<PlatformerCharacterTag>())
+            foreach (
+                var control in SystemAPI.Query<RefRW<PlatformerCharacterControl2D>>().WithAll<PlatformerCharacterTag>()
+            )
             {
                 control.ValueRW.MoveX = moveX;
                 // Latch (OR), never overwrite to false here: the consuming system clears each latch after it acts on the

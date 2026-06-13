@@ -17,7 +17,7 @@ namespace Zori.Entities.CharacterController2D
     /// <item>The 3D <c>Unity.Physics.PhysicsWorld</c> becomes the substrate's <see cref="PhysicsWorld"/> handle,
     /// read from <c>SystemAPI.GetSingleton&lt;PhysicsWorldSingleton2D&gt;().world</c>
     /// (P2D/Runtime/Components/PhysicsWorldSingleton2D.cs). The substrate's queries read against a stepped world,
-    /// so the system holding this context runs <c>[UpdateAfter(PhysicsWorld2DSystem)]</c>.</item>
+    /// so the system holding this context runs <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>.</item>
     /// <item>The 3D context's three typed scratch lists (<c>TmpRaycastHits</c> / <c>TmpColliderCastHits</c> /
     /// <c>TmpDistanceHits</c>) plus the rigidbody-index dedup list collapse to ONE
     /// <see cref="NativeList{PhysicsQueryHit2D}"/>: the substrate exposes a single hit type
@@ -43,7 +43,7 @@ namespace Zori.Entities.CharacterController2D
         /// <summary>
         /// The substrate physics world this character is part of, read from the
         /// <see cref="PhysicsWorldSingleton2D"/> singleton. Queried through <see cref="PhysicsQueries2D"/>; valid
-        /// only against a stepped world, so the holder runs after <c>PhysicsWorld2DSystem</c>.
+        /// only against a stepped world, so the holder runs after <c>Physics2DSimulationSystemGroup</c>.
         /// </summary>
         [ReadOnly]
         public PhysicsWorld PhysicsWorld;
@@ -67,8 +67,8 @@ namespace Zori.Entities.CharacterController2D
         /// regular (non-character) dynamic body's velocity and mass (written by
         /// <see cref="StoreDynamicBodyDataSystem2D"/>). It is how the Burst character solve reads another body's
         /// motion for the hit-dynamics impulse exchange without touching the managed <c>PhysicsBody</c> handle (the
-        /// D5 resolution — the velocity read is not Burst-callable, so it is snapshotted on the main thread and read
-        /// here as a Burst-safe component).
+        /// velocity read is not Burst-callable, so it is snapshotted on the main thread and read here as a Burst-safe
+        /// component).
         /// </summary>
         [ReadOnly]
         public ComponentLookup<StoredDynamicBodyData2D> DynamicBodyDataLookup;

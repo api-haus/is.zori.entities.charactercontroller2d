@@ -27,7 +27,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
     /// anchor, and the character pose. The exact tick + surface where the rope trajectory dies is therefore observable.
     ///
     /// <para>It is BOTH the e2e gate the user wants (grab → swing → land over real input) AND the instrument that
-    /// decomposes the two upstream suspects Phase 0 left un-adjudicated: "never reached AirMove+grab in range"
+    /// decomposes the two upstream suspects an earlier diagnostic pass left un-adjudicated: "never reached AirMove+grab in range"
     /// (trigger/input/stance) vs "reached it but detection returned nothing" (scene bake) vs "detected but never
     /// swung/landed" (swing path). The substrate masked closest-point primitive itself is already proven sound by
     /// <c>RopeAnchorMaskedClosestPointGate</c> (physics2d) and <c>RopeGrabQueryDiagnosisGate</c> (this assembly) — this
@@ -121,14 +121,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
 
         KinematicCharacterBody2D Body() => _em.GetComponentData<KinematicCharacterBody2D>(_character);
 
-        PlatformerStance2D Stance() =>
-            _em.GetComponentData<PlatformerCharacterState2D>(_character).Stance;
+        PlatformerStance2D Stance() => _em.GetComponentData<PlatformerCharacterState2D>(_character).Stance;
 
-        PlatformerCharacterTuning2D Tuning() =>
-            _em.GetComponentData<PlatformerCharacterTuning2D>(_character);
+        PlatformerCharacterTuning2D Tuning() => _em.GetComponentData<PlatformerCharacterTuning2D>(_character);
 
-        bool GrabLatched() =>
-            _em.GetComponentData<PlatformerCharacterControl2D>(_character).GrabPressed;
+        bool GrabLatched() => _em.GetComponentData<PlatformerCharacterControl2D>(_character).GrabPressed;
 
         PhysicsWorld LiveWorld()
         {
@@ -161,9 +158,12 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
         {
             var c = _em.GetComponentData<PlatformerCharacterControl2D>(_character);
             c.MoveX = moveX;
-            if (jump) c.JumpPressed = true;
-            if (grab) c.GrabPressed = true;
-            if (release) c.ReleasePressed = true;
+            if (jump)
+                c.JumpPressed = true;
+            if (grab)
+                c.GrabPressed = true;
+            if (release)
+                c.ReleasePressed = true;
             _em.SetComponentData(_character, c);
             _fixedGroup.Update();
         }
@@ -228,7 +228,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                     + $"RopeLength = {tuning.RopeLength}, RopeAnchorSearchRadius = {tuning.RopeAnchorSearchRadius}"
             );
 
-            ulong anchorCat = 0, anchorContacts = 0;
+            ulong anchorCat = 0,
+                anchorContacts = 0;
             if (hasShape)
             {
                 var shape = _em.GetComponentData<PhysicsShape2D>(_anchor);
@@ -246,30 +247,49 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
 
             // What an actual grab-time detection returns against the LIVE world, from the anchor's own position (so
             // distance is ~0 — this isolates the FILTER MATCH from any reachability question).
-            var detectedAtAnchor = ProbeDetectAt(AnchorPosition(), tuning.RopeAnchorSearchRadius,
-                tuning.RopeAnchorLayerMask, out var hitEnt, out var hitPt);
+            var detectedAtAnchor = ProbeDetectAt(
+                AnchorPosition(),
+                tuning.RopeAnchorSearchRadius,
+                tuning.RopeAnchorLayerMask,
+                out var hitEnt,
+                out var hitPt
+            );
             sb.AppendLine(
                 $"  detection probe AT anchor pos (radius {tuning.RopeAnchorSearchRadius}, mask 0x{tuning.RopeAnchorLayerMask:X}): "
                     + $"found = {detectedAtAnchor}, entity = {hitEnt}, point = {hitPt}"
             );
             Debug.Log(sb.ToString());
 
-            Assert.IsTrue(hasShape,
-                "PRE-FLIGHT: the baked scene anchor must carry a queryable PhysicsShape2D collider.");
-            Assert.AreEqual(tuning.RopeAnchorLayerMask & anchorCat, tuning.RopeAnchorLayerMask,
+            Assert.IsTrue(
+                hasShape,
+                "PRE-FLIGHT: the baked scene anchor must carry a queryable PhysicsShape2D collider."
+            );
+            Assert.AreEqual(
+                tuning.RopeAnchorLayerMask & anchorCat,
+                tuning.RopeAnchorLayerMask,
                 $"PRE-FLIGHT: the anchor's categoryBits 0x{anchorCat:X} must contain the character's rope mask "
-                    + $"0x{tuning.RopeAnchorLayerMask:X} — the mask must select this anchor.");
-            Assert.IsTrue(detectedAtAnchor,
+                    + $"0x{tuning.RopeAnchorLayerMask:X} — the mask must select this anchor."
+            );
+            Assert.IsTrue(
+                detectedAtAnchor,
                 "PRE-FLIGHT: the grab detection must find the anchor when standing on it — the scene bake + substrate "
-                    + "query are sound, so any in-game failure is upstream (input/stance reachability).");
+                    + "query are sound, so any in-game failure is upstream (input/stance reachability)."
+            );
             Assert.AreEqual(_anchor, hitEnt, "PRE-FLIGHT: detection resolved a different entity than the anchor.");
         }
 
         bool ProbeDetectAt(float2 at, float searchRadius, ulong mask, out Entity hit, out float2 point)
         {
             using var scratch = new NativeList<PhysicsQueryHit2D>(8, Allocator.Temp);
-            return PlatformerRopeMath.TryDetectRopeAnchor(LiveWorld(), at, searchRadius, mask, scratch,
-                out hit, out point);
+            return PlatformerRopeMath.TryDetectRopeAnchor(
+                LiveWorld(),
+                at,
+                searchRadius,
+                mask,
+                scratch,
+                out hit,
+                out point
+            );
         }
 
         // ----- the natural-approach continuous-input e2e trace ------------------------------------------------------
@@ -327,9 +347,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             const int airTicks = 320; // generous: covers the arc, the full swing build-up, the release, and the fall
 
             var everAirborneNearAnchor = false; // got within searchRadius of the anchor while airborne pre-grab
-            var everGrabbed = false;            // the grab transition fired into RopeSwing from a non-swing stance
-            var everProbeFoundPreGrab = false;  // the read-only probe found the anchor while airborne pre-grab
-            var minDistAir = float.MaxValue;    // closest the (pre-grab) airborne character got to the anchor
+            var everGrabbed = false; // the grab transition fired into RopeSwing from a non-swing stance
+            var everProbeFoundPreGrab = false; // the read-only probe found the anchor while airborne pre-grab
+            var minDistAir = float.MaxValue; // closest the (pre-grab) airborne character got to the anchor
             var enteredSwing = false;
             var released = false;
             var landedAfterRelease = false;
@@ -346,7 +366,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 var pre = Position();
                 Step(moveX: 1f);
                 if ((i % 8) == 0 || i == runUpTicks - 1)
-                    sb.AppendLine(TickLine($"run{i,3}", pre, searchRadius));
+                    sb.AppendLine(TickLine($"run{i, 3}", pre, searchRadius));
             }
 
             // jump off the launch ledge
@@ -379,8 +399,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 if (!enteredSwing && stancePre != PlatformerStance2D.RopeSwing && !grounded)
                 {
                     var dPre = length(pre - anchor);
-                    if (dPre < minDistAir) minDistAir = dPre;
-                    if (dPre <= searchRadius) everAirborneNearAnchor = true;
+                    if (dPre < minDistAir)
+                        minDistAir = dPre;
+                    if (dPre <= searchRadius)
+                        everAirborneNearAnchor = true;
                     if (ProbeDetect(searchRadius, out _, out _))
                         everProbeFoundPreGrab = true;
                 }
@@ -390,10 +412,13 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 // carries it onto the far ledge. One-shot.
                 var bodyPre = Body();
                 bool wantRelease = false;
-                if (enteredSwing && !released
+                if (
+                    enteredSwing
+                    && !released
                     && stancePre == PlatformerStance2D.RopeSwing
                     && pre.x > anchor.x + 0.5f
-                    && bodyPre.RelativeVelocity.y > 0f)
+                    && bodyPre.RelativeVelocity.y > 0f
+                )
                 {
                     wantRelease = true;
                 }
@@ -424,8 +449,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
                 }
 
                 // Release fired: RopeSwing -> AirMove (the jump-release edge).
-                if (wantRelease && stancePre == PlatformerStance2D.RopeSwing
-                    && stancePost != PlatformerStance2D.RopeSwing)
+                if (
+                    wantRelease
+                    && stancePre == PlatformerStance2D.RopeSwing
+                    && stancePost != PlatformerStance2D.RopeSwing
+                )
                 {
                     released = true;
                     releaseTick = i;
@@ -446,7 +474,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
 
                 bool interesting = (i % 12) == 0 || grabLatchedBefore || stancePre != stancePost || wantRelease;
                 if (interesting)
-                    sb.AppendLine(TickLine($"air{i,3}", pre, searchRadius));
+                    sb.AppendLine(TickLine($"air{i, 3}", pre, searchRadius));
             }
 
             var swingX = enteredSwing ? (swingMaxX - swingMinX) : 0f;
@@ -461,18 +489,26 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
 
             // The e2e assertion chain: a natural approach (run, jump, grab) must complete grab -> swing -> release ->
             // land. Each sub-claim is asserted separately so the trace above pins exactly which one fails.
-            Assert.IsTrue(everGrabbed,
+            Assert.IsTrue(
+                everGrabbed,
                 $"ROPE-E2E[{label}]: the natural run+jump never entered RopeSwing — the grab was not reachable from "
                     + $"the launch ledge. (everAirborneNearAnchor={everAirborneNearAnchor}, minDistAir={minDistAir:F3} "
-                    + $"vs searchRadius {searchRadius}, everProbeFoundPreGrab={everProbeFoundPreGrab}.)");
-            Assert.IsTrue(enteredSwing && swingX > 0.5f,
+                    + $"vs searchRadius {searchRadius}, everProbeFoundPreGrab={everProbeFoundPreGrab}.)"
+            );
+            Assert.IsTrue(
+                enteredSwing && swingX > 0.5f,
                 $"ROPE-E2E[{label}]: entered RopeSwing but the pendulum did not sweep a horizontal arc "
-                    + $"(X range {swingX:F3}).");
-            Assert.IsTrue(released,
-                $"ROPE-E2E[{label}]: the swing never released (jump-off the rope) — could not launch onto the far ledge.");
-            Assert.IsTrue(landedAfterRelease,
+                    + $"(X range {swingX:F3})."
+            );
+            Assert.IsTrue(
+                released,
+                $"ROPE-E2E[{label}]: the swing never released (jump-off the rope) — could not launch onto the far ledge."
+            );
+            Assert.IsTrue(
+                landedAfterRelease,
                 $"ROPE-E2E[{label}]: the released swing never delivered the character to a landing on the far ledge "
-                    + $"(X > 89). endPos={Position()} endGrounded={Body().IsGrounded}.");
+                    + $"(X > 89). endPos={Position()} endGrounded={Body().IsGrounded}."
+            );
             yield break;
         }
 
@@ -485,10 +521,9 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer.Tests
             var dist = length(pos - anchor);
             var grab = GrabLatched();
             var probe = ProbeDetect(searchRadius, out var hitEnt, out _);
-            return
-                $"  {tag}: pos=({pos.x:F2},{pos.y:F2}) stance={stance} grnd={body.IsGrounded} "
-                    + $"v=({body.RelativeVelocity.x:+0.0;-0.0},{body.RelativeVelocity.y:+0.0;-0.0}) "
-                    + $"distAnchor={dist:F2} grabLatched={grab} probeFinds={probe}{(probe ? $"({hitEnt})" : "")}";
+            return $"  {tag}: pos=({pos.x:F2},{pos.y:F2}) stance={stance} grnd={body.IsGrounded} "
+                + $"v=({body.RelativeVelocity.x:+0.0;-0.0},{body.RelativeVelocity.y:+0.0;-0.0}) "
+                + $"distAnchor={dist:F2} grabLatched={grab} probeFinds={probe}{(probe ? $"({hitEnt})" : "")}";
         }
     }
 }

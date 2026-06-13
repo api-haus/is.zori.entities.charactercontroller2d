@@ -10,7 +10,7 @@ using static Unity.Mathematics.math;
 namespace Zori.Entities.CharacterController2D.Samples.Platformer
 {
     /// <summary>
-    /// The physics half of the design §8 control→physics split: the fixed-step solve that turns each Platformer
+    /// The physics half of the control→physics split: the fixed-step solve that turns each Platformer
     /// character's <see cref="PlatformerCharacterControl2D"/> intent into motion. It extends the SideScroller's verified
     /// solve with the three-stance machine and the per-character tuning / friction read. Per fixed step, for every
     /// <see cref="PlatformerCharacterTag"/> character it:
@@ -37,20 +37,21 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
     /// <item><see cref="PlatformerStance2D.AirMove"/> — gravity always, plus a touch of air control on the horizontal
     /// plane; if a step lands the character grounded, the same block accelerates it on the ground line and consumes a
     /// jump, mirroring the SideScroller's grounded/airborne split inside one stance.</item>
-    /// <item><see cref="PlatformerStance2D.RopeSwing"/> — <b>P4 stub.</b> The pendulum swing (position-clamp-to-rope +
-    /// inward-velocity-projection against the stored <see cref="RopeSwingState2D"/>) is filled by chunk P4; for now this
-    /// case falls through to the AirMove block so a rope-stanced character still moves (gravity + air control) rather
-    /// than freezing. The transition logic that ENTERS/EXITS RopeSwing is also P4.</item>
+    /// <item><see cref="PlatformerStance2D.RopeSwing"/> — runs the pendulum swing (position-clamp-to-rope +
+    /// inward-velocity-projection against the stored <see cref="RopeSwingState2D"/>) with grounding suppressed. The
+    /// stance is entered on a grab edge near an anchor (AirMove → RopeSwing) and left on a jump or release edge,
+    /// carrying the swing velocity back into AirMove.</item>
     /// </list>
     /// </para>
     ///
-    /// <para><b>Ordering (design D3 + the C3 contract).</b> <c>[UpdateAfter(PhysicsWorld2DSystem)]</c> (implied by the
-    /// Store edge below — Store runs after the world step) — the substrate's queries are valid only against the
-    /// just-stepped world, so the solve reads frame N's world and enqueues the move the substrate drains on frame N+1.
-    /// <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c> (read the pre-solve char↔char snapshot) and
-    /// <c>[UpdateBefore(KinematicCharacterDeferredImpulsesSystem2D)]</c> (the deferred drain applies the recorded
-    /// impulses after the solve) — the exact edges the built-in solve and the SideScroller declare, so this slots into
-    /// the same resolved order: <c>PhysicsWorld2DSystem → Store… → (this) → DeferredImpulses…</c>.</para>
+    /// <para><b>Ordering.</b> <c>[UpdateAfter(Physics2DSimulationSystemGroup)]</c>
+    /// (implied by the Store edge below — Store runs after the physics group) — the substrate's queries are valid only
+    /// against the just-stepped world, so the solve reads frame N's world and enqueues the move the substrate drains
+    /// on frame N+1. <c>[UpdateAfter(StoreKinematicCharacterBodyPropertiesSystem2D)]</c> (read the pre-solve char↔char
+    /// snapshot) and <c>[UpdateBefore(KinematicCharacterDeferredImpulsesSystem2D)]</c> (the deferred drain applies the
+    /// recorded impulses after the solve) — the exact edges the built-in solve and the SideScroller declare, so this
+    /// slots into the same resolved order:
+    /// <c>Physics2DSimulationSystemGroup → Store… → (this) → DeferredImpulses…</c>.</para>
     ///
     /// <para><b>Burst.</b> The solve never touches managed input (the control system's job); it reads the already-written
     /// <see cref="PlatformerCharacterControl2D"/> component, so it Bursts and parallelizes. <c>[BurstCompile]</c> on the
@@ -72,10 +73,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
         public void OnCreate(ref SystemState state)
         {
             // The query MUST list every component AND buffer the job's Execute accesses, plus Simulate (the job is
-            // [WithAll(typeof(Simulate))]) — the C4a gate's load-bearing lesson: an IJobEntity with a custom query
+            // [WithAll(typeof(Simulate))]): an IJobEntity with a custom query
             // validates the query against Execute at SCHEDULE time, so an omitted buffer throws there, not at compile.
             // The Platformer adds PlatformerCharacterTuning2D (per-character tuning) + PlatformerCharacterState2D
-            // (the stance) + RopeSwingState2D (the active rope params, read by the RopeSwing block / P4) to the
+            // (the stance) + RopeSwingState2D (the active rope params, read by the RopeSwing block) to the
             // SideScroller's set.
             _characterQuery = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<PlatformerCharacterTag>()
@@ -162,7 +163,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 DynamicBuffer<StatefulKinematicCharacterHit2D> statefulHitsBuffer,
                 DynamicBuffer<KinematicCharacterDeferredImpulse2D> deferredImpulsesBuffer,
                 DynamicBuffer<KinematicVelocityProjectionHit2D> velocityProjectionHits,
-                DynamicBuffer<PhysicsBody2DCommand> commandBuffer)
+                DynamicBuffer<PhysicsBody2DCommand> commandBuffer
+            )
             {
                 BaseContext.EnsureCreationOfTmpCollections();
 
@@ -203,7 +205,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
 
                 bool jumpBuffered = HasBufferedJump(in control, in tuning, ElapsedTime);
 
-                // --- Stance transitions (P4): GroundMove ↔ AirMove ↔ RopeSwing, consumed BEFORE the velocity block ---
+                // --- Stance transitions: GroundMove ↔ AirMove ↔ RopeSwing, consumed BEFORE the velocity block ------
                 //
                 // The 3D reference flips state inside each state's DetectTransitions (RopeSwingState.cs:91-103,
                 // AirMoveState.cs grab edge); in 2D the {GroundMove, AirMove, RopeSwing} enum makes it a small block
@@ -242,7 +244,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                             ref characterBody,
                             groundingUp * tuning.JumpSpeed,
                             cancelVelocityBeforeJump: false,
-                            groundingUp);
+                            groundingUp
+                        );
                         ConsumeBufferedJump(ref control);
                         jumpBuffered = false;
                         state.Stance = PlatformerStance2D.AirMove;
@@ -264,14 +267,17 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                     // course's high anchor out of reach), while the captured RopeLength is the pendulum-constraint
                     // radius the swing clamps to — so the rope is slack from the grab point until the character swings
                     // out to RopeLength.
-                    if (PlatformerRopeMath.TryDetectRopeAnchor(
+                    if (
+                        PlatformerRopeMath.TryDetectRopeAnchor(
                             BaseContext.PhysicsWorld,
                             characterContext.CurrentPosition,
                             tuning.RopeAnchorSearchRadius,
                             tuning.RopeAnchorLayerMask,
                             BaseContext.TmpQueryHits,
                             out Entity anchorEntity,
-                            out float2 anchorPoint))
+                            out float2 anchorPoint
+                        )
+                    )
                     {
                         ropeState.Anchor = anchorEntity;
                         ropeState.AnchorPoint = anchorPoint;
@@ -290,7 +296,16 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 switch (state.Stance)
                 {
                     case PlatformerStance2D.GroundMove:
-                        SolveGroundMove(ref characterBody, ref control, in tuning, groundingUp, gravity, DeltaTime, jumpBuffered, in FrictionModifierLookup);
+                        SolveGroundMove(
+                            ref characterBody,
+                            ref control,
+                            in tuning,
+                            groundingUp,
+                            gravity,
+                            DeltaTime,
+                            jumpBuffered,
+                            in FrictionModifierLookup
+                        );
                         break;
 
                     case PlatformerStance2D.RopeSwing:
@@ -300,12 +315,29 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                         // .Update_Grounding:327), so clearing it here skips all ground detection / snapping for this
                         // step, leaving the pendulum free to swing without snapping to a floor below the arc.
                         characterContext.CharacterProperties.EvaluateGrounding = false;
-                        SolveRopeSwing(ref characterContext, ref characterBody, in control, in ropeState, in tuning, gravity, DeltaTime);
+                        SolveRopeSwing(
+                            ref characterContext,
+                            ref characterBody,
+                            in control,
+                            in ropeState,
+                            in tuning,
+                            gravity,
+                            DeltaTime
+                        );
                         break;
 
                     case PlatformerStance2D.AirMove:
                     default:
-                        SolveAirMove(ref characterBody, ref control, in tuning, groundingUp, gravity, DeltaTime, jumpBuffered, in FrictionModifierLookup);
+                        SolveAirMove(
+                            ref characterBody,
+                            ref control,
+                            in tuning,
+                            groundingUp,
+                            gravity,
+                            DeltaTime,
+                            jumpBuffered,
+                            in FrictionModifierLookup
+                        );
                         break;
                 }
 
@@ -347,7 +379,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                     in BodyTransformLookup,
                     in stepAndSlopeHandling,
                     gravity,
-                    DeltaTime);
+                    DeltaTime
+                );
             }
 
             /// <summary>
@@ -364,12 +397,22 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 float2 gravity,
                 float deltaTime,
                 bool jumpBuffered,
-                in ComponentLookup<FrictionModifier2D> frictionModifierLookup)
+                in ComponentLookup<FrictionModifier2D> frictionModifierLookup
+            )
             {
                 if (!characterBody.IsGrounded)
                 {
                     // Walked off the ground line: behave as AirMove until the grounding step or a transition re-grounds.
-                    SolveAirMove(ref characterBody, ref control, in tuning, groundingUp, gravity, deltaTime, jumpBuffered, in frictionModifierLookup);
+                    SolveAirMove(
+                        ref characterBody,
+                        ref control,
+                        in tuning,
+                        groundingUp,
+                        gravity,
+                        deltaTime,
+                        jumpBuffered,
+                        in frictionModifierLookup
+                    );
                     return;
                 }
 
@@ -393,7 +436,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                     tuning.GroundedMovementSharpness * frictionScale,
                     deltaTime,
                     groundingUp,
-                    characterBody.GroundHit.Normal);
+                    characterBody.GroundHit.Normal
+                );
 
                 // Fire a BUFFERED jump: unground, cancel downward velocity, add the jump impulse. The jump fires only
                 // if a fresh press is still inside the JumpBufferTime window (jumpBuffered) — a press older than the
@@ -406,7 +450,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                         ref characterBody,
                         groundingUp * tuning.JumpSpeed,
                         cancelVelocityBeforeJump: true,
-                        groundingUp);
+                        groundingUp
+                    );
                     ConsumeBufferedJump(ref control);
                 }
             }
@@ -425,7 +470,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 float2 gravity,
                 float deltaTime,
                 bool jumpBuffered,
-                in ComponentLookup<FrictionModifier2D> frictionModifierLookup)
+                in ComponentLookup<FrictionModifier2D> frictionModifierLookup
+            )
             {
                 float2 targetMove = new float2(control.MoveX, 0f);
 
@@ -441,7 +487,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                         tuning.GroundedMovementSharpness * frictionScale,
                         deltaTime,
                         groundingUp,
-                        characterBody.GroundHit.Normal);
+                        characterBody.GroundHit.Normal
+                    );
 
                     // Fire the BUFFERED jump on landing (the jump-buffer feature): a press within JumpBufferTime of
                     // this grounded step still fires here; an older press has expired and does not.
@@ -451,7 +498,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                             ref characterBody,
                             groundingUp * tuning.JumpSpeed,
                             cancelVelocityBeforeJump: true,
-                            groundingUp);
+                            groundingUp
+                        );
                         ConsumeBufferedJump(ref control);
                     }
                 }
@@ -469,7 +517,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                         tuning.AirMoveSpeed,
                         groundingUp,
                         deltaTime,
-                        forceNoMaxSpeedExcess: false);
+                        forceNoMaxSpeedExcess: false
+                    );
                 }
             }
 
@@ -483,7 +532,7 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             /// <para>The position clamp lands on <see cref="KinematicCharacterContext2D.CurrentPosition"/> — the
             /// pre-solve tracked position the package's <c>PhysicsUpdate2D</c> reads as the starting
             /// <c>characterPosition</c> and delivers via the single per-step <c>MovePosition</c>. So the rope clamp is a
-            /// pre-adjustment of that one verified motion-drive (design D3/D6), NOT a new pose-delivery path: the normal
+            /// pre-adjustment of that one verified motion-drive, NOT a new pose-delivery path: the normal
             /// collide-and-slide then runs from the clamped start and resolves any world collision along the swing arc.
             /// Grounding is already suppressed by the caller (EvaluateGrounding = false on the context), the 2D analogue
             /// of the 3D OnStateEnter (RopeSwingState.cs:18).</para>
@@ -499,7 +548,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                 in RopeSwingState2D ropeState,
                 in PlatformerCharacterTuning2D tuning,
                 float2 gravity,
-                float deltaTime)
+                float deltaTime
+            )
             {
                 float2 groundingUp = characterBody.GroundingUp;
 
@@ -514,14 +564,19 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                     tuning.RopeSwingMaxSpeed,
                     groundingUp,
                     deltaTime,
-                    forceNoMaxSpeedExcess: false);
+                    forceNoMaxSpeedExcess: false
+                );
 
                 // Gravity — the pendulum's driving force (the 3D AccelerateVelocity with CustomGravity.Gravity).
                 CharacterControlUtilities2D.AccelerateVelocity(ref characterBody.RelativeVelocity, gravity, deltaTime);
 
                 // Drag — bleeds energy out of the swing so it settles rather than swinging forever (the 3D
                 // ApplyDragToVelocity with RopeSwingDrag).
-                CharacterControlUtilities2D.ApplyDragToVelocity(ref characterBody.RelativeVelocity, deltaTime, tuning.RopeSwingDrag);
+                CharacterControlUtilities2D.ApplyDragToVelocity(
+                    ref characterBody.RelativeVelocity,
+                    deltaTime,
+                    tuning.RopeSwingDrag
+                );
 
                 // The rope constraint — clamp the tracked position onto the rope-length circle and project out the
                 // radial velocity. The character is a point-mass pendulum, so its position IS its rope-attachment point:
@@ -533,7 +588,8 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
                     ref characterBody.RelativeVelocity,
                     ropeState.RopeLength,
                     ropeState.AnchorPoint,
-                    anchorOnCharacter);
+                    anchorOnCharacter
+                );
             }
 
             /// <summary>
@@ -542,7 +598,10 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             /// modifier (or no ground hit) is neutral (1). Low values feel slippery (ice — slow to gain/shed speed),
             /// values above 1 feel sticky.
             /// </summary>
-            static float ReadFrictionScale(in ComponentLookup<FrictionModifier2D> frictionModifierLookup, Entity groundEntity)
+            static float ReadFrictionScale(
+                in ComponentLookup<FrictionModifier2D> frictionModifierLookup,
+                Entity groundEntity
+            )
             {
                 if (groundEntity != Entity.Null && frictionModifierLookup.HasComponent(groundEntity))
                 {
@@ -560,7 +619,11 @@ namespace Zori.Entities.CharacterController2D.Samples.Platformer
             /// <c>+∞</c> and never satisfies the window. This is the load-bearing expiry: a press older than the window
             /// returns false, so it does NOT fire on landing — replacing the earlier unbounded latch.
             /// </summary>
-            static bool HasBufferedJump(in PlatformerCharacterControl2D control, in PlatformerCharacterTuning2D tuning, double elapsedTime)
+            static bool HasBufferedJump(
+                in PlatformerCharacterControl2D control,
+                in PlatformerCharacterTuning2D tuning,
+                double elapsedTime
+            )
             {
                 return elapsedTime - control.JumpBufferElapsedTime <= tuning.JumpBufferTime;
             }

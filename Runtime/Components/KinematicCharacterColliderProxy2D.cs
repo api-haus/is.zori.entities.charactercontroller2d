@@ -6,8 +6,8 @@ using Zori.Entities.Physics2D;
 namespace Zori.Entities.CharacterController2D
 {
     /// <summary>
-    /// The circle/box/capsule cast proxy the solve sweeps against the world. NEW in 2D — it has no 3D origin
-    /// (design D1). The 3D controller casts the character's actual collider; the substrate's cast surface offers
+    /// The circle/box/capsule cast proxy the solve sweeps against the world. NEW in 2D — it has no 3D origin.
+    /// The 3D controller casts the character's actual collider; the substrate's cast surface offers
     /// <c>PhysicsQueries2D.CircleCast</c>, <c>BoxCast</c>, and <c>CapsuleCast</c> (no arbitrary-shape cast), so
     /// the controller's <em>sensing</em> shape is one of those three even when the body's <em>world</em> collider
     /// is a polygon or edge. <see cref="Kind"/> must be <see cref="PhysicsShape2DKind.Circle"/>,

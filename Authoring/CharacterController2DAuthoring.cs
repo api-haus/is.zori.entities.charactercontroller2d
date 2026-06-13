@@ -7,7 +7,7 @@ namespace Zori.Entities.CharacterController2D.Authoring
     /// Which cast-proxy shape the controller's solve sweeps against the world. A subset of the substrate's
     /// <c>Zori.Entities.Physics2D.PhysicsShape2DKind</c> — Circle, Box, and Capsule have a substrate cast surface
     /// (<c>PhysicsQueries2D.CircleCast</c> / <c>BoxCast</c> / <c>CapsuleCast</c>), so the proxy is one of those
-    /// three (design D1). A local authoring enum (rather than exposing the full substrate enum) so the inspector
+    /// three. A local authoring enum (rather than exposing the full substrate enum) so the inspector
     /// offers only the valid choices and the Authoring assembly stays free of a substrate-runtime reference.
     /// </summary>
     public enum CharacterProxyShape2D : byte
@@ -53,7 +53,9 @@ namespace Zori.Entities.CharacterController2D.Authoring
     public sealed class CharacterController2DAuthoring : MonoBehaviour
     {
         [SerializeField]
-        [Tooltip("General character properties (grounding, collision, dynamics). Slope angle is authored in degrees and converted at bake.")]
+        [Tooltip(
+            "General character properties (grounding, collision, dynamics). Slope angle is authored in degrees and converted at bake."
+        )]
         AuthoringKinematicCharacterProperties2D m_CharacterProperties =
             AuthoringKinematicCharacterProperties2D.GetDefault();
 
@@ -66,7 +68,7 @@ namespace Zori.Entities.CharacterController2D.Authoring
         [Tooltip(
             "The cast-proxy shape the solve sweeps against the world. Circle (round) or Box (flat sides). "
                 + "The substrate exposes only circle/box casts, so a capsule character is approximated by one of "
-                + "these (design D1)."
+                + "these."
         )]
         CharacterProxyShape2D m_ProxyShape = CharacterProxyShape2D.Circle;
 
@@ -164,10 +166,7 @@ namespace Zori.Entities.CharacterController2D.Authoring
             m_ProxyRadius = math.max(0f, m_ProxyRadius);
             m_ProxyBoxSize = math.max(float2.zero, m_ProxyBoxSize);
             m_ProxyCapsuleSize = math.max(float2.zero, m_ProxyCapsuleSize);
-            m_CharacterProperties.GroundSnappingDistance = math.max(
-                0f,
-                m_CharacterProperties.GroundSnappingDistance
-            );
+            m_CharacterProperties.GroundSnappingDistance = math.max(0f, m_CharacterProperties.GroundSnappingDistance);
             m_CharacterProperties.Mass = math.max(0f, m_CharacterProperties.Mass);
         }
     }

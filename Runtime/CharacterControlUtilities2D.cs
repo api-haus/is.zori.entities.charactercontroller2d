@@ -28,9 +28,16 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="slopeNormal"> The slope's surface normal </param>
         /// <param name="groundingUp"> The character's grounding up direction </param>
         /// <returns> The signed slope angle </returns>
-        public static float GetSlopeAngleTowardsDirection(bool useDegrees, float2 moveDirection, float2 slopeNormal, float2 groundingUp)
+        public static float GetSlopeAngleTowardsDirection(
+            bool useDegrees,
+            float2 moveDirection,
+            float2 slopeNormal,
+            float2 groundingUp
+        )
         {
-            float2 moveDirectionOnSlopePlane = normalizesafe(MathUtilities2D.ProjectOnPlane(moveDirection, slopeNormal));
+            float2 moveDirectionOnSlopePlane = normalizesafe(
+                MathUtilities2D.ProjectOnPlane(moveDirection, slopeNormal)
+            );
             float angleRadiansWithUp = MathUtilities2D.AngleRadians(moveDirectionOnSlopePlane, groundingUp);
 
             if (useDegrees)
@@ -52,10 +59,21 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="groundingUp"> The character's grounding up direction </param>
         /// <param name="groundedHitNormal"> The ground hit normal </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StandardGroundMove_Interpolated(ref float2 velocity, float2 targetVelocity, float sharpness, float deltaTime, float2 groundingUp, float2 groundedHitNormal)
+        public static void StandardGroundMove_Interpolated(
+            ref float2 velocity,
+            float2 targetVelocity,
+            float sharpness,
+            float deltaTime,
+            float2 groundingUp,
+            float2 groundedHitNormal
+        )
         {
             velocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(velocity, groundedHitNormal, groundingUp);
-            targetVelocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(targetVelocity, groundedHitNormal, groundingUp);
+            targetVelocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
+                targetVelocity,
+                groundedHitNormal,
+                groundingUp
+            );
             InterpolateVelocityTowardsTarget(ref velocity, targetVelocity, deltaTime, sharpness);
         }
 
@@ -72,14 +90,32 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="groundedHitNormal"> The ground hit normal </param>
         /// <param name="forceNoMaxSpeedExcess"> Trim total velocity to an absolute maximum (prevents exploits, can break momentum) </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StandardGroundMove_Accelerated(ref float2 velocity, float2 acceleration, float maxSpeed, float deltaTime, float2 groundingUp, float2 groundedHitNormal, bool forceNoMaxSpeedExcess)
+        public static void StandardGroundMove_Accelerated(
+            ref float2 velocity,
+            float2 acceleration,
+            float maxSpeed,
+            float deltaTime,
+            float2 groundingUp,
+            float2 groundedHitNormal,
+            bool forceNoMaxSpeedExcess
+        )
         {
             float2 addedVelocityFromAcceleration = Unity.Mathematics.float2.zero;
             AccelerateVelocity(ref addedVelocityFromAcceleration, acceleration, deltaTime);
 
             velocity = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(velocity, groundedHitNormal, groundingUp);
-            addedVelocityFromAcceleration = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(addedVelocityFromAcceleration, groundedHitNormal, groundingUp);
-            ClampAdditiveVelocityToMaxSpeedOnPlane(ref addedVelocityFromAcceleration, velocity, maxSpeed, groundedHitNormal, forceNoMaxSpeedExcess);
+            addedVelocityFromAcceleration = MathUtilities2D.ReorientVectorOnPlaneAlongDirection2D(
+                addedVelocityFromAcceleration,
+                groundedHitNormal,
+                groundingUp
+            );
+            ClampAdditiveVelocityToMaxSpeedOnPlane(
+                ref addedVelocityFromAcceleration,
+                velocity,
+                maxSpeed,
+                groundedHitNormal,
+                forceNoMaxSpeedExcess
+            );
             velocity += addedVelocityFromAcceleration;
         }
 
@@ -94,11 +130,24 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="deltaTime"> The character update time delta </param>
         /// <param name="forceNoMaxSpeedExcess"> Trim total velocity to an absolute maximum </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StandardAirMove(ref float2 velocity, float2 acceleration, float maxSpeed, float2 movementPlaneUp, float deltaTime, bool forceNoMaxSpeedExcess)
+        public static void StandardAirMove(
+            ref float2 velocity,
+            float2 acceleration,
+            float maxSpeed,
+            float2 movementPlaneUp,
+            float deltaTime,
+            bool forceNoMaxSpeedExcess
+        )
         {
             float2 addedVelocityFromAcceleration = Unity.Mathematics.float2.zero;
             AccelerateVelocity(ref addedVelocityFromAcceleration, acceleration, deltaTime);
-            ClampAdditiveVelocityToMaxSpeedOnPlane(ref addedVelocityFromAcceleration, velocity, maxSpeed, movementPlaneUp, forceNoMaxSpeedExcess);
+            ClampAdditiveVelocityToMaxSpeedOnPlane(
+                ref addedVelocityFromAcceleration,
+                velocity,
+                maxSpeed,
+                movementPlaneUp,
+                forceNoMaxSpeedExcess
+            );
             velocity += addedVelocityFromAcceleration;
         }
 
@@ -111,9 +160,18 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="deltaTime"> The character update time delta </param>
         /// <param name="interpolationSharpness"> The sharpness of the velocity change </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void InterpolateVelocityTowardsTarget(ref float2 velocity, float2 targetVelocity, float deltaTime, float interpolationSharpness)
+        public static void InterpolateVelocityTowardsTarget(
+            ref float2 velocity,
+            float2 targetVelocity,
+            float deltaTime,
+            float interpolationSharpness
+        )
         {
-            velocity = lerp(velocity, targetVelocity, MathUtilities2D.GetSharpnessInterpolant(interpolationSharpness, deltaTime));
+            velocity = lerp(
+                velocity,
+                targetVelocity,
+                MathUtilities2D.GetSharpnessInterpolant(interpolationSharpness, deltaTime)
+            );
         }
 
         /// <summary>
@@ -141,7 +199,13 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="movementPlaneUp"> Up direction of the clamping plane </param>
         /// <param name="forceNoMaxSpeedExcess"> Trim total velocity to an absolute maximum </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ClampAdditiveVelocityToMaxSpeedOnPlane(ref float2 additiveVelocity, float2 originalVelocity, float maxSpeed, float2 movementPlaneUp, bool forceNoMaxSpeedExcess)
+        public static void ClampAdditiveVelocityToMaxSpeedOnPlane(
+            ref float2 additiveVelocity,
+            float2 originalVelocity,
+            float maxSpeed,
+            float2 movementPlaneUp,
+            bool forceNoMaxSpeedExcess
+        )
         {
             if (forceNoMaxSpeedExcess)
             {
@@ -171,12 +235,21 @@ namespace Zori.Entities.CharacterController2D
                     float2 totalClampedVelocityOnPlane;
                     if (dot(totalVelocityDirectionOnPlane, originalVelocityForwardOnPlane) > 0f)
                     {
-                        float2 originalVelocityRightOnPlane = normalizesafe(MathUtilities2D.perp(originalVelocityForwardOnPlane));
+                        float2 originalVelocityRightOnPlane = normalizesafe(
+                            MathUtilities2D.perp(originalVelocityForwardOnPlane)
+                        );
 
                         // trim additive velocity excess in original velocity direction
-                        float2 trimmedTotalVelocityForwardComponent = MathUtilities2D.ClampToMaxLength(projectsafe(totalVelocityOnPlane, originalVelocityForwardOnPlane), max(maxSpeed, length(originalVelocityOnPlane)));
-                        float2 trimmedTotalVelocityRightComponent = MathUtilities2D.ClampToMaxLength(projectsafe(totalVelocityOnPlane, originalVelocityRightOnPlane), maxSpeed);
-                        totalClampedVelocityOnPlane = trimmedTotalVelocityForwardComponent + trimmedTotalVelocityRightComponent;
+                        float2 trimmedTotalVelocityForwardComponent = MathUtilities2D.ClampToMaxLength(
+                            projectsafe(totalVelocityOnPlane, originalVelocityForwardOnPlane),
+                            max(maxSpeed, length(originalVelocityOnPlane))
+                        );
+                        float2 trimmedTotalVelocityRightComponent = MathUtilities2D.ClampToMaxLength(
+                            projectsafe(totalVelocityOnPlane, originalVelocityRightOnPlane),
+                            maxSpeed
+                        );
+                        totalClampedVelocityOnPlane =
+                            trimmedTotalVelocityForwardComponent + trimmedTotalVelocityRightComponent;
                     }
                     else
                     {
@@ -200,7 +273,12 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="cancelVelocityBeforeJump"> Whether to cancel velocity along <paramref name="velocityCancelingUpDirection"/> first </param>
         /// <param name="velocityCancelingUpDirection"> The velocity-canceling up direction </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StandardJump(ref KinematicCharacterBody2D characterBody, float2 jumpVelocity, bool cancelVelocityBeforeJump, float2 velocityCancelingUpDirection)
+        public static void StandardJump(
+            ref KinematicCharacterBody2D characterBody,
+            float2 jumpVelocity,
+            bool cancelVelocityBeforeJump,
+            float2 velocityCancelingUpDirection
+        )
         {
             // Without this, the ground snapping mechanism would prevent jumping.
             characterBody.IsGrounded = false;
@@ -208,7 +286,10 @@ namespace Zori.Entities.CharacterController2D
 
             if (cancelVelocityBeforeJump)
             {
-                characterBody.RelativeVelocity = MathUtilities2D.ProjectOnPlane(characterBody.RelativeVelocity, velocityCancelingUpDirection);
+                characterBody.RelativeVelocity = MathUtilities2D.ProjectOnPlane(
+                    characterBody.RelativeVelocity,
+                    velocityCancelingUpDirection
+                );
             }
 
             characterBody.RelativeVelocity += jumpVelocity;
@@ -256,12 +337,21 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="direction"> The direction to face </param>
         /// <param name="orientationSharpness"> The sharpness of the rotation </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SlerpRotationTowardsDirection(ref float rotationRadians, float deltaTime, float2 direction, float orientationSharpness)
+        public static void SlerpRotationTowardsDirection(
+            ref float rotationRadians,
+            float deltaTime,
+            float2 direction,
+            float orientationSharpness
+        )
         {
             if (lengthsq(direction) > 0f)
             {
                 float targetAngle = MathUtilities2D.AngleOfDirection(normalizesafe(direction));
-                rotationRadians = LerpAngleRadians(rotationRadians, targetAngle, MathUtilities2D.GetSharpnessInterpolant(orientationSharpness, deltaTime));
+                rotationRadians = LerpAngleRadians(
+                    rotationRadians,
+                    targetAngle,
+                    MathUtilities2D.GetSharpnessInterpolant(orientationSharpness, deltaTime)
+                );
             }
         }
 
@@ -278,14 +368,23 @@ namespace Zori.Entities.CharacterController2D
         /// <param name="upDirection"> The up direction to align to </param>
         /// <param name="orientationSharpness"> The sharpness of the rotation </param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SlerpCharacterUpTowardsDirection(ref float rotationRadians, float deltaTime, float2 upDirection, float orientationSharpness)
+        public static void SlerpCharacterUpTowardsDirection(
+            ref float rotationRadians,
+            float deltaTime,
+            float2 upDirection,
+            float orientationSharpness
+        )
         {
             if (lengthsq(upDirection) > 0f)
             {
                 float2 up = normalizesafe(upDirection);
                 // UpFromAngle(a) = (-sin a, cos a); solving for the angle whose up equals `up` gives atan2(-up.x, up.y).
                 float targetAngle = atan2(-up.x, up.y);
-                rotationRadians = LerpAngleRadians(rotationRadians, targetAngle, MathUtilities2D.GetSharpnessInterpolant(orientationSharpness, deltaTime));
+                rotationRadians = LerpAngleRadians(
+                    rotationRadians,
+                    targetAngle,
+                    MathUtilities2D.GetSharpnessInterpolant(orientationSharpness, deltaTime)
+                );
             }
         }
 

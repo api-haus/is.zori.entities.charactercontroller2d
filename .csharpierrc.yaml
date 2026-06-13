@@ -1,0 +1,7 @@
+# shipshape enforcement layer — csharpier is the formatter of record.
+# A trailing `//` preserves a hand-authored line break through formatting;
+# use it only where the break carries meaning, never as a reflex.
+printWidth: 120
+useTabs: false
+tabWidth: 4
+endOfLine: lf
